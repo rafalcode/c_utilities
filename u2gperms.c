@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     }
 
     struct stat sb;
-    uint i, up, gp, op, nwtp;
+    uint i, up, gp, op, nwtp; /* unsigneds under types.h */
 
     for(i=1;i<=argc-1;++i) {
 
