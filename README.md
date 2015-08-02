@@ -4,5 +4,5 @@ Various input/output and system utilities
 utilites, but realised they were becomeign more general than that)
 
 # Programs
-* readmat: reads a text which consists of a raw matrix of arbitrary size. floats assumed all round.
+* matread: reads a text which consists of a raw matrix of arbitrary size. floats assumed all round.
 
