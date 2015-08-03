@@ -13,9 +13,9 @@ typedef struct /* wseq_t */
     size_t *wln;
     size_t wsbuf;
     size_t quan;
-    size_t lbuf;
-    size_t numl;
-    size_t *wpla; /* words per line array number of words per line */
+    size_t lbuf; /* a buffer for the number of lines */
+    size_t numl; /* number of lines, i.e. rows */
+    size_t *wpla; /* words per line array: the number of words on each line */
 } wseq_t;
 
 wseq_t *create_wseq_t(size_t initsz)
@@ -46,7 +46,7 @@ float *processinpf(char *fname, int *m, int *n)
     /* declarations */
     FILE *fp=fopen(fname,"r");
     int i;
-    size_t couc /*count chars */, couw=0 /* count words */, oldcouw = 0;
+    size_t couc /*count chars per line */, couw=0 /* count words */, oldcouw = 0;
     char c;
     boole inword=0;
     wseq_t *wa=create_wseq_t(GBUF);
