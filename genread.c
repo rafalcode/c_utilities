@@ -1,12 +1,91 @@
-/* Reads a matrix type and without making any assumptionsi aboutn number of columns nor number of rows */
+/* modification of matread but operating on words instead of floats */
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
 
+#define CBUF 8
 #define GBUF 8
 #define WBUF 8
 
 typedef unsigned char boole;
+
+typedef struct /* word type */
+{
+    char *w;
+    unsigned b; /* buffer */
+    unsigned lp1; /* length */
+} w_t;
+
+w_t *creawt(void)
+{
+    w_t *wt=malloc(sizeof(w_t));
+    wt->b=CBUF;
+    wt->lp1=0;
+    wt->w=malloc(wt->b*sizeof(char));
+    return wt;
+}
+
+void reallwt(w_t **wt)
+{
+    w_t *twt=*wt;
+    twt->w=realloc(twt->w, twt->b*sizeof(char));
+    *wt=twt; /* realloc can often change the ptr */
+    return;
+}
+
+void normwt(w_t **wt)
+{
+    w_t *twt=*wt;
+    twt->w=realloc(twt->w, twt->lp1*sizeof(char));
+    *wt=twt; /* realloc can often change the ptr */
+    return;
+}
+
+void freewt(w_t **wt)
+{
+    w_t *twt=*wt;
+    free(twt->w)
+    free(twt)
+    return;
+}
+
+typedef struct /* wa_t: word array */
+{
+    w_t **wa;
+    unsigned ab;
+    unsigned al;
+} wa_t;
+
+wa_t *creatwat(void)
+{
+    int i;
+    wa_t *wat=malloc(sizeof(wa_t));
+    wat->ab=WABUF;
+    wat->al=0;
+    for(i=0;i<wat->ab;++i) 
+        wat->wa[i]=creawt();
+    return wat;
+}
+
+void reallwat(wa_t **wat, unsigned buf)
+{
+    int i;
+    wa_t *twat=*wat;
+    for(i=twat->ab-buf;i<twat->ab;++i) 
+        twat->wa[i]=creawt();
+    *wat=twat;
+    return;
+}
+
+void normwat(wa_t **wat)
+{
+    int i;
+    wa_t *twat=*wat;
+    for(i=twat->al;i<twat->ab;++i) 
+        freewt(twat->wa[i]);
+    *wat=twat;
+    return;
+}
 
 typedef struct /* wseq_t */
 {
@@ -16,6 +95,7 @@ typedef struct /* wseq_t */
     size_t lbuf; /* a buffer for the number of lines */
     size_t numl; /* number of lines, i.e. rows */
     size_t *wpla; /* words per line array: the number of words on each line */
+    wa_t *wat;
 } wseq_t;
 
 wseq_t *create_wseq_t(size_t initsz)
@@ -39,10 +119,6 @@ void free_wseq(wseq_t *wa)
 
 float *processinpf(char *fname, int *m, int *n)
 {
-    /* In order to make no assumptions, the file is treated as lines containing the same amount of words each,
-     * except for lines starting with #, which are ignored (i.e. comments). These words are checked to make sure they contain only floating number-type
-     * characters [0123456789+-.] only, one string variable is icontinually written over and copied into a growing floating point array each time */
-
     /* declarations */
     FILE *fp=fopen(fname,"r");
     int i;
@@ -51,25 +127,26 @@ float *processinpf(char *fname, int *m, int *n)
     boole inword=0;
     wseq_t *wa=create_wseq_t(GBUF);
     size_t bwbuf=WBUF;
-    char *bufword=calloc(bwbuf, sizeof(char)); /* this is the string we'll keep overwriting. */
+
+    wa_t *wa=
+
+    for(i=0;i<n;++i) 
+    w_t *bufworda=calloc(bwbuf, sizeof(w_t)); /* this is the string we'll keep overwriting. */
 
     float *mat=malloc(GBUF*sizeof(float));
 
     while( (c=fgetc(fp)) != EOF) {
         /*  take care of  */
         if( (c== '\n') | (c == ' ') | (c == '\t') | (c=='#')) {
-            if( inword==1) { /* we end a word */
+            if( inword==1) { /* we've been in a word so we have to end it */
                 wa->wln[couw]=couc;
-                bufword[couc++]='\0';
-                bufword = realloc(bufword, couc*sizeof(char)); /* normalize */
+                bufword[k][couc++]='\0';
+                bufword[k] = realloc(bufword[k], couc*sizeof(char)); /* normalize */
                 mat[couw]=atof(bufword);
                 couc=0;
                 couw++;
             }
-            if(c=='#') {
-                while( (c=fgetc(fp)) != '\n') ;
-                continue;
-            } else if(c=='\n') {
+            if(c=='\n') {
                 if(wa->numl == wa->lbuf-1) {
                     wa->lbuf += WBUF;
                     wa->wpla=realloc(wa->wpla, wa->lbuf*sizeof(size_t));
@@ -80,7 +157,7 @@ float *processinpf(char *fname, int *m, int *n)
                 wa->numl++;
             }
             inword=0;
-        } else if( (inword==0) && ((c == 0x2B) | (c == 0x2D) | (c == 0x2E) | ((c >= 0x30) && (c <= 0x39))) ) { /* deal with first character of new word, + and - also allowed */
+        } else if(inword==0) {
             if(couw == wa->wsbuf-1) {
                 wa->wsbuf += GBUF;
                 wa->wln=realloc(wa->wln, wa->wsbuf*sizeof(size_t));
