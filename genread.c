@@ -13,9 +13,10 @@ w_t *creawt(void)
     return wt;
 }
 
-void reallwt(w_t **wt)
+void reallwt(w_t **wt, unsigned buf)
 {
     w_t *twt=*wt;
+    twt->b += buf;
     twt->w=realloc(twt->w, twt->b*sizeof(char));
     *wt=twt; /* realloc can often change the ptr */
     return;
@@ -52,6 +53,7 @@ void reallwat(wa_t **wat, unsigned buf)
 {
     int i;
     wa_t *twat=*wat;
+    twat->ab += BUF;
     for(i=twat->ab-buf;i<twat->ab;++i) 
         twat->wa[i]=creawt();
     *wat=twat;
@@ -123,7 +125,7 @@ float *processinpf(char *fname, int *m, int *n)
                     wa->lbuf += WBUF;
                     wa->wpla=realloc(wa->wpla, wa->lbuf*sizeof(size_t));
                     memset(wa->wpla+(wa->lbuf-WBUF), 0, WBUF*sizeof(size_t));
-                    wa.awat=realloc(wa.awat, wa->lbuf*sizeof(wa_t));
+                    wa->awat=realloc(wa->awat, wa->lbuf*sizeof(wa_t));
                     for(i=wa->lbuf-WBUF; i<wa->lbuf; ++i)
                         wa->awat[i]=creawat();
                 }
@@ -138,27 +140,19 @@ float *processinpf(char *fname, int *m, int *n)
                 wa->wln=realloc(wa->wln, wa->wsbuf*sizeof(size_t));
                 for(i=wa->wsbuf-GBUF;i<wa->wsbuf;++i)
                     wa->wln[i]=0;
-                for(i=wa->wsbuf-GBUF;i<wa->wsbuf;++i)
-                    reallwat(wa->awat[wa->numl]->wa);
+                reallwat(wa->awat[wa->numl]->wa, GBUF);
             }
             couc=0;
             bwbuf=WBUF;
             bufword=realloc(bufword, bwbuf*sizeof(char)); /* don't bother with memset, it's not necessary */
             bufword[couc++]=c; /* no need to check here, it's the first character */
-                wa->wat[wa->numl]->wa[couw]->w[couc++]=c;
+                wa->awat[wa->numl]->wa[couw]->w[couc++]=c;
             inword=1;
-        } else if( (c == 0x2E) | ((c >= 0x30) && (c <= 0x39)) ) {
-            if(couc == bwbuf-1) { /* the -1 so that we can always add and extra (say 0) when we want */
-                bwbuf += WBUF;
-                bufword = realloc(bufword, bwbuf*sizeof(char));
-            }
-            bufword[couc++]=c;
-        } else {
-            printf("Error. Non-float character detected. This program is only for reading floats\n"); 
-            free_wseq(wa);
-            exit(EXIT_FAILURE);
+        } else if(inword) { /* simply store */
+            if(couc == wa->awat[wa->numl]->wa[couw]->b-1)
+               reallwt(wa->awat[wa->numl]->wa[couw], CBUF);
+            wa->awat[wa->numl]->wa[couw]->w[couc++]=c;
         }
-
     } /* end of big for statement */
     fclose(fp);
     free(bufword);
