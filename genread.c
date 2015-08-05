@@ -2,19 +2,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-
-#define CBUF 8
-#define GBUF 8
-#define WBUF 8
-
-typedef unsigned char boole;
-
-typedef struct /* word type */
-{
-    char *w;
-    unsigned b; /* buffer */
-    unsigned lp1; /* length */
-} w_t;
+#include "genread.h"
 
 w_t *creawt(void)
 {
@@ -49,13 +37,6 @@ void freewt(w_t **wt)
     return;
 }
 
-typedef struct /* wa_t: word array */
-{
-    w_t **wa;
-    unsigned ab;
-    unsigned al;
-} wa_t;
-
 wa_t *creatwat(void)
 {
     int i;
@@ -87,16 +68,14 @@ void normwat(wa_t **wat)
     return;
 }
 
-typedef struct /* wseq_t */
+void freewat(wa_t **wat)
 {
-    size_t *wln;
-    size_t wsbuf;
-    size_t quan;
-    size_t lbuf; /* a buffer for the number of lines */
-    size_t numl; /* number of lines, i.e. rows */
-    size_t *wpla; /* words per line array: the number of words on each line */
-    wa_t *wat;
-} wseq_t;
+    int i;
+    for(i=0;i<twat->al;++i) 
+        freewt(twat->wa[i]);
+    free(twat);
+    return;
+}
 
 wseq_t *create_wseq_t(size_t initsz)
 {
@@ -107,6 +86,7 @@ wseq_t *create_wseq_t(size_t initsz)
     words->lbuf=WBUF;
     words->numl=0;
     words->wpla=calloc(words->lbuf, sizeof(size_t));
+    wa_t=creawat();
     return words;
 }
 
@@ -114,6 +94,7 @@ void free_wseq(wseq_t *wa)
 {
     free(wa->wln);
     free(wa->wpla);
+    free(wa->wat);
     free(wa);
 }
 
@@ -126,23 +107,14 @@ float *processinpf(char *fname, int *m, int *n)
     int c;
     boole inword=0;
     wseq_t *wa=create_wseq_t(GBUF);
-    size_t bwbuf=WBUF;
-
-    wa_t *wa=
-
-    for(i=0;i<n;++i) 
-    w_t *bufworda=calloc(bwbuf, sizeof(w_t)); /* this is the string we'll keep overwriting. */
-
-    float *mat=malloc(GBUF*sizeof(float));
 
     while( (c=fgetc(fp)) != EOF) {
-        /*  take care of  */
-        if( (c== '\n') | (c == ' ') | (c == '\t') | (c=='#')) {
+        if( (c== '\n') | (c == ' ') | (c == '\t') ) {
             if( inword==1) { /* we've been in a word so we have to end it */
                 wa->wln[couw]=couc;
-                bufword[k][couc++]='\0';
-                bufword[k] = realloc(bufword[k], couc*sizeof(char)); /* normalize */
-                mat[couw]=atof(bufword);
+                wa->awat[wa->numl]->wa[couw]->w[couc++]='\0';
+                wa->awat[wa->numl]->wa[couw]->lp1=couc;
+                normwt(wa->awat[wa->numl]->wa[couw]);
                 couc=0;
                 couw++;
             }
@@ -151,24 +123,29 @@ float *processinpf(char *fname, int *m, int *n)
                     wa->lbuf += WBUF;
                     wa->wpla=realloc(wa->wpla, wa->lbuf*sizeof(size_t));
                     memset(wa->wpla+(wa->lbuf-WBUF), 0, WBUF*sizeof(size_t));
+                    wa.awat=realloc(wa.awat, wa->lbuf*sizeof(wa_t));
+                    for(i=wa->lbuf-WBUF; i<wa->lbuf; ++i)
+                        wa->awat[i]=creawat();
                 }
                 wa->wpla[wa->numl] = couw-oldcouw;
                 oldcouw=couw;
                 wa->numl++;
             }
             inword=0;
-        } else if(inword==0) {
-            if(couw == wa->wsbuf-1) {
+        } else if(inword==0) { /* a normal character opens word */
+            if(couw == wa->wsbuf-1) { /* new word opening */
                 wa->wsbuf += GBUF;
                 wa->wln=realloc(wa->wln, wa->wsbuf*sizeof(size_t));
-                mat=realloc(mat, wa->wsbuf*sizeof(float));
                 for(i=wa->wsbuf-GBUF;i<wa->wsbuf;++i)
                     wa->wln[i]=0;
+                for(i=wa->wsbuf-GBUF;i<wa->wsbuf;++i)
+                    reallwat(wa->awat[wa->numl]->wa);
             }
             couc=0;
             bwbuf=WBUF;
             bufword=realloc(bufword, bwbuf*sizeof(char)); /* don't bother with memset, it's not necessary */
             bufword[couc++]=c; /* no need to check here, it's the first character */
+                wa->wat[wa->numl]->wa[couw]->w[couc++]=c;
             inword=1;
         } else if( (c == 0x2E) | ((c >= 0x30) && (c <= 0x39)) ) {
             if(couc == bwbuf-1) { /* the -1 so that we can always add and extra (say 0) when we want */
