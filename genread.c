@@ -70,7 +70,7 @@ void normwat(wa_t **wat)
     for(i=twat->al;i<twat->ab;++i) 
         freewt(twat->wa+i);
     /* now release the pointers to those freed w_t's */
-    twat->wa=realloc(twat->wa, twat->al*sizeof(wa_t));
+    twat->wa=realloc(twat->wa, twat->al*sizeof(wa_t*));
     *wat=twat;
     return;
 }
@@ -120,15 +120,14 @@ wseq_t *processinpf(char *fname)
 
     while( (c=fgetc(fp)) != EOF) {
         if( (c== '\n') | (c == ' ') | (c == '\t') ) {
-            if( inword==1) { /* we've been in a word so we have to end it */
+            if( inword==1) { /* cue word -edning procedure */
                 awpl->awat[awpl->numl]->wa[couw]->w[couc++]='\0';
                 awpl->awat[awpl->numl]->wa[couw]->lp1=couc;
                 normwt(awpl->awat[awpl->numl]->wa+couw);
-                couc=0;
                 couw++;
             }
-            if(c=='\n') {
-                if(awpl->numl >=lbuf-1) {
+            if(c=='\n') { /* cue line-ending procedure */
+                if(awpl->numl ==lbuf-1) {
                     lbuf += LBUF;
                     awpl->awat=realloc(awpl->awat, lbuf*sizeof(wa_t*));
                     for(i=lbuf-LBUF; i<lbuf; ++i)
@@ -141,7 +140,7 @@ wseq_t *processinpf(char *fname)
             }
             inword=0;
         } else if(inword==0) { /* a normal character opens word */
-            if(couw >=awpl->awat[awpl->numl]->ab-1) /* new word opening */
+            if(couw ==awpl->awat[awpl->numl]->ab-1) /* new word opening */
                 reallwat(awpl->awat+awpl->numl, WABUF);
             couc=0;
 #ifdef DBG
@@ -158,11 +157,26 @@ wseq_t *processinpf(char *fname)
     fclose(fp);
 
     /* normalization stage */
-    for(i=lbuf-awpl->numl; i<lbuf; ++i)
+    for(i=awpl->numl; i<lbuf; ++i)
         freewat(awpl->awat+i);
     awpl->awat=realloc(awpl->awat, awpl->numl*sizeof(wa_t*));
 
     return awpl;
+}
+
+void prtwseq(wseq_t *awpl)
+{
+    int i, j, k;
+    for(i=0;i<awpl->numl;++i) {
+        printf("l.%u(%u): ", i, awpl->awat[i]->al); 
+        for(j=0;j<awpl->awat[i]->al;++j) {
+            printf("w_%u: ", j); 
+            for(k=0;k<awpl->awat[i]->wa[j]->lp1-1; k++)
+                putchar(awpl->awat[i]->wa[j]->w[k]);
+            printf("/%u ", awpl->awat[i]->wa[j]->lp1-1); 
+        }
+        printf("\n"); 
+    }
 }
 
 int main(int argc, char *argv[])
@@ -177,6 +191,7 @@ int main(int argc, char *argv[])
 #endif
 
     wseq_t *awpl=processinpf(argv[1]);
+    prtwseq(awpl);
     printf("Numlines: %zu\n", awpl->numl); 
 
     free_wseq(&awpl);

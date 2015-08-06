@@ -2,10 +2,9 @@
 #include<stdlib.h>
 #include<string.h>
 
-#define CBUF 8
-#define GBUF 8
+#define CBUF 4
 #define WABUF 4
-#define LBUF 8
+#define LBUF 4
 
 typedef unsigned char boole;
 
