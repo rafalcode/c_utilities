@@ -8,8 +8,11 @@ w_t *creawt(unsigned initsz)
 {
     w_t *wt=malloc(sizeof(w_t));
     wt->b=initsz;
-    wt->lp1=0;
+    wt->lp1=wt->b;
     wt->w=malloc(wt->b*sizeof(char));
+#ifdef DBG
+    printf("%u wt-b char's created\n", wt->b); 
+#endif
     return wt;
 }
 
@@ -17,6 +20,7 @@ void reallwt(w_t **wt, unsigned buf)
 {
     w_t *twt=*wt;
     twt->b += buf;
+    twt->lp1=twt->b;
     twt->w=realloc(twt->w, twt->b*sizeof(char));
     *wt=twt; /* realloc can often change the ptr */
     return;
@@ -43,8 +47,11 @@ wa_t *creawat(unsigned initsz)
     int i;
     wa_t *wat=malloc(sizeof(wa_t));
     wat->ab=initsz;
-    wat->al=0;
+    wat->al=wat->ab;
     wat->wa=malloc(wat->ab*sizeof(w_t*));
+#ifdef DBG
+    printf("%u wat-ab w_t*'s created\n", wat->ab); 
+#endif
     for(i=0;i<wat->ab;++i) 
         wat->wa[i]=creawt(CBUF);
     return wat;
@@ -55,10 +62,14 @@ void reallwat(wa_t **wat, unsigned buf)
     int i;
     wa_t *twat=*wat;
     twat->ab += buf;
+    twat->al=twat->ab;
     twat->wa=realloc(twat->wa, twat->ab*sizeof(wa_t*));
     for(i=twat->ab-buf;i<twat->ab;++i)
         twat->wa[i]=creawt(CBUF);
     *wat=twat;
+#ifdef DBG2
+    printf("ab to %u\n", twat->ab); 
+#endif
     return;
 }
 
@@ -67,6 +78,9 @@ void normwat(wa_t **wat)
     int i;
     wa_t *twat=*wat;
     /* free the individual w_t's */
+#ifdef DBG
+    printf("%u wa_t's released via norm\n", twat->ab-twat->al);
+#endif
     for(i=twat->al;i<twat->ab;++i) 
         freewt(twat->wa+i);
     /* now release the pointers to those freed w_t's */
@@ -81,6 +95,7 @@ void freewat(wa_t **wat)
     wa_t *twat=*wat;
     for(i=0;i<twat->al;++i) 
         freewt(twat->wa+i);
+    free(twat->wa); /* unbelieveable: I left this out, couldn't find where I leaking the memory! */
     free(twat);
     return;
 }
@@ -91,6 +106,9 @@ wseq_t *create_wseq_t(unsigned initsz)
     unsigned lbuf=initsz;
     wseq_t *awpl=malloc(sizeof(wseq_t));
     awpl->numl=0;
+#ifdef DBG
+    printf("%u lbuf wa_t*'s created\n", lbuf); 
+#endif
     awpl->awat=malloc(lbuf*sizeof(wa_t*));
     for(i=0;i<initsz;++i) 
         awpl->awat[i]=creawat(WABUF);
@@ -101,7 +119,7 @@ void free_wseq(wseq_t **wa)
 {
     int i;
     wseq_t *twa=*wa;
-    for(i=0;i<twa->numl;++i) 
+    for(i=0;i<twa->numl;++i) /* tried to release 1 more, no go */
         freewat(twa->awat+i);
     free(twa->awat);
     free(twa);
@@ -124,7 +142,7 @@ wseq_t *processinpf(char *fname)
                 awpl->awat[awpl->numl]->wa[couw]->w[couc++]='\0';
                 awpl->awat[awpl->numl]->wa[couw]->lp1=couc;
                 normwt(awpl->awat[awpl->numl]->wa+couw);
-                couw++;
+                couw++; /* verified: this has to be here */
             }
             if(c=='\n') { /* cue line-ending procedure */
                 if(awpl->numl ==lbuf-1) {
@@ -143,7 +161,7 @@ wseq_t *processinpf(char *fname)
             if(couw ==awpl->awat[awpl->numl]->ab-1) /* new word opening */
                 reallwat(awpl->awat+awpl->numl, WABUF);
             couc=0;
-#ifdef DBG
+#ifdef DBG2
             printf("numl: %zu couw: %zu couc: %zu\n", awpl->numl, couw, couc); 
 #endif
             awpl->awat[awpl->numl]->wa[couw]->w[couc++]=c;
@@ -157,8 +175,12 @@ wseq_t *processinpf(char *fname)
     fclose(fp);
 
     /* normalization stage */
-    for(i=awpl->numl; i<lbuf; ++i)
+    for(i=awpl->numl; i<lbuf; ++i) {
         freewat(awpl->awat+i);
+    }
+#ifdef DBG
+    printf("final normaliz from %u to %zu\n", lbuf, awpl->numl);
+#endif
     awpl->awat=realloc(awpl->awat, awpl->numl*sizeof(wa_t*));
 
     return awpl;
@@ -186,15 +208,13 @@ int main(int argc, char *argv[])
         printf("Error. Pls supply argument (name of text file).\n");
         exit(EXIT_FAILURE);
     }
-#ifdef DBG
     printf("typeszs: wseq_t: %zu wa_t: %zu w_t: %zu\n", sizeof(wseq_t), sizeof(wa_t), sizeof(w_t));
-#endif
 
     wseq_t *awpl=processinpf(argv[1]);
     prtwseq(awpl);
     printf("Numlines: %zu\n", awpl->numl); 
 
-    free_wseq(&awpl);
+     free_wseq(&awpl);
 
     return 0;
 }
