@@ -66,10 +66,11 @@ void normwat(wa_t **wat)
 {
     int i;
     wa_t *twat=*wat;
+    /* free the individual w_t's */
     for(i=twat->al;i<twat->ab;++i) 
         freewt(twat->wa+i);
-    /* causing problems ... */
-    twat=realloc(twat, twat->al*sizeof(wa_t));
+    /* now release the pointers to those freed w_t's */
+    twat->wa=realloc(twat->wa, twat->al*sizeof(wa_t));
     *wat=twat;
     return;
 }
@@ -156,11 +157,10 @@ wseq_t *processinpf(char *fname)
     } /* end of big for statement */
     fclose(fp);
 
-    /* normalization stage
-       awpl->quan=couw;
-       awpl->wln = realloc(awpl->wln, awpl->quan*sizeof(size_t));
-       awpl->wpla= realloc(awpl->wpla, awpl->numl*sizeof(unsigned));
-       */
+    /* normalization stage */
+    for(i=lbuf-awpl->numl; i<lbuf; ++i)
+        freewat(awpl->awat+i);
+    awpl->awat=realloc(awpl->awat, awpl->numl*sizeof(wa_t*));
 
     return awpl;
 }
