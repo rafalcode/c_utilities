@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-O3
-DBGCFLAGS=-g -Wall -DDBG
+DBGCFLAGS=-g -Wall
 EXES=cmd2ext extcou cleangrpo matread genread
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
@@ -19,13 +19,16 @@ cleangrpo: cleangrpo.c
 	${CC} ${CFLAGS} -o $@ $^
 
 cleangrpo_d: cleangrpo.c
-	${CC} ${DBGCFLAGS} -o $@ $^
+	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 
 matread: matread.c
-	${CC} ${CFLAGS} -o $@ $^
+	${CC} ${DBGCFLAGS} -o $@ $^
 
 genread: genread.c
-	${CC} ${CFLAGS} -o $@ $^
+	${CC} ${DBGCFLAGS} -o $@ $^
+genread_d: genread.c
+	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
+
 
 .PHONY: clean
 
