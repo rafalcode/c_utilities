@@ -7,10 +7,16 @@
 #define LBUF 2
 
 typedef unsigned char boole;
+typedef enum
+{
+    UNK, /* unknown type, so default to string */
+    NUM /* number: treat as float, an int requires more information */
+} t_t;
 
 typedef struct /* word type */
 {
     char *w;
+    t_t t; /* number or not */
     unsigned lp1; /* length of word plus one (i.e. includes null char */
 } w_c;
 

@@ -8,6 +8,7 @@ w_c *crea_wc(unsigned initsz)
 {
     w_c *wc=malloc(sizeof(w_c));
     wc->lp1=initsz;
+    wc->t=UNK;
     wc->w=malloc(wc->lp1*sizeof(char));
 #ifdef DBG
     printf("%u wc-lp1 char's created\n", wc->lp1); 
@@ -126,6 +127,25 @@ void free_aawc(aaw_c **aw)
     free(taw);
 }
 
+void prtaawc(aaw_c *aawc)
+{
+    int i, j, k;
+    for(i=0;i<aawc->numl;++i) {
+        printf("l.%u(%u): ", i, aawc->aaw[i]->al); 
+        for(j=0;j<aawc->aaw[i]->al;++j) {
+            printf("w_%u: ", j); 
+            if(aawc->aaw[i]->aw[j]->t == NUM) {
+                printf("NUM! "); 
+                continue;
+            }
+            for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
+                putchar(aawc->aaw[i]->aw[j]->w[k]);
+            printf("/%u ", aawc->aaw[i]->aw[j]->lp1-1); 
+        }
+        printf("\n"); 
+    }
+}
+
 aaw_c *processinpf(char *fname)
 {
     /* declarations */
@@ -163,15 +183,16 @@ aaw_c *processinpf(char *fname)
                 reall_awc(aawc->aaw+aawc->numl, WABUF);
             couc=0;
             cbuf=CBUF;
-#ifdef DBG2
-            printf("numl: %zu couw: %zu couc: %zu\n", aawc->numl, couw, couc); 
-#endif
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
+            if((c == 0x2B) | (c == 0x2D) | (c == 0x2E) | ((c >= 0x30) && (c <= 0x39))) /* first char test:[+-.0-9] */
+                aawc->aaw[aawc->numl]->aw[couw]->t=NUM;
             inword=1;
         } else if(inword) { /* simply store */
             if(couc == cbuf-1)
                 reall_wc(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
+            if( (aawc->aaw[aawc->numl]->aw[couw]->t == NUM) & ((c != 0x2E) & ((c < 0x30) || (c > 0x39)))) /* first char test:[+-.0-9] */
+                    aawc->aaw[aawc->numl]->aw[couw]->t = UNK; /* a later character wasn't [.0-9], so reset to unknown */
         }
     } /* end of big for statement */
     fclose(fp);
@@ -186,21 +207,6 @@ aaw_c *processinpf(char *fname)
     aawc->aaw=realloc(aawc->aaw, aawc->numl*sizeof(aw_c*));
 
     return aawc;
-}
-
-void prtaawc(aaw_c *aawc)
-{
-    int i, j, k;
-    for(i=0;i<aawc->numl;++i) {
-        printf("l.%u(%u): ", i, aawc->aaw[i]->al); 
-        for(j=0;j<aawc->aaw[i]->al;++j) {
-            printf("w_%u: ", j); 
-            for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
-                putchar(aawc->aaw[i]->aw[j]->w[k]);
-            printf("/%u ", aawc->aaw[i]->aw[j]->lp1-1); 
-        }
-        printf("\n"); 
-    }
 }
 
 int main(int argc, char *argv[])
