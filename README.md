@@ -5,4 +5,6 @@ utilites, but realised they were becomeign more general than that)
 
 # Programs
 * matread: reads a text which consists of a raw matrix of arbitrary size. floats assumed all round.
+* genread: parses a text file into lines and words.
+
 

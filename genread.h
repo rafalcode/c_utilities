@@ -13,18 +13,18 @@ typedef struct /* word type */
     char *w;
     unsigned b; /* buffer */
     unsigned lp1; /* length */
-} w_t;
+} w_c;
 
-typedef struct /* wa_t: word array */
+typedef struct /* aw_c: array of words container */
 {
-    w_t **wa;
+    w_c **aw;
     unsigned ab;
     unsigned al;
-} wa_t;
+} aw_c;
 
-typedef struct /* wseq_t */
+typedef struct /* aaw_c: array of array of words container */
 {
     size_t numl; /* number of lines, i.e. rows */
-    wa_t **awat; /* an array of pointers to wa_t */
-} wseq_t;
+    aw_c **aaw; /* an array of pointers to aw_c */
+} aaw_c;
 
