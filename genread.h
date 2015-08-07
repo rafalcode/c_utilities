@@ -11,8 +11,7 @@ typedef unsigned char boole;
 typedef struct /* word type */
 {
     char *w;
-    unsigned b; /* buffer */
-    unsigned lp1; /* length */
+    unsigned lp1; /* length of word plus one (i.e. includes null char */
 } w_c;
 
 typedef struct /* aw_c: array of words container */

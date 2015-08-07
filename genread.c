@@ -7,22 +7,23 @@
 w_c *crea_wc(unsigned initsz)
 {
     w_c *wc=malloc(sizeof(w_c));
-    wc->b=initsz;
-    wc->lp1=wc->b;
-    wc->w=malloc(wc->b*sizeof(char));
+    wc->lp1=initsz;
+    wc->w=malloc(wc->lp1*sizeof(char));
 #ifdef DBG
-    printf("%u wc-b char's created\n", wc->b); 
+    printf("%u wc-lp1 char's created\n", wc->lp1); 
 #endif
     return wc;
 }
 
-void reall_wc(w_c **wc, unsigned buf)
+void reall_wc(w_c **wc, unsigned *cbuf)
 {
     w_c *twc=*wc;
-    twc->b += buf;
-    twc->lp1=twc->b;
-    twc->w=realloc(twc->w, twc->b*sizeof(char));
+    unsigned tcbuf=*cbuf;
+    tcbuf += CBUF;
+    twc->lp1=tcbuf;
+    twc->w=realloc(twc->w, tcbuf*sizeof(char));
     *wc=twc; /* realloc can often change the ptr */
+    *cbuf=tcbuf;
     return;
 }
 
@@ -133,7 +134,7 @@ aaw_c *processinpf(char *fname)
     size_t couc /*count chars per line */, couw=0 /* count words */;
     int c;
     boole inword=0;
-    unsigned lbuf=LBUF;
+    unsigned lbuf=LBUF /* buffer for number of lines */, cbuf=CBUF /* char buffer for size of w_c's: reused for every word */;
     aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
 
     while( (c=fgetc(fp)) != EOF) {
@@ -161,14 +162,15 @@ aaw_c *processinpf(char *fname)
             if(couw ==aawc->aaw[aawc->numl]->ab-1) /* new word opening */
                 reall_awc(aawc->aaw+aawc->numl, WABUF);
             couc=0;
+            cbuf=CBUF;
 #ifdef DBG2
             printf("numl: %zu couw: %zu couc: %zu\n", aawc->numl, couw, couc); 
 #endif
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
             inword=1;
         } else if(inword) { /* simply store */
-            if(couc == aawc->aaw[aawc->numl]->aw[couw]->b-1)
-                reall_wc(aawc->aaw[aawc->numl]->aw+couw, CBUF);
+            if(couc == cbuf-1)
+                reall_wc(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
         }
     } /* end of big for statement */
