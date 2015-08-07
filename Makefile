@@ -25,14 +25,9 @@ matread: matread.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
 genread: genread.c
-	${CC} ${DBGCFLAGS} -o $@ $^
+	${CC} ${CFLAGS} -o $@ $^
+# debug version ... no optimisation, very small buffers.
 genread_d: genread.c
-	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
-
-# alternatives.
-genread2: genread2.c
-	${CC} ${DBGCFLAGS} -o $@ $^
-genread2_d: genread2.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 
 .PHONY: clean

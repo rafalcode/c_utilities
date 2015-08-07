@@ -137,6 +137,9 @@ void prtaawc(aaw_c *aawc)
             if(aawc->aaw[i]->aw[j]->t == NUM) {
                 printf("NUM! "); 
                 continue;
+            } else if(aawc->aaw[i]->aw[j]->t == PNI) {
+                printf("PNI! "); 
+                continue;
             }
             for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
                 putchar(aawc->aaw[i]->aw[j]->w[k]);
@@ -184,15 +187,24 @@ aaw_c *processinpf(char *fname)
             couc=0;
             cbuf=CBUF;
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-            if((c == 0x2B) | (c == 0x2D) | (c == 0x2E) | ((c >= 0x30) && (c <= 0x39))) /* first char test:[+-.0-9] */
-                aawc->aaw[aawc->numl]->aw[couw]->t=NUM;
+            if((c == 0x2B) | (c == 0x2D) | (c == 0x2E) | ((c >= 0x30) && (c <= 0x39))) { /* first char test:[+-.0-9] */
+                if( (c == 0x2B) | (c == 0x2D) | ((c >= 0x30) && (c <= 0x39))) /* pos or neg integer test: "+" accepted but it's got to be unusual  */
+                    aawc->aaw[aawc->numl]->aw[couw]->t=PNI;
+                else
+                    aawc->aaw[aawc->numl]->aw[couw]->t=NUM;
+            }
             inword=1;
         } else if(inword) { /* simply store */
             if(couc == cbuf-1)
                 reall_wc(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
+            /* if word is a candidate for a NUM or PNI (i.e. via its first character), make sure it continues to obey rules */
             if( (aawc->aaw[aawc->numl]->aw[couw]->t == NUM) & ((c != 0x2E) & ((c < 0x30) || (c > 0x39)))) /* first char test:[+-.0-9] */
                     aawc->aaw[aawc->numl]->aw[couw]->t = UNK; /* a later character wasn't [.0-9], so reset to unknown */
+            else if( (aawc->aaw[aawc->numl]->aw[couw]->t == PNI) & (c == 0x2E))
+                    aawc->aaw[aawc->numl]->aw[couw]->t = NUM;
+            else if( (aawc->aaw[aawc->numl]->aw[couw]->t == PNI) & ((c < 0x30) || (c > 0x39)) )
+                    aawc->aaw[aawc->numl]->aw[couw]->t = UNK;
         }
     } /* end of big for statement */
     fclose(fp);

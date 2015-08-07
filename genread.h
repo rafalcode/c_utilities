@@ -2,15 +2,22 @@
 #include<stdlib.h>
 #include<string.h>
 
+#ifdef DBG
 #define CBUF 2
 #define WABUF 1
 #define LBUF 2
+#else
+#define CBUF 12
+#define WABUF 20
+#define LBUF 32
+#endif
 
 typedef unsigned char boole;
 typedef enum
 {
     UNK, /* unknown type, so default to string */
-    NUM /* number: treat as float, an int requires more information */
+    NUM, /* number: float or int, but treat as float, an int requires more information */
+    PNI /* pos or beg int */
 } t_t;
 
 typedef struct /* word type */
