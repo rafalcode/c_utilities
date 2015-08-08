@@ -8,11 +8,8 @@ w_c *crea_wc(unsigned initsz)
 {
     w_c *wc=malloc(sizeof(w_c));
     wc->lp1=initsz;
-    wc->t=UNK;
+    wc->t=STRG;
     wc->w=malloc(wc->lp1*sizeof(char));
-#ifdef DBG
-    printf("%u wc-lp1 char's created\n", wc->lp1); 
-#endif
     return wc;
 }
 
@@ -51,9 +48,6 @@ aw_c *crea_awc(unsigned initsz)
     awc->ab=initsz;
     awc->al=awc->ab;
     awc->aw=malloc(awc->ab*sizeof(w_c*));
-#ifdef DBG
-    printf("%u awc-ab w_c*'s created\n", awc->ab); 
-#endif
     for(i=0;i<awc->ab;++i) 
         awc->aw[i]=crea_wc(CBUF);
     return awc;
@@ -69,9 +63,6 @@ void reall_awc(aw_c **awc, unsigned buf)
     for(i=tawc->ab-buf;i<tawc->ab;++i)
         tawc->aw[i]=crea_wc(CBUF);
     *awc=tawc;
-#ifdef DBG2
-    printf("ab to %u\n", tawc->ab); 
-#endif
     return;
 }
 
@@ -80,9 +71,6 @@ void norm_awc(aw_c **awc)
     int i;
     aw_c *tawc=*awc;
     /* free the individual w_c's */
-#ifdef DBG
-    printf("%u aw_c's released via norm\n", tawc->ab-tawc->al);
-#endif
     for(i=tawc->al;i<tawc->ab;++i) 
         free_wc(tawc->aw+i);
     /* now release the pointers to those freed w_c's */
@@ -108,9 +96,6 @@ aaw_c *crea_aawc(unsigned initsz)
     unsigned lbuf=initsz;
     aaw_c *aawc=malloc(sizeof(aaw_c));
     aawc->numl=0;
-#ifdef DBG
-    printf("%u lbuf aw_c*'s created\n", lbuf); 
-#endif
     aawc->aaw=malloc(lbuf*sizeof(aw_c*));
     for(i=0;i<initsz;++i) 
         aawc->aaw[i]=crea_awc(WABUF);
@@ -127,18 +112,21 @@ void free_aawc(aaw_c **aw)
     free(taw);
 }
 
-void prtaawc(aaw_c *aawc)
+void prtaawcdbg(aaw_c *aawc)
 {
     int i, j, k;
     for(i=0;i<aawc->numl;++i) {
         printf("l.%u(%u): ", i, aawc->aaw[i]->al); 
         for(j=0;j<aawc->aaw[i]->al;++j) {
             printf("w_%u: ", j); 
-            if(aawc->aaw[i]->aw[j]->t == NUM) {
+            if(aawc->aaw[i]->aw[j]->t == NUMS) {
                 printf("NUM! "); 
                 continue;
             } else if(aawc->aaw[i]->aw[j]->t == PNI) {
                 printf("PNI! "); 
+                continue;
+            } else if(aawc->aaw[i]->aw[j]->t == STCP) {
+                printf("STCP! "); 
                 continue;
             }
             for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
@@ -149,22 +137,44 @@ void prtaawc(aaw_c *aawc)
     }
 }
 
+void prtaawcdata(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i, j;
+    for(i=0;i<aawc->numl;++i) {
+        printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+        for(j=0;j<aawc->aaw[i]->al;++j) {
+            printf("l%ut", aawc->aaw[i]->aw[j]->lp1-1);
+            switch(aawc->aaw[i]->aw[j]->t) {
+                case NUMS: printf("N "); break;
+                case PNI: printf("I "); break;
+                case STRG: printf("S "); break;
+                case STCP: printf("C "); break; /* closing punctuation */
+                case SCST: printf("Z "); break; /* starting capital */
+                case SCCP: printf("Y "); break; /* starting capital and closing punctuation */
+                case ALLC: printf("A "); break; /* horrid! all capitals */
+            }
+        }
+    }
+    printf("\n"); 
+}
+
 aaw_c *processinpf(char *fname)
 {
     /* declarations */
     FILE *fp=fopen(fname,"r");
     int i;
     size_t couc /*count chars per line */, couw=0 /* count words */;
-    int c;
+    int c, oldc='\0';
     boole inword=0;
     unsigned lbuf=LBUF /* buffer for number of lines */, cbuf=CBUF /* char buffer for size of w_c's: reused for every word */;
     aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
 
     while( (c=fgetc(fp)) != EOF) {
         if( (c== '\n') | (c == ' ') | (c == '\t') ) {
-            if( inword==1) { /* cue word -edning procedure */
+            if( inword==1) { /* cue word-ending procedure */
                 aawc->aaw[aawc->numl]->aw[couw]->w[couc++]='\0';
                 aawc->aaw[aawc->numl]->aw[couw]->lp1=couc;
+                SETCPTYPE(oldc, aawc->aaw[aawc->numl]->aw[couw]->t);
                 norm_wc(aawc->aaw[aawc->numl]->aw+couw);
                 couw++; /* verified: this has to be here */
             }
@@ -187,25 +197,16 @@ aaw_c *processinpf(char *fname)
             couc=0;
             cbuf=CBUF;
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-            if((c == 0x2B) | (c == 0x2D) | (c == 0x2E) | ((c >= 0x30) && (c <= 0x39))) { /* first char test:[+-.0-9] */
-                if( (c == 0x2B) | (c == 0x2D) | ((c >= 0x30) && (c <= 0x39))) /* pos or neg integer test: "+" accepted but it's got to be unusual  */
-                    aawc->aaw[aawc->numl]->aw[couw]->t=PNI;
-                else
-                    aawc->aaw[aawc->numl]->aw[couw]->t=NUM;
-            }
+            GETLCTYPE(c, aawc->aaw[aawc->numl]->aw[couw]->t); /* MACRO: the firt character gives a clue */
             inword=1;
         } else if(inword) { /* simply store */
             if(couc == cbuf-1)
                 reall_wc(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-            /* if word is a candidate for a NUM or PNI (i.e. via its first character), make sure it continues to obey rules */
-            if( (aawc->aaw[aawc->numl]->aw[couw]->t == NUM) & ((c != 0x2E) & ((c < 0x30) || (c > 0x39)))) /* first char test:[+-.0-9] */
-                    aawc->aaw[aawc->numl]->aw[couw]->t = UNK; /* a later character wasn't [.0-9], so reset to unknown */
-            else if( (aawc->aaw[aawc->numl]->aw[couw]->t == PNI) & (c == 0x2E))
-                    aawc->aaw[aawc->numl]->aw[couw]->t = NUM;
-            else if( (aawc->aaw[aawc->numl]->aw[couw]->t == PNI) & ((c < 0x30) || (c > 0x39)) )
-                    aawc->aaw[aawc->numl]->aw[couw]->t = UNK;
+            /* if word is a candidate for a NUM or PNI (i.e. via its first character), make sure it continues to obey rules: a MACRO */
+            IWMODTYPEIF(c, aawc->aaw[aawc->numl]->aw[couw]->t);
         }
+        oldc=c;
     } /* end of big for statement */
     fclose(fp);
 
@@ -213,9 +214,6 @@ aaw_c *processinpf(char *fname)
     for(i=aawc->numl; i<lbuf; ++i) {
         free_awc(aawc->aaw+i);
     }
-#ifdef DBG
-    printf("final normaliz from %u to %zu\n", lbuf, aawc->numl);
-#endif
     aawc->aaw=realloc(aawc->aaw, aawc->numl*sizeof(aw_c*));
 
     return aawc;
@@ -228,10 +226,16 @@ int main(int argc, char *argv[])
         printf("Error. Pls supply argument (name of text file).\n");
         exit(EXIT_FAILURE);
     }
+#ifdef DBG2
     printf("typeszs: aaw_c: %zu aw_c: %zu w_c: %zu\n", sizeof(aaw_c), sizeof(aw_c), sizeof(w_c));
+#endif
 
     aaw_c *aawc=processinpf(argv[1]);
-    prtaawc(aawc);
+#ifdef DBG
+    prtaawcdbg(aawc);
+#else
+    prtaawcdata(aawc);
+#endif
     printf("Numlines: %zu\n", aawc->numl); 
 
     free_aawc(&aawc);
