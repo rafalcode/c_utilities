@@ -2,7 +2,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include "genread.h"
+#include "txtread.h"
 
 w_c *crea_wc(unsigned initsz)
 {
@@ -147,7 +147,8 @@ void prtaawcdata(aaw_c *aawc) /* print line and word details, but not the words 
             switch(aawc->aaw[i]->aw[j]->t) {
                 case NUMS: printf("N "); break;
                 case PNI: printf("I "); break;
-                case STRG: printf("S "); break;
+                case STRG: printf("S "); break; /* basic string */
+                case STPP: printf("P "); break; /* word is a string and ends with a period */
                 case STCP: printf("C "); break; /* closing punctuation */
                 case SCST: printf("Z "); break; /* starting capital */
                 case SCCP: printf("Y "); break; /* starting capital and closing punctuation */
@@ -164,7 +165,7 @@ aaw_c *processinpf(char *fname)
     FILE *fp=fopen(fname,"r");
     int i;
     size_t couc /*count chars per line */, couw=0 /* count words */;
-    int c, oldc='\0';
+    int c, oldc='\0', ooldc='\0';
     boole inword=0;
     unsigned lbuf=LBUF /* buffer for number of lines */, cbuf=CBUF /* char buffer for size of w_c's: reused for every word */;
     aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
@@ -206,6 +207,7 @@ aaw_c *processinpf(char *fname)
             /* if word is a candidate for a NUM or PNI (i.e. via its first character), make sure it continues to obey rules: a MACRO */
             IWMODTYPEIF(c, aawc->aaw[aawc->numl]->aw[couw]->t);
         }
+        ooldc=oldc;
         oldc=c;
     } /* end of big for statement */
     fclose(fp);
