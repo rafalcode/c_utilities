@@ -30,6 +30,10 @@ genread: genread.c
 genread_d: genread.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 
+# a redoing of genread but for for general text
+txtread: txtread.c
+	${CC} ${CFLAGS} -o $@ $^
+
 .PHONY: clean
 
 clean:
