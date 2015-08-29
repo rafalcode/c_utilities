@@ -2,7 +2,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include "txtread.h"
+#include "dreadi.h"
 
 w_c *crea_wc(unsigned initsz)
 {

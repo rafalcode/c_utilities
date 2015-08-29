@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-O3
 DBGCFLAGS=-g -Wall
-EXES=cmd2ext extcou cleangrpo matread genread genread_d
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadi dreadi_d
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -31,9 +31,18 @@ genread_d: genread.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 
 # a redoing of genread but for for general text
+# instead of ignoring whitespace, it must be recorded.
 txtread: txtread.c
-	${CC} ${CFLAGS} -o $@ $^
+	${CC} ${DBGCFLAGS} -o $@ $^
+txtread_d: txtread.c
+	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 
+# dreadi: "Data READ Integers" for text files whose elements are elements are newline-separated and all integers
+# actually hived off from 
+dreadi: dreadi.c
+	${CC} ${DBGCFLAGS} -o $@ $^
+dreadi_d: dreadi.c
+	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 .PHONY: clean
 
 clean:
