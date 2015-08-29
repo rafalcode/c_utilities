@@ -139,7 +139,7 @@ void prtaawapap0(aaw_c *aawc) /* prototype for version 2: print aaw As Pure As P
 void prtaawapap2(aaw_c *aawc) /* printing as if datastructure */
 {
     int i, j, k, m;
-    int blksz=aawc->ppa[1] - aawc->ppa[0]-1;
+    int blksz=aawc->ppa[1] - aawc->ppa[0];
     for(i=0;i<aawc->ppsz;++i) {
         for(j=aawc->ppa[i]+1;j<aawc->ppa[i]+blksz;++j)
             if(j==aawc->ppa[i]+1) {
