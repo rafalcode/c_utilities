@@ -136,6 +136,42 @@ void prtaawapap0(aaw_c *aawc) /* prototype for version 2: print aaw As Pure As P
     }
 }
 
+strandic_t *givemestriac(aaw_c *aawc) /* load up the strandi data structure */
+{
+    int i, j, k, m;
+    strandic_t *striac=malloc(sizeof(strandic_t));
+    striac->lbksz=aawc->ppa[1] - aawc->ppa[0]; /* size of this block of lines */
+    striac->osz=aawc->ppsz+1;
+    striac->sia=malloc(striac->osz*sizeof(strandi_t));
+    for(i=0;i<striac->osz; ++i)
+        striac->sia[i].ia=malloc((striac->lbksz-2)*sizeof(int));
+
+    /*record 1 needs special treatment*/
+    for(j=0;j<striac->lbksz-1;++j) {
+        if(j==0) {
+            striac->sia[0].w=malloc(aawc->aaw[j]->aw[0]->lp1*sizeof(char));
+            strcpy(striac->sia[0].w, aawc->aaw[j]->aw[0]->w);
+        } else {
+            k=aawc->aaw[j]->al-1; /* the final word of the line in this line-block */
+            striac->sia[0].ia[j-1]=atoi(aawc->aaw[j]->aw[k]->w);
+        }
+    }
+
+    /*rest of records */
+    for(i=0;i<aawc->ppsz;++i) {
+        m=0;
+        for(j=aawc->ppa[i]+1;j<aawc->ppa[i]+striac->lbksz;++j)
+            if(j==aawc->ppa[i]+1) {
+                striac->sia[i+1].w=malloc(aawc->aaw[j]->aw[0]->lp1*sizeof(char));
+                strcpy(striac->sia[i+1].w, aawc->aaw[j]->aw[0]->w);
+            } else {
+                k=aawc->aaw[j]->al-1;
+                striac->sia[i+1].ia[m++]=atoi(aawc->aaw[j]->aw[k]->w);
+            }
+    }
+    return striac;
+}
+
 void prtaawapap2(aaw_c *aawc) /* printing as if datastructure */
 {
     int i, j, k, m;
@@ -158,7 +194,7 @@ void prtaawapap2(aaw_c *aawc) /* printing as if datastructure */
         }
     }
     printf("\n");
-    /*rest of redcords */
+    /*rest of records */
     for(i=0;i<aawc->ppsz;++i) {
         for(j=aawc->ppa[i]+1;j<aawc->ppa[i]+blksz;++j)
             if(j==aawc->ppa[i]+1) {
@@ -334,7 +370,7 @@ int main(int argc, char *argv[])
     // prtaawcdbg(aawc);
     prtaawapap(aawc);
 #endif
-    prtaawapap2(aawc);
+    // prtaawapap2(aawc);
     printf("Numlines: %zu\n", aawc->numl); 
     printf("Numparas: %d\n", aawc->ppsz); 
     /*
@@ -343,8 +379,15 @@ int main(int argc, char *argv[])
        for(i=0;i<aawc->ppsz+1; i++) {
        stria[i].ia=malloc(numints*sizeof(int));
        */
+    strandic_t *striac=givemestriac(aawc);
+    free_aawc(&aawc); /* we can get rid of this guy now */
 
-    free_aawc(&aawc);
-
+    int i;
+    for(i=0;i<striac->osz; ++i) {
+        free(striac->sia[i].w);
+        free(striac->sia[i].ia);
+    }
+    free(striac->sia);
+    free(striac);
     return 0;
 }

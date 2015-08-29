@@ -1,4 +1,3 @@
-/* it's all too easy to start over-complicating this: for example quotations. Here you woul dneed to check the last 2 characters of everyword, not just the last one, i.e "stop!", that adds new layers. */
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -26,11 +25,18 @@ typedef enum
     ALLC /* string with all caps */
 } t_t;
 
-typedef struct /* String and IntS type */
+typedef struct /* strandi_t: String and IntS type */
 {
     char *w;
     int *ia;
 } strandi_t;
+
+typedef struct /* strandic_t container for strandi_tString and IntS type */
+{
+    strandi_t *sia; 
+    int lbksz; /* line-block size */
+    int osz; /* overall size: the number of records */
+} strandic_t;
 
 typedef struct /* word type */
 {
