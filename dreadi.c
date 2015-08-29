@@ -117,13 +117,55 @@ void free_aawc(aaw_c **aw)
     free(taw);
 }
 
+void prtaawapap2(aaw_c *aawc) /* print aaw As Pure As Possible */
+{
+    int i, j, k, m;
+    for(i=0;i<aawc->ppsz-1;++i) {
+        for(j=aawc->ppa[i];j<aawc->ppa[i+1];++j)
+            for(k=0;k<aawc->aaw[j]->al;++k) {
+                for(m=0;m<aawc->aaw[j]->aw[k]->lp1-1; m++) {
+                    putchar(aawc->aaw[j]->aw[k]->w[m]);
+                    if(m==aawc->aaw[j]->aw[k]->lp1-2)
+                        putchar(' ');
+                }
+            }
+        printf("\n");
+    }
+}
+
+void prtaawapap0(aaw_c *aawc) /* prototype: print aaw As Pure As Possible */
+{
+    int i, j, k, m;
+    for(i=0;i<aawc->ppsz-1;++i) {
+        for(j=aawc->ppa[i];j<aawc->ppa[i+1];++j)
+            if(j==aawc->ppa[i]) {
+                for(m=0;m<aawc->aaw[j]->aw[0]->lp1-1; m++) {
+                    putchar(aawc->aaw[j]->aw[0]->w[m]);
+                    if(m==aawc->aaw[j]->aw[0]->lp1-2)
+                        putchar(' ');
+                }
+            } else {
+                k=aawc->aaw[j]->al-1;
+                for(m=0;m<aawc->aaw[j]->aw[k]->lp1-1; m++) {
+                    putchar(aawc->aaw[j]->aw[k]->w[m]);
+                    if(m==aawc->aaw[j]->aw[k]->lp1-2)
+                        putchar(' ');
+                }
+            }
+        printf("\n");
+    }
+}
+
 void prtaawapap(aaw_c *aawc) /* print aaw As Pure As Possible */
 {
     int i, j, k, ppi=0;
     for(i=0;i<aawc->numl;++i) {
         for(j=0;j<aawc->aaw[i]->al;++j) {
-            for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
+            for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++) {
                 putchar(aawc->aaw[i]->aw[j]->w[k]);
+                if(k!=aawc->aaw[i]->aw[j]->lp1-2)
+                    putchar(' ');
+            }
             if(j==aawc->aaw[i]->al-1)
                 printf("\n"); 
         }
@@ -266,12 +308,18 @@ int main(int argc, char *argv[])
 #ifdef DBG2
     prtaawcdata(aawc);
 #elif DBG
-    prtaawcdbg(aawc);
-#else
+    // prtaawcdbg(aawc);
     prtaawapap(aawc);
 #endif
+    prtaawapap0(aawc);
     printf("Numlines: %zu\n", aawc->numl); 
     printf("Numparas: %d\n", aawc->ppsz); 
+    /*
+       int numints=(aawc->ppa[1]-aawc->[0])-2;
+       strandi_t *stria=malloc((aawc->ppsz+1)*sizeof(strandi_t));
+       for(i=0;i<aawc->ppsz+1; i++) {
+       stria[i].ia=malloc(numints*sizeof(int));
+       */
 
     free_aawc(&aawc);
 

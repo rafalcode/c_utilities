@@ -43,6 +43,7 @@ dreadi: dreadi.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 dreadi_d: dreadi.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
+
 .PHONY: clean
 
 clean:

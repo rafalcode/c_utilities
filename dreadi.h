@@ -26,6 +26,12 @@ typedef enum
     ALLC /* string with all caps */
 } t_t;
 
+typedef struct /* String and IntS type */
+{
+    char *w;
+    int *ia;
+} strandi_t;
+
 typedef struct /* word type */
 {
     char *w;
