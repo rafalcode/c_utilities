@@ -136,6 +136,18 @@ void prtaawapap0(aaw_c *aawc) /* prototype for version 2: print aaw As Pure As P
     }
 }
 
+void prtstriac(strandic_t *striac) /* load up the strandi data structure */
+{
+    int i, j;
+
+    for(i=0;i<striac->osz;++i) {
+        printf("%s ", striac->sia[i].w);
+        for(j=0;j<striac->lbksz-2;++j) 
+            printf("%d ", striac->sia[i].ia[j]); 
+        printf("\n");
+    }
+}
+
 strandic_t *givemestriac(aaw_c *aawc) /* load up the strandi data structure */
 {
     int i, j, k, m;
@@ -381,6 +393,7 @@ int main(int argc, char *argv[])
        */
     strandic_t *striac=givemestriac(aawc);
     free_aawc(&aawc); /* we can get rid of this guy now */
+    prtstriac(striac);
 
     int i;
     for(i=0;i<striac->osz; ++i) {
