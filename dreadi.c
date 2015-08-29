@@ -1,4 +1,7 @@
-/* modification of matread but operating on words instead of floats */
+/* dreadi.c "Data READ Integers": we use the genread procedures and depend on seeing a regular paragraph
+ * structure: i.e. a datafile with records separated by double newlines (paragraphs)
+ * and then fields -also separated by (single) newlines- and prints the out in dataframe style:
+ * without a field identification header though */
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
