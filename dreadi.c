@@ -117,11 +117,13 @@ void free_aawc(aaw_c **aw)
     free(taw);
 }
 
-void prtaawapap2(aaw_c *aawc) /* print aaw As Pure As Possible */
+void prtaawapap0(aaw_c *aawc) /* prototype for version 2: print aaw As Pure As Possible */
 {
     int i, j, k, m;
+    /*middle section */
     for(i=0;i<aawc->ppsz-1;++i) {
-        for(j=aawc->ppa[i];j<aawc->ppa[i+1];++j)
+        for(j=aawc->ppa[i]+1;j<aawc->ppa[i+1];++j) { /* the +1 avoids the empty line: ppa elements are empty lines */
+            printf("j=%d) ", j); 
             for(k=0;k<aawc->aaw[j]->al;++k) {
                 for(m=0;m<aawc->aaw[j]->aw[k]->lp1-1; m++) {
                     putchar(aawc->aaw[j]->aw[k]->w[m]);
@@ -129,16 +131,18 @@ void prtaawapap2(aaw_c *aawc) /* print aaw As Pure As Possible */
                         putchar(' ');
                 }
             }
+        }
         printf("\n");
     }
 }
 
-void prtaawapap0(aaw_c *aawc) /* prototype: print aaw As Pure As Possible */
+void prtaawapap2(aaw_c *aawc) /* printing as if datastructure */
 {
     int i, j, k, m;
-    for(i=0;i<aawc->ppsz-1;++i) {
-        for(j=aawc->ppa[i];j<aawc->ppa[i+1];++j)
-            if(j==aawc->ppa[i]) {
+    int blksz=aawc->ppa[1] - aawc->ppa[0]-1;
+    for(i=0;i<aawc->ppsz;++i) {
+        for(j=aawc->ppa[i]+1;j<aawc->ppa[i]+blksz;++j)
+            if(j==aawc->ppa[i]+1) {
                 for(m=0;m<aawc->aaw[j]->aw[0]->lp1-1; m++) {
                     putchar(aawc->aaw[j]->aw[0]->w[m]);
                     if(m==aawc->aaw[j]->aw[0]->lp1-2)
@@ -311,7 +315,7 @@ int main(int argc, char *argv[])
     // prtaawcdbg(aawc);
     prtaawapap(aawc);
 #endif
-    prtaawapap0(aawc);
+    prtaawapap2(aawc);
     printf("Numlines: %zu\n", aawc->numl); 
     printf("Numparas: %d\n", aawc->ppsz); 
     /*
