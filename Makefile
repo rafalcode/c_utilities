@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-O3
 DBGCFLAGS=-g -Wall
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadi dreadi_d dreadn dreadn_d
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -37,19 +37,13 @@ txtread: txtread.c
 txtread_d: txtread.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 
-# dreadi: "Data READ Integers" for text files whose elements are elements are newline-separated and all integers
-# actually hived off from 
-dreadi: dreadi.c
-	${CC} ${DBGCFLAGS} -o $@ $^
-dreadi_d: dreadi.c
-	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
-
-# Quite naturally, we want both ints and floats to be read in. OK: we can use an array of unions for that.
+# dreadn="Data READ Numbers" we want both ints and floats to be read in. OK: we can use an array of unions for that.
 # However, there is the problem that sometimes floats are printed as ints.
 dreadn: dreadn.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 dreadn_d: dreadn.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
+
 .PHONY: clean
 
 clean:
