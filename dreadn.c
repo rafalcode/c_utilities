@@ -139,7 +139,7 @@ void prtaawapap0(aaw_c *aawc) /* prototype for version 2: print aaw As Pure As P
     }
 }
 
-void prtstriac(strandic_t *striac) /* load up the strandi data structure */
+void prtstriac(strandnc_t *striac) /* load up the strandi data structure */
 {
     int i, j;
 
@@ -151,15 +151,15 @@ void prtstriac(strandic_t *striac) /* load up the strandi data structure */
     }
 }
 
-strandic_t *givemestriac(aaw_c *aawc) /* load up the strandi data structure */
+strandnc_t *givemestriac(aaw_c *aawc) /* load up the strandi data structure */
 {
     int i, j, k, m;
-    strandic_t *striac=malloc(sizeof(strandic_t));
-    striac->lbksz=aawc->ppa[1] - aawc->ppa[0]; /* size of this block of lines */
+    strandnc_t *striac=malloc(sizeof(strandnc_t));
+    striac->lbksz=aawc->ppa[1] - aawc->ppa[0]; /* Assume all line-blocks are the same size, the second block is chosen here */
     striac->osz=aawc->ppsz+1;
-    striac->sia=malloc(striac->osz*sizeof(strandi_t));
+    striac->sia=malloc(striac->osz*sizeof(strandn_t));
     for(i=0;i<striac->osz; ++i)
-        striac->sia[i].ia=malloc((striac->lbksz-2)*sizeof(int));
+        striac->sia[i].na=malloc((striac->lbksz-2)*sizeof(if_t));
 
     /*record 1 needs special treatment*/
     for(j=0;j<striac->lbksz-1;++j) {
@@ -168,7 +168,7 @@ strandic_t *givemestriac(aaw_c *aawc) /* load up the strandi data structure */
             strcpy(striac->sia[0].w, aawc->aaw[j]->aw[0]->w);
         } else {
             k=aawc->aaw[j]->al-1; /* the final word of the line in this line-block */
-            striac->sia[0].ia[j-1]=atoi(aawc->aaw[j]->aw[k]->w);
+            striac->sia[0].na[j-1].n=atoi(aawc->aaw[j]->aw[k]->w);
         }
     }
 
@@ -390,11 +390,11 @@ int main(int argc, char *argv[])
     // printf("Numparas: %d\n", aawc->ppsz); 
     /*
        int numints=(aawc->ppa[1]-aawc->[0])-2;
-       strandi_t *stria=malloc((aawc->ppsz+1)*sizeof(strandi_t));
+       strandn_t *stria=malloc((aawc->ppsz+1)*sizeof(strandn_t));
        for(i=0;i<aawc->ppsz+1; i++) {
        stria[i].ia=malloc(numints*sizeof(int));
        */
-    strandic_t *striac=givemestriac(aawc);
+    strandnc_t *striac=givemestriac(aawc);
     free_aawc(&aawc); /* we can get rid of this guy now */
     prtstriac(striac);
 
