@@ -13,11 +13,11 @@
 #endif
 
 typedef unsigned char boole;
-typedef enum
+typedef enum /* t_t s types of words we expect */
 {
     STRG, /* unknown type, so default to string */
     NUMS, /* NUMberS: but does not include currency. Date, time, float or int, i.e. just a sequence of numbers with maybe some special symbils.*/
-    PNI, /* pos or beg int */
+    PNI, /* pos or neg int */
     STPP, /* string with closing period symbol */
     STCP, /* string with closing punctuation attached.. a comma, or a full stop, semicolon, !? etc */
     SCST, /* string with starting capital */
@@ -25,18 +25,17 @@ typedef enum
     ALLC /* string with all caps */
 } t_t;
 
-typedef enum {IN, UI, FL} typelabel;
+typedef enum {FL, IN} typelabel;
 typedef struct /* dual int/float type using union */
 {
     typelabel typ;
     union {
-        int i;
-        unsigned ui;
         float f;
+        int i;
     } n;
 } if_t; /* int/float type */
 
-typedef struct /* strandn_t: String and IntS type */
+typedef struct /* strandn_t: String and NumS type */
 {
     char *w;
     if_t *na; /* number array: can be floats or integers */
@@ -44,7 +43,7 @@ typedef struct /* strandn_t: String and IntS type */
 
 typedef struct /* strandnc_t container for strandn_tString and IntS type */
 {
-    strandn_t *sia; 
+    strandn_t *sna; 
     int lbksz; /* line-block size */
     int osz; /* overall size: the number of records */
 } strandnc_t;

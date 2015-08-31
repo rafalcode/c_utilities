@@ -5,7 +5,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include "dreadi.h"
+#include "dreadn.h"
 
 w_c *crea_wc(unsigned initsz)
 {
@@ -139,52 +139,67 @@ void prtaawapap0(aaw_c *aawc) /* prototype for version 2: print aaw As Pure As P
     }
 }
 
-void prtstriac(strandnc_t *striac) /* load up the strandi data structure */
+void prtstrnac(strandnc_t *strnac) /* load up the strandi data structure */
 {
     int i, j;
 
-    for(i=0;i<striac->osz;++i) {
-        printf("%s ", striac->sia[i].w);
-        for(j=0;j<striac->lbksz-2;++j) 
-            printf("%d ", striac->sia[i].ia[j]); 
+    for(i=0;i<strnac->osz;++i) {
+        printf("%s ", strnac->sna[i].w);
+        for(j=0;j<strnac->lbksz-2;++j)
+            if(strnac->sna[i].na[j].typ==IN)
+                printf("%d ", strnac->sna[i].na[j].n.i); 
+            else if(strnac->sna[i].na[j].typ==FL)
+                printf("%.4f ", strnac->sna[i].na[j].n.f);
         printf("\n");
     }
 }
 
-strandnc_t *givemestriac(aaw_c *aawc) /* load up the strandi data structure */
+strandnc_t *givemestrnac(aaw_c *aawc) /* load up the strandi data structure */
 {
     int i, j, k, m;
-    strandnc_t *striac=malloc(sizeof(strandnc_t));
-    striac->lbksz=aawc->ppa[1] - aawc->ppa[0]; /* Assume all line-blocks are the same size, the second block is chosen here */
-    striac->osz=aawc->ppsz+1;
-    striac->sia=malloc(striac->osz*sizeof(strandn_t));
-    for(i=0;i<striac->osz; ++i)
-        striac->sia[i].na=malloc((striac->lbksz-2)*sizeof(if_t));
+    strandnc_t *strnac=malloc(sizeof(strandnc_t));
+    strnac->lbksz=aawc->ppa[1] - aawc->ppa[0]; /* Assume all line-blocks are the same size, the second block is chosen here */
+    strnac->osz=aawc->ppsz+1;
+    strnac->sna=malloc(strnac->osz*sizeof(strandn_t));
+    for(i=0;i<strnac->osz; ++i)
+        strnac->sna[i].na=malloc((strnac->lbksz-2)*sizeof(if_t));
 
     /*record 1 needs special treatment*/
-    for(j=0;j<striac->lbksz-1;++j) {
+    for(j=0;j<strnac->lbksz-1;++j) {
         if(j==0) {
-            striac->sia[0].w=malloc(aawc->aaw[j]->aw[0]->lp1*sizeof(char));
-            strcpy(striac->sia[0].w, aawc->aaw[j]->aw[0]->w);
+            strnac->sna[0].w=malloc(aawc->aaw[j]->aw[0]->lp1*sizeof(char));
+            strcpy(strnac->sna[0].w, aawc->aaw[j]->aw[0]->w);
         } else {
             k=aawc->aaw[j]->al-1; /* the final word of the line in this line-block */
-            striac->sia[0].na[j-1].n=atoi(aawc->aaw[j]->aw[k]->w);
+            if(aawc->aaw[j]->aw[k]->t==PNI) {
+                strnac->sna[0].na[j-1].typ=IN;
+                strnac->sna[0].na[j-1].n.i=atoi(aawc->aaw[j]->aw[k]->w);
+            } else if(aawc->aaw[j]->aw[k]->t==NUMS) {
+                strnac->sna[0].na[j-1].typ=FL;
+                strnac->sna[0].na[j-1].n.f=atof(aawc->aaw[j]->aw[k]->w);
+            }
         }
     }
 
     /*rest of records */
     for(i=0;i<aawc->ppsz;++i) {
         m=0;
-        for(j=aawc->ppa[i]+1;j<aawc->ppa[i]+striac->lbksz;++j)
+        for(j=aawc->ppa[i]+1;j<aawc->ppa[i]+strnac->lbksz;++j)
             if(j==aawc->ppa[i]+1) {
-                striac->sia[i+1].w=malloc(aawc->aaw[j]->aw[0]->lp1*sizeof(char));
-                strcpy(striac->sia[i+1].w, aawc->aaw[j]->aw[0]->w);
+                strnac->sna[i+1].w=malloc(aawc->aaw[j]->aw[0]->lp1*sizeof(char));
+                strcpy(strnac->sna[i+1].w, aawc->aaw[j]->aw[0]->w);
             } else {
                 k=aawc->aaw[j]->al-1;
-                striac->sia[i+1].ia[m++]=atoi(aawc->aaw[j]->aw[k]->w);
+                if(aawc->aaw[j]->aw[k]->t==PNI) {
+                    strnac->sna[i+1].na[m].typ=IN;
+                    strnac->sna[i+1].na[m++].n.i=atoi(aawc->aaw[j]->aw[k]->w);
+                } else if(aawc->aaw[j]->aw[k]->t==NUMS) {
+                    strnac->sna[i+1].na[m].typ=FL;
+                    strnac->sna[i+1].na[m++].n.f=atof(aawc->aaw[j]->aw[k]->w);
+                }
             }
     }
-    return striac;
+    return strnac;
 }
 
 void prtaawapap2(aaw_c *aawc) /* printing as if datastructure */
@@ -305,7 +320,7 @@ aaw_c *processinpf(char *fname)
     FILE *fp=fopen(fname,"r");
     int i;
     size_t couc /*count chars per line */, couw=0 /* count words */;
-    int c, oldc='\0', ooldc='\0' /* pcou=0 paragraph counter */;
+    int c, oldc='\0';
     boole inword=0;
     unsigned lbuf=LBUF /* buffer for number of lines */, cbuf=CBUF /* char buffer for size of w_c's: reused for every word */;
     aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
@@ -351,7 +366,6 @@ aaw_c *processinpf(char *fname)
             /* if word is a candidate for a NUM or PNI (i.e. via its first character), make sure it continues to obey rules: a MACRO */
             IWMODTYPEIF(c, aawc->aaw[aawc->numl]->aw[couw]->t);
         }
-        ooldc=oldc;
         oldc=c;
     } /* end of big for statement */
     fclose(fp);
@@ -390,20 +404,20 @@ int main(int argc, char *argv[])
     // printf("Numparas: %d\n", aawc->ppsz); 
     /*
        int numints=(aawc->ppa[1]-aawc->[0])-2;
-       strandn_t *stria=malloc((aawc->ppsz+1)*sizeof(strandn_t));
+       strandn_t *strna=malloc((aawc->ppsz+1)*sizeof(strandn_t));
        for(i=0;i<aawc->ppsz+1; i++) {
-       stria[i].ia=malloc(numints*sizeof(int));
+       strna[i].ia=malloc(numints*sizeof(int));
        */
-    strandnc_t *striac=givemestriac(aawc);
+    strandnc_t *strnac=givemestrnac(aawc);
     free_aawc(&aawc); /* we can get rid of this guy now */
-    prtstriac(striac);
+    prtstrnac(strnac);
 
     int i;
-    for(i=0;i<striac->osz; ++i) {
-        free(striac->sia[i].w);
-        free(striac->sia[i].ia);
+    for(i=0;i<strnac->osz; ++i) {
+        free(strnac->sna[i].w);
+        free(strnac->sna[i].na);
     }
-    free(striac->sia);
-    free(striac);
+    free(strnac->sna);
+    free(strnac);
     return 0;
 }
