@@ -191,6 +191,7 @@ aaw_c *processinpf(char *fname)
     size_t couc /*count chars per line */, couw=0 /* count words */;
     int c, oldc='\0', ooldc='\0' /* pcou=0 paragraph counter */;
     boole inword=0;
+    boole linestart=1; /* want to catch number of stating spaces or tabs */
     unsigned lbuf=LBUF /* buffer for number of lines */, cbuf=CBUF /* char buffer for size of w_c's: reused for every word */;
     aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
 
