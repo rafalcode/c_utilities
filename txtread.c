@@ -47,6 +47,8 @@ aw_c *crea_awc(unsigned initsz)
     aw_c *awc=malloc(sizeof(aw_c));
     awc->ab=initsz;
     awc->al=awc->ab;
+    awc->stsps=0;
+    awc->sttbs=0;
     awc->aw=malloc(awc->ab*sizeof(w_c*));
     for(i=0;i<awc->ab;++i) 
         awc->aw[i]=crea_wc(CBUF);
@@ -59,6 +61,8 @@ void reall_awc(aw_c **awc, unsigned buf)
     aw_c *tawc=*awc;
     tawc->ab += buf;
     tawc->al=tawc->ab;
+    tawc->stsps=0;
+    tawc->sttbs=0;
     tawc->aw=realloc(tawc->aw, tawc->ab*sizeof(aw_c*));
     for(i=tawc->ab-buf;i<tawc->ab;++i)
         tawc->aw[i]=crea_wc(CBUF);
@@ -121,16 +125,26 @@ void prtaawapap(aaw_c *aawc) /* print aaw As Pure As Possible */
 {
     int i, j, k, ppi=0;
     for(i=0;i<aawc->numl;++i) {
+        // printf("ln%dsp%dtb%d) ", i, aawc->aaw[i]->stsps, aawc->aaw[i]->sttbs);
+        /* order fo tabs and space will be messed up sure, but usually it will be one or the other. */
+        for(j=0; j<aawc->aaw[i]->stsps;j++)
+            putchar(' ');
+        for(j=0; j<aawc->aaw[j]->sttbs;j++)
+            putchar('\t');
         for(j=0;j<aawc->aaw[i]->al;++j) {
             for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
                 putchar(aawc->aaw[i]->aw[j]->w[k]);
             if(j==aawc->aaw[i]->al-1)
-                printf("\n"); 
+                putchar('\n');
+            else
+                putchar(' ');
         }
 
         if( (ppi< aawc->ppsz) && (i == aawc->ppa[ppi])) { /* && means it will not evaluate second, if first is neg. */
+#ifdef DBG
             putchar('\n');
             printf("%d ", ppi); 
+#endif
             ppi++;
         }
     }
@@ -219,7 +233,9 @@ aaw_c *processinpf(char *fname)
                 }
                 aawc->numl++;
                 couw=0;
-            }
+                linestart=1;
+            } else if (linestart) /* must be a space or a tab */
+                (c == ' ')? aawc->aaw[aawc->numl]->stsps++ : aawc->aaw[aawc->numl]->sttbs++;
             inword=0;
         } else if(inword==0) { /* a normal character opens word */
             if(couw ==aawc->aaw[aawc->numl]->ab-1) /* new word opening */
@@ -229,6 +245,7 @@ aaw_c *processinpf(char *fname)
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
             GETLCTYPE(c, aawc->aaw[aawc->numl]->aw[couw]->t); /* MACRO: the firt character gives a clue */
             inword=1;
+            linestart=0;
         } else if(inword) { /* simply store */
             if(couc == cbuf-1)
                 reall_wc(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
@@ -268,11 +285,11 @@ int main(int argc, char *argv[])
     prtaawcdata(aawc);
 #elif DBG
     prtaawcdbg(aawc);
+    printf("Numlines: %zu\n", aawc->numl); 
+    printf("Numparas: %d\n", aawc->ppsz); 
 #else
     prtaawapap(aawc);
 #endif
-    printf("Numlines: %zu\n", aawc->numl); 
-    printf("Numparas: %d\n", aawc->ppsz); 
 
     free_aawc(&aawc);
 

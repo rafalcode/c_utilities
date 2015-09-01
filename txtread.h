@@ -38,7 +38,7 @@ typedef struct /* aw_c: array of words container: essentially, a line of words *
     w_c **aw;
     unsigned ab;
     unsigned al;
-    short stnls; /* number of starting newlines */
+    short stsps; /* number of starting spaces */
     short sttbs; /* number of starting tabs */
 } aw_c;
 
