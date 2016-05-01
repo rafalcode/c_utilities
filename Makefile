@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-O3
 DBGCFLAGS=-g -Wall
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -42,6 +42,12 @@ txtread_d: txtread.c
 dreadn: dreadn.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 dreadn_d: dreadn.c
+	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
+
+# How to deal with table type text files, which are not easy on the eye? Visual COLumn FoRCeR
+vcolfrcr: vcolfrcr.c
+	${CC} ${DBGCFLAGS} -o $@ $^
+vcolfrcr_d: vcolfrcr.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 
 .PHONY: clean
