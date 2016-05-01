@@ -4,7 +4,7 @@
 #include<string.h>
 #include "txtread.h"
 
-#define STRICSZ 9 /* Strict Column size. Should not include column separator */
+#define STRICSZ 7 /* Strict Column size. Should not include column separator */
 #define CSEP '\t'
 
 w_c *crea_wc(unsigned initsz)
@@ -158,9 +158,16 @@ void prtaawstric(aaw_c *aawc) /* print strict column style */
     int i, j, k, ppi=0;
     for(i=0;i<aawc->numl;++i)
         for(j=0;j<aawc->aaw[i]->al;++j) {
-            for(k=0;k<STRICSZ; k++)
-                putchar(aawc->aaw[i]->aw[j]->w[k]);
-            putchar(CSEP);
+            if(aawc->aaw[i]->aw[j]->lp1-1>STRICSZ) { /* if word is bigger than STRICSZ, only putchars up to STRICSZ */
+                for(k=0;k<STRICSZ; k++)
+                    putchar(aawc->aaw[i]->aw[j]->w[k]);
+            } else { /* words shorter than STRICSZ need to be padded somehow */
+                for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
+                    putchar(aawc->aaw[i]->aw[j]->w[k]);
+                for(k=aawc->aaw[i]->aw[j]->lp1-1; k<STRICSZ; k++)
+                    putchar(' ');
+            }
+            putchar(((j==aawc->aaw[i]->al-1)? '\n': CSEP));
         }
 }
 
