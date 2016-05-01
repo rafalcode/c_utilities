@@ -14,7 +14,7 @@
 #endif
 
 typedef unsigned char boole;
-typedef enum
+typedef enum /* type of word it is */
 {
     STRG, /* unknown type, so default to string */
     NUMS, /* NUMberS: but does not include currency. Date, time, float or int, i.e. just a sequence of numbers with maybe some special symbils.*/
@@ -26,18 +26,19 @@ typedef enum
     ALLC /* string with all caps */
 } t_t;
 
-typedef struct /* word type */
+typedef struct /* word container */
 {
     char *w;
     t_t t; /* number or not */
-    unsigned lp1; /* length of word plus one (i.e. includes null char */
+    unsigned lp1; /* length of word plus one (i.e. will include null char, for good and for bad) */
 } w_c;
 
-typedef struct /* aw_c: array of words container: essentially, a line of words */
+typedef struct /* aw_c: array of words containers: essentially, a line of words */
 {
-    w_c **aw;
-    unsigned ab;
-    unsigned al;
+    w_c **aw; /* a pointer to an array of words. */
+    unsigned ab; /* array buffer */
+    unsigned al; /* array length ... number of words in the array */
+    /* you can add characteristics here is you like */
     short stsps; /* number of starting spaces */
     short sttbs; /* number of starting tabs */
 } aw_c;
