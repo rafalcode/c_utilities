@@ -1,4 +1,4 @@
-/* Reads a matrix type and without making any assumptionsi aboutn number of columns nor number of rows */
+/* Reads a matrix type and without making any assumptions about number of columns nor number of rows */
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -41,7 +41,7 @@ float *processinpf(char *fname, int *m, int *n)
 {
     /* In order to make no assumptions, the file is treated as lines containing the same amount of words each,
      * except for lines starting with #, which are ignored (i.e. comments). These words are checked to make sure they contain only floating number-type
-     * characters [0123456789+-.] only, one string variable is icontinually written over and copied into a growing floating point array each time */
+     * characters [0123456789+-.] only, one string variable is continually written over and copied into a growing floating point array each time */
 
     /* declarations */
     FILE *fp=fopen(fname,"r");
