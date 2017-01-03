@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-O3
 DBGCFLAGS=-g -Wall
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -36,10 +36,15 @@ txtread: txtread.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 txtread_d: txtread.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
+# Jan 2017, a way of pulling out mm:ss from text, must start with an integer, include a : and not end with a : i.e. time numbers
+# not sophis, but fast.
+txtread_t: txtread.c
+	${CC} -DTNM -o $@ $^
 
 
 # dreadn="Data READ Numbers" we want both ints and floats to be read in. OK: we can use an array of unions for that.
 # However, there is the problem that sometimes floats are printed as ints.
+# by git ver  e37b9163 these two were no longer working.
 dreadn: dreadn.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 dreadn_d: dreadn.c

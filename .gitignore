@@ -8,6 +8,7 @@ matread
 genread
 genread_d
 txtread_d
+txtread_t
 txtread
 dreadn
 dreadn_d

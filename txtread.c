@@ -175,6 +175,20 @@ void prtaawcdbg(aaw_c *aawc)
     }
 }
 
+void prt_tnum(aaw_c *aawc) /* will print matching numbers of mm:ss style */
+{
+    int i, j, k;
+    for(i=0;i<aawc->numl;++i) {
+        for(j=0;j<aawc->aaw[i]->al;++j) {
+            if(aawc->aaw[i]->aw[j]->t == TNUM) {
+                for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
+                    putchar(aawc->aaw[i]->aw[j]->w[k]);
+                printf("\n"); 
+            }
+        }
+    }
+}
+
 void prtaawcdata(aaw_c *aawc) /* print line and word details, but not the words themselves */
 {
     int i, j;
@@ -243,7 +257,7 @@ aaw_c *processinpf(char *fname)
             couc=0;
             cbuf=CBUF;
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-            GETLCTYPE(c, aawc->aaw[aawc->numl]->aw[couw]->t); /* MACRO: the firt character gives a clue */
+            GETLCTYPE(c, aawc->aaw[aawc->numl]->aw[couw]->t); /* MACRO: the leading character gives a clue */
             inword=1;
             linestart=0;
         } else if(inword) { /* simply store */
@@ -287,6 +301,10 @@ int main(int argc, char *argv[])
     prtaawcdbg(aawc);
     printf("Numlines: %zu\n", aawc->numl); 
     printf("Numparas: %d\n", aawc->ppsz); 
+#elif NUMS
+    prtnums(aawc);
+#elif TNM
+    prt_tnum(aawc);
 #else
     prtaawapap(aawc);
 #endif
