@@ -1,4 +1,4 @@
-/* Reads a matrix type and without making any assumptions about number of columns nor number of rows */
+/* Failed attempt to turn this into a row reader. Based on matread.c */
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -11,7 +11,7 @@ typedef unsigned char boole;
 typedef struct
 {
 	char *n;
-	unsigned s, e, c; /* start end coverage */
+	long[3]; /* start end coverage */
 } bgr_t; /* bedgraph row type */
 
 typedef struct /* wseq_t */
@@ -60,6 +60,7 @@ float *processinpf(char *fname, int *m, int *n)
     char *bufword=calloc(bwbuf, sizeof(char)); /* this is the string we'll keep overwriting. */
 
     float *mat=malloc(GBUF*sizeof(float));
+    bgr_t *bgrow=malloc(GBUF*sizeof(bgf_t));
 
     while( (c=fgetc(fp)) != EOF) {
         /*  take care of  */
@@ -68,7 +69,9 @@ float *processinpf(char *fname, int *m, int *n)
                 wa->wln[couw]=couc;
                 bufword[couc++]='\0';
                 bufword = realloc(bufword, couc*sizeof(char)); /* normalize */
-                mat[couw]=atof(bufword);
+				if(couw==oldcouw)
+				else
+                bgrow[couw-oldcouw]=atol(bufword);
                 couc=0;
                 couw++;
             }
@@ -119,6 +122,7 @@ float *processinpf(char *fname, int *m, int *n)
     wa->quan=couw;
     wa->wln = realloc(wa->wln, wa->quan*sizeof(size_t)); /* normalize */
     mat = realloc(mat, wa->quan*sizeof(float)); /* normalize */
+    bgrow = realloc(bgrow, wa->quan*sizeof(bgr_t)); /* normalize */
     wa->wpla= realloc(wa->wpla, wa->numl*sizeof(size_t));
 
     *m= wa->numl;

@@ -21,6 +21,8 @@ cleangrpo: cleangrpo.c
 cleangrpo_d: cleangrpo.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 
+# if there was ever a program made in hell it was this.
+# it's called matread, but in fact it's an array reader. A 1-D matrix..
 matread: matread.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
