@@ -89,6 +89,10 @@ bgr_t *processinpf(char *fname, int *m, int *n)
                 bufword[couc++]='\0';
                 bufword = realloc(bufword, couc*sizeof(char)); /* normalize */
 				if(strcmp(tmpch, bufword)) { /* a new bgra element required. */
+					/* normalise current array */
+    				for(i=bgra[cc].sz;i<bgra[cc].bf;++i)
+						free(bgra[cc][bgra[cc].sz].n);
+					bgra[cc].bg=realloc(bgra[cc].bg*sizeof(bgra[cc].sz));
 					CONDREALLOC(cc, bgrabf, GBUF, bgra, bgra_t);
 					for(i=bgrabf-GBUF;i<bgrabf;++i) {
 						bgra[i].bf=GBUF;
@@ -96,25 +100,31 @@ bgr_t *processinpf(char *fname, int *m, int *n)
     					bgra[i].bg=malloc(bgra[i].bf*sizeof(bgr_t));
 					}
 					cc++;
-					// CONDREALLOC(bgra[cc].sz, bgra[cc].bf, GBUF, bgra[cc].bg, bgr_t);
-
-					if(couw==oldcouw) {
-                		bgra[cc][wa->numl-prevlc].n=malloc(couc*sizeof(char));
-                		strcpy(bgra[cc][wa->numl-prevlc].n, bufword);
-					} else
-                		bgra[cc][wa->numl-prevlc].c[couw-oldcouw-1]=atol(bufword);
+				}
+				// CONDREALLOC(bgra[cc].sz, bgra[cc].bf, GBUF, bgra[cc].bg, bgr_t);
+				if(couw==oldcouw) {
+                	bgra[cc][bgra[cc].sz].n=malloc(couc*sizeof(char));
+                	strcpy(bgra[cc][wa->numl-prevlc].n, bufword);
+				} else
+                	bgra[cc][bgra[cc].sz].c[couw-oldcouw-1]=atol(bufword);
+				bgra[cc].sz++;
                 couc=0;
                 couw++;
             }
             if(c=='#') {
                 while( (c=fgetc(fp)) != '\n') ;
                 continue;
-            } else if(c=='\n') {
+            } else if(c=='\n') { /* new line to current chromosome */
                 if(wa->numl == wa->lbuf-1) {
                     wa->lbuf += WBUF;
                     wa->wpla=realloc(wa->wpla, wa->lbuf*sizeof(size_t));
                     memset(wa->wpla+(wa->lbuf-WBUF), 0, WBUF*sizeof(size_t));
-                    bgra[cc]=realloc(bgra[cc], (wa->lbuf-prevlc)*sizeof(bgr_t));
+    				// for(i=bgra[cc].sz;i<bgra[cc].bf;++i)
+					// 	free(bgra[cc][bgra[cc].sz].n);
+					// bgra[cc].bg=realloc(bgra[cc].bg*sizeof(bgra[cc].sz));
+                    // bgra[cc]=realloc(bgra[cc], (wa->lbuf-prevlc)*sizeof(bgr_t));
+                    bgra[cc].bg=realloc(bgra[cc].bg, (wa->lbuf-prevlc)*sizeof(bgr_t));
+                    bgra[cc].bf=wa->lbuf-prevlc;
                 }
                 wa->wpla[wa->numl] = couw-oldcouw;
 				if(couw-oldcouw >4) {
@@ -125,14 +135,14 @@ bgr_t *processinpf(char *fname, int *m, int *n)
 				}
                 oldcouw=couw;
                 wa->numl++;
-				cc++;
+                bgra[cc].sz++;
                 if(cc == bgra->bf->lbuf-1) {
                     bgrow=realloc(bgrow, wa->lbuf*sizeof(bgr_t));
                     memset(wa->wpla+(wa->lbuf-WBUF), 0, WBUF*sizeof(size_t));
                 }
             }
             inword=0;
-        } else if(inword==0) { /* deal with first character of new word, + and - also allowed */
+        } else if(inword==0) {
             if(couw == wa->wsbuf-1) {
                 wa->wsbuf += GBUF;
                 wa->wln=realloc(wa->wln, wa->wsbuf*sizeof(size_t));

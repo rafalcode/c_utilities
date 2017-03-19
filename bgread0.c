@@ -3,14 +3,22 @@
 #include<stdlib.h>
 #include<string.h>
 
-#define GBUF 4
-#define WBUF 4
+#define GBUF 2
+#define WBUF 2
+
+#define CONDREALLOC(x, b, c, a, t); \
+    if((x)>=((b)-1)) { \
+        (b) += (c); \
+        (a)=realloc((a), (b)*sizeof(t)); \
+		memset(((a)+(b)-(c)), 0, (c)*sizeof(t)); \
+    }
 
 typedef unsigned char boole;
 
-typedef struct
+typedef struct /* bgr_t */
 {
 	char *n;
+	size_t nsz;
 	long c[3]; /* coords: 1) start 2) end 3) coverage */
 } bgr_t; /* bedgraph row type */
 
@@ -70,6 +78,7 @@ bgr_t *processinpf(char *fname, int *m, int *n)
 				/* for the struct, we want to know if it's the first word in a line, like so: */
 				if(couw==oldcouw) {
                 	bgrow[wa->numl].n=malloc(couc*sizeof(char));
+                	bgrow[wa->numl].nsz=couc;
                 	strcpy(bgrow[wa->numl].n, bufword);
 				} else /* it's not the first word */
                 	bgrow[wa->numl].c[couw-oldcouw-1]=atol(bufword);
@@ -139,6 +148,74 @@ bgr_t *processinpf(char *fname, int *m, int *n)
     return bgrow;
 }
 
+void prtbed(bgr_t *bgrow, int m, int n)
+{
+	int i, j;
+    printf("bgr_t is %i rows by %i columns and is as follows:\n", m, n); 
+    for(i=0;i<m;++i) {
+        for(j=0;j<n;++j) {
+            if(j==0)
+				printf("%s ", bgrow[i].n);
+			else
+            	printf("%li ", bgrow[i].c[j-1]);
+		}
+        printf("\n"); 
+    }
+	return;
+}
+
+void prtbed2(bgr_t **bgra, int *dca, int dcasz, int n) /* the 2D version */
+{
+	int i, j, k;
+	for(i=0;i<dcasz;++i) {
+		for(j=0;j<dca[i];++j) {
+			for(k=0;k<n;++k) {
+            	if(k==0)
+					printf("%s ", bgra[i][j].n);
+				else
+            		printf("%li ", bgra[i][j].c[k-1]);
+			}
+        	printf("\n"); 
+		}
+	}
+	return;
+}
+
+int *difca(bgr_t *bgrow, int m, int *dcasz) /* find out how many differnt chromosomes there are */
+{
+	int i;
+	/* how many different chromosomes are there? the dc (different chromsosome array */
+	int dcbf=GBUF, dci=0;
+	int *dca=calloc(dcbf, sizeof(int));
+	size_t sz1=strlen(bgrow[0].n);
+	char *tstr=malloc((1+sz1)*sizeof(char)); /* tmp string */
+	/* deal with first outside of loop */
+	strcpy(tstr, bgrow[dci].n);
+	dca[dci]++;
+    for(i=1;i<m;++i) {
+		if(!strcmp(tstr, bgrow[i].n))
+			dca[dci]++;
+		else {
+			CONDREALLOC(dci, dcbf, GBUF, dca, int);
+			dci++;
+			dca[dci]++;
+			/* new string could be differnt length*/
+			sz1=strlen(bgrow[i].n);
+			tstr=realloc(tstr, bgrow[i].nsz*sizeof(char)); /* tmp string */
+			strcpy(tstr, bgrow[i].n);
+		}
+	}
+	dca=realloc(dca, (dci+1)*sizeof(int));
+ 	printf("Num of different chroms=%i. How many each of the same name?\n", dci+1); 
+	printf("dcbf=%i\n", dcbf); 
+	for(i=0;i<=dci;++i) 
+		printf("%i ",dca[i]); 
+	printf("\n"); 
+	*dcasz=dci+1;
+	free(tstr);
+	return dca;
+}
+
 int main(int argc, char *argv[])
 {
     /* argument accounting */
@@ -150,19 +227,44 @@ int main(int argc, char *argv[])
     int i, j, m, n;
     // float *mat=processinpf(argv[1], &m, &n);
     bgr_t *bgrow=processinpf(argv[1], &m, &n);
+	// prtbed(bgrow, m, n);
+	int dcasz, cumsz;
+	int *dca=difca(bgrow, m, &dcasz);
 
-    printf("bgr_t is %i rows by %i columns and is as follows:\n", m, n); 
-    for(i=0;i<m;++i) {
-        for(j=0;j<n;++j) {
-            if(j==0)
-				printf("%s ", bgrow[i].n);
-			else
-            	printf("%li ", bgrow[i].c[j-1]);
+	bgr_t **bgra=malloc(dcasz*sizeof(bgr_t*));
+	/* splits */
+	bgra[0]=malloc(dca[0]*sizeof(bgr_t)); /* first one is special */
+	for(j=0;j<dca[0];++j) {
+		bgra[0][j].n=malloc(bgrow[j].nsz*sizeof(char));
+		strcpy(bgra[0][j].n, bgrow[j].n);
+		memcpy(bgra[0][j].c, bgrow[j].c, 3*sizeof(long));
+	}
+	cumsz=dca[0];
+	for(i=1;i<dcasz;++i) {
+		bgra[i]=malloc(dca[i]*sizeof(bgr_t));
+		for(j=0;j<dca[i];++j) {
+			bgra[i][j].n=malloc(bgrow[cumsz+j].nsz*sizeof(char));
+			strcpy(bgra[i][j].n, bgrow[cumsz+j].n);
+			memcpy(bgra[i][j].c, bgrow[cumsz+j].c, 3*sizeof(long));
 		}
-        printf("\n"); 
-    }
+		cumsz += dca[i];
+	}
+
+	/* now parsed, we can get rid of bgrow now, now that we have bgra */
     for(i=0;i<m;++i)
 		free(bgrow[i].n);
     free(bgrow);
+
+	prtbed2(bgra, dca, dcasz, n);
+
+	/* free bgra */
+	for(i=0;i<dcasz;++i) {
+		for(j=0;j<dca[i];++j)
+			free(bgra[i][j].n);
+		free(bgra[i]);
+	}
+	free(bgra);
+
+	free(dca);
     return 0;
 }
