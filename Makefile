@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-O3
 DBGCFLAGS=-g -Wall
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -24,6 +24,10 @@ cleangrpo_d: cleangrpo.c
 # if there was ever a program made in hell it was this.
 # it's called matread, but in fact it's an array reader. A 1-D matrix..
 matread: matread.c
+	${CC} ${DBGCFLAGS} -o $@ $^
+
+# for readng bedgraph files
+bgread: bgread.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
 genread: genread.c

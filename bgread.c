@@ -3,15 +3,15 @@
 #include<stdlib.h>
 #include<string.h>
 
-#define GBUF 8
-#define WBUF 8
+#define GBUF 4
+#define WBUF 4
 
 typedef unsigned char boole;
 
 typedef struct
 {
 	char *n;
-	long[3]; /* start end coverage */
+	long c[3]; /* coords: 1) start 2) end 3) coverage */
 } bgr_t; /* bedgraph row type */
 
 typedef struct /* wseq_t */
@@ -43,7 +43,7 @@ void free_wseq(wseq_t *wa)
     free(wa);
 }
 
-float *processinpf(char *fname, int *m, int *n)
+bgr_t *processinpf(char *fname, int *m, int *n)
 {
     /* In order to make no assumptions, the file is treated as lines containing the same amount of words each,
      * except for lines starting with #, which are ignored (i.e. comments). These words are checked to make sure they contain only floating number-type
@@ -59,8 +59,7 @@ float *processinpf(char *fname, int *m, int *n)
     size_t bwbuf=WBUF;
     char *bufword=calloc(bwbuf, sizeof(char)); /* this is the string we'll keep overwriting. */
 
-    float *mat=malloc(GBUF*sizeof(float));
-    bgr_t *bgrow=malloc(GBUF*sizeof(bgf_t));
+    bgr_t *bgrow=malloc(GBUF*sizeof(bgr_t));
 
     while( (c=fgetc(fp)) != EOF) {
         /*  take care of  */
@@ -69,9 +68,11 @@ float *processinpf(char *fname, int *m, int *n)
                 wa->wln[couw]=couc;
                 bufword[couc++]='\0';
                 bufword = realloc(bufword, couc*sizeof(char)); /* normalize */
-				if(couw==oldcouw)
-				else
-                bgrow[couw-oldcouw]=atol(bufword);
+				if(couw==oldcouw) {
+                	bgrow[wa->numl].n=malloc(couc*sizeof(char));
+                	strcpy(bgrow[wa->numl].n, bufword);
+				} else
+                	bgrow[wa->numl].c[couw-oldcouw-1]=atol(bufword);
                 couc=0;
                 couw++;
             }
@@ -82,18 +83,25 @@ float *processinpf(char *fname, int *m, int *n)
                 if(wa->numl == wa->lbuf-1) {
                     wa->lbuf += WBUF;
                     wa->wpla=realloc(wa->wpla, wa->lbuf*sizeof(size_t));
+                    bgrow=realloc(bgrow, wa->lbuf*sizeof(bgr_t));
                     memset(wa->wpla+(wa->lbuf-WBUF), 0, WBUF*sizeof(size_t));
                 }
                 wa->wpla[wa->numl] = couw-oldcouw;
+				if(couw-oldcouw >4) {
+					printf("Error, each row cannot exceed 4 words: revise your input file\n"); 
+					/* need to release all memory too */
+            		free_wseq(wa);
+					exit(EXIT_FAILURE);
+				}
                 oldcouw=couw;
                 wa->numl++;
             }
             inword=0;
-        } else if( (inword==0) && ((c == 0x2B) | (c == 0x2D) | (c == 0x2E) | ((c >= 0x30) && (c <= 0x39))) ) { /* deal with first character of new word, + and - also allowed */
+        } else if(inword==0) { /* deal with first character of new word, + and - also allowed */
             if(couw == wa->wsbuf-1) {
                 wa->wsbuf += GBUF;
                 wa->wln=realloc(wa->wln, wa->wsbuf*sizeof(size_t));
-                mat=realloc(mat, wa->wsbuf*sizeof(float));
+                bgrow=realloc(bgrow, wa->wsbuf*sizeof(bgr_t));
                 for(i=wa->wsbuf-GBUF;i<wa->wsbuf;++i)
                     wa->wln[i]=0;
             }
@@ -102,16 +110,13 @@ float *processinpf(char *fname, int *m, int *n)
             bufword=realloc(bufword, bwbuf*sizeof(char)); /* don't bother with memset, it's not necessary */
             bufword[couc++]=c; /* no need to check here, it's the first character */
             inword=1;
-        } else if( (c == 0x2E) | ((c >= 0x30) && (c <= 0x39)) ) {
+        // } else if( (c == 0x2E) | ((c >= 0x30) && (c <= 0x39)) ) {
+        } else {
             if(couc == bwbuf-1) { /* the -1 so that we can always add and extra (say 0) when we want */
                 bwbuf += WBUF;
                 bufword = realloc(bufword, bwbuf*sizeof(char));
             }
             bufword[couc++]=c;
-        } else {
-            printf("Error. Non-float character detected. This program is only for reading floats\n"); 
-            free_wseq(wa);
-            exit(EXIT_FAILURE);
         }
 
     } /* end of big for statement */
@@ -121,7 +126,6 @@ float *processinpf(char *fname, int *m, int *n)
     /* normalization stage */
     wa->quan=couw;
     wa->wln = realloc(wa->wln, wa->quan*sizeof(size_t)); /* normalize */
-    mat = realloc(mat, wa->quan*sizeof(float)); /* normalize */
     bgrow = realloc(bgrow, wa->quan*sizeof(bgr_t)); /* normalize */
     wa->wpla= realloc(wa->wpla, wa->numl*sizeof(size_t));
 
@@ -133,7 +137,7 @@ float *processinpf(char *fname, int *m, int *n)
     *n= k; 
     free_wseq(wa);
 
-    return mat;
+    return bgrow;
 }
 
 int main(int argc, char *argv[])
@@ -145,16 +149,21 @@ int main(int argc, char *argv[])
     }
 
     int i, j, m, n;
-    float *mat=processinpf(argv[1], &m, &n);
+    // float *mat=processinpf(argv[1], &m, &n);
+    bgr_t *bgrow=processinpf(argv[1], &m, &n);
 
-    printf("Matrix is %i rows by %i columns and is as follows:\n", m, n); 
+    printf("bgr_t is %i rows by %i columns and is as follows:\n", m, n); 
     for(i=0;i<m;++i) {
-        for(j=0;j<n;++j) 
-            printf("%f ", mat[i*n+j]);
+        for(j=0;j<n;++j) {
+            if(j==0)
+				printf("%s ", bgrow[i].n);
+			else
+            	printf("%li ", bgrow[i].c[j-1]);
+		}
         printf("\n"); 
     }
-
-    free(mat);
-
+    for(i=0;i<m;++i)
+		free(bgrow[i].n);
+    free(bgrow);
     return 0;
 }
