@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-O3
 DBGCFLAGS=-g -Wall
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -29,6 +29,10 @@ matread: matread.c
 # for readng bedgraph files
 bgread: bgread.c
 	${CC} ${DBGCFLAGS} -o $@ $^
+# poor start on parsing out different chromosome.
+bgread2: bgread2.c
+	${CC} ${DBGCFLAGS} -o $@ $^
+
 
 genread: genread.c
 	${CC} ${CFLAGS} -o $@ $^
