@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-O3
 DBGCFLAGS=-g -Wall
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -36,7 +36,10 @@ bgread2: bgread2.c
 # This is the space inefficient version.
 bgread0: bgread0.c
 	${CC} ${DBGCFLAGS} -o $@ $^
-
+# Ooops again failed.
+# bgread0_.c tries to render a container for our bgr_t's
+bgread0_: bgread0_.c
+	${CC} ${DBGCFLAGS} -o $@ $^
 
 genread: genread.c
 	${CC} ${CFLAGS} -o $@ $^
