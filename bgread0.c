@@ -80,7 +80,9 @@ bgr_t *processinpf(char *fname, int *m, int *n)
                 	bgrow[wa->numl].n=malloc(couc*sizeof(char));
                 	bgrow[wa->numl].nsz=couc;
                 	strcpy(bgrow[wa->numl].n, bufword);
-				} else /* it's not the first word */
+				} else if((couw-oldcouw)<4) /* it's not the first word, and it's 1st and second col */
+                	bgrow[wa->numl].c[couw-oldcouw-1]=atol(bufword);
+				else if( ((couw-oldcouw)==4) & (((int)(bufword[0])>47) & ((int)(bufword[0])<58)) ) /* 4th col could be a string, in which case, don't store */
                 	bgrow[wa->numl].c[couw-oldcouw-1]=atol(bufword);
                 couc=0;
                 couw++;

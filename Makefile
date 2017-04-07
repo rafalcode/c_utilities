@@ -33,9 +33,12 @@ bgread: bgread.c
 # bgread2 worked inside the process function
 bgread2: bgread2.c
 	${CC} ${DBGCFLAGS} -o $@ $^
-# This is the space inefficient version. BUT it's the one that works!
+
+# This is the space inefficient version. BUT it's the one that works! Yes, this is the primary one.
+# Note that if given a bed file with column 4 as a string or with more fields, they will be ignored.
 bgread0: bgread0.c
 	${CC} ${DBGCFLAGS} -o $@ $^
+
 bgread0a: bgread0a.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 # Ooops again failed.
