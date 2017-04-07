@@ -18,7 +18,7 @@ typedef unsigned char boole;
 typedef struct /* bgr_t */
 {
 	char *n;
-	size_t nsz;
+	size_t nsz; /* size of the name r ID field */
 	long c[3]; /* coords: 1) start 2) end 3) coverage */
 } bgr_t; /* bedgraph row type */
 
@@ -216,6 +216,41 @@ int *difca(bgr_t *bgrow, int m, int *dcasz) /* find out how many differnt chromo
 	return dca;
 }
 
+int *difca2(bgr_t *bgrow, int m, int *dcasz) /* Chromosome may be different, or, if the same, is not contiguous */
+{
+	int i;
+	/* how many different chromosomes are there? the dc (different chromsosome array */
+	int dcbf=GBUF, dci=0;
+	int *dca=calloc(dcbf, sizeof(int));
+	size_t sz1=strlen(bgrow[0].n);
+	char *tstr=malloc((1+sz1)*sizeof(char)); /* tmp string */
+	/* deal with first outside of loop */
+	strcpy(tstr, bgrow[dci].n);
+	dca[dci]++;
+    for(i=1;i<m;++i) {
+		/* the same now means same name and contiguous */
+		if( (!strcmp(tstr, bgrow[i].n)) & (bgrow[i].c[0] == bgrow[i-1].c[1]) )
+			dca[dci]++;
+		else {
+			CONDREALLOC(dci, dcbf, GBUF, dca, int);
+			dci++;
+			dca[dci]++;
+			/* new string could be differnt length*/
+			tstr=realloc(tstr, bgrow[i].nsz*sizeof(char)); /* tmp string */
+			strcpy(tstr, bgrow[i].n);
+		}
+	}
+	dca=realloc(dca, (dci+1)*sizeof(int));
+ 	printf("Num of different chromcontigs=%i. How many of each? Let's see:\n", dci+1); 
+	printf("dcbf=%i\n", dcbf); 
+	for(i=0;i<=dci;++i) 
+		printf("%i ",dca[i]); 
+	printf("\n"); 
+	*dcasz=dci+1;
+	free(tstr);
+	return dca;
+}
+
 int main(int argc, char *argv[])
 {
     /* argument accounting */
@@ -229,7 +264,7 @@ int main(int argc, char *argv[])
     bgr_t *bgrow=processinpf(argv[1], &m, &n);
 	// prtbed(bgrow, m, n);
 	int dcasz, cumsz;
-	int *dca=difca(bgrow, m, &dcasz);
+	int *dca=difca2(bgrow, m, &dcasz);
 
 	bgr_t **bgra=malloc(dcasz*sizeof(bgr_t*));
 	/* splits */
