@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-O3
 DBGCFLAGS=-g -Wall
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgred3
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -37,6 +37,11 @@ bgread2: bgread2.c
 # This is the space inefficient version. BUT it's the one that works! Yes, this is the primary one.
 # Note that if given a bed file with column 4 as a string or with more fields, they will be ignored.
 bgread0: bgread0.c
+	${CC} ${DBGCFLAGS} -o $@ $^
+# bgread3 is where I try to merge contiguous sections.
+# sorry can't do it, too difficult.
+# # needs full immersion. Cna't do it in an hour.
+bgread3: bgread3.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
 bgread0a: bgread0a.c

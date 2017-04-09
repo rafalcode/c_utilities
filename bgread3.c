@@ -22,6 +22,21 @@ typedef struct /* bgr_t */
 	long c[3]; /* coords: 1) start 2) end 3) coverage */
 } bgr_t; /* bedgraph row type */
 
+void copbgr0(bgr_t *bg0, bgr_t *bg2) /* copy bg0 to bg2, but bg2 is empty, mallocs needed */
+{
+	bg2->nsz=bg0->nsz;
+	bg2->n=calloc(bg2->nsz, sizeof(char));
+	strcpy(bg2->n, bg0->n);
+	memcpy(bg2->c, bg0->c, 3*sizeof(long));
+    return;
+}
+
+void copbgr2(bgr_t *bg0, bgr_t *bg2, long thresh) /* mergecopy bg0 to bg2, but bg2 is empty, mallocs needed */
+{
+	bg2->c[2]= bg0->c[2];
+    return;
+}
+
 typedef struct /* wseq_t */
 {
     size_t *wln;
@@ -183,6 +198,23 @@ void prtbed2(bgr_t **bgra, int *dca, int dcasz, int n) /* the 2D version */
 	return;
 }
 
+void prtbed3(bgr_t **bgra, int *dca, int dcasz, int n) /* the 2D version */
+{
+	int i, j, k;
+	for(i=0;i<dcasz;++i) {
+		for(j=0;j<dca[i];++j) {
+			for(k=0;k<n;++k) {
+            	if(k==0)
+					printf("%s ", bgra[i][j].n);
+				else
+            		printf("%li ", bgra[i][j].c[k-1]);
+			}
+        	printf("\n"); 
+		}
+	}
+	return;
+}
+
 int *difca(bgr_t *bgrow, int m, int *dcasz) /* find out how many differnt chromosomes there are */
 {
 	int i;
@@ -253,7 +285,7 @@ int *difca2(bgr_t *bgrow, int m, int *dcasz) /* Chromosome may be different, or,
 	return dca;
 }
 
-int *difca3(bgr_t *bgrow, int m, int *dcasz) /* An temmpt to merge bgraph quickly, no hope */
+bgr_t *difca3(bgr_t *bgrow, int m, int *dcasz) /* An temmpt to merge bgraph quickly, no hope */
 {
 	int i;
 	/* how many different chromosomes are there? the dc (different chromsosome array */
@@ -264,10 +296,13 @@ int *difca3(bgr_t *bgrow, int m, int *dcasz) /* An temmpt to merge bgraph quickl
 	/* deal with first outside of loop */
 	strcpy(tstr, bgrow[dci].n);
 	dca[dci]++;
+    bgr_t *bg2=malloc(m*sizeof(bgr_t)); // same size as bgrow.
+    copbgr0(&(bgrow[dci]), &(bg2[dci])); // dci is zero
     for(i=1;i<m;++i) {
 		/* the same now means same name and contiguous */
 		if( (!strcmp(tstr, bgrow[i].n)) & (bgrow[i].c[0] == bgrow[i-1].c[1]) )
 			dca[dci]++;
+            copbgr2(&(bgrow[dci]), &(bg2[dci]));
 		else {
 			CONDREALLOC(dci, dcbf, GBUF, dca, int);
 			dci++;
@@ -275,9 +310,11 @@ int *difca3(bgr_t *bgrow, int m, int *dcasz) /* An temmpt to merge bgraph quickl
 			/* new string could be differnt length*/
 			tstr=realloc(tstr, bgrow[i].nsz*sizeof(char)); /* tmp string */
 			strcpy(tstr, bgrow[i].n);
+            copbgr0(&(bgrow[dci]), &(bg2[dci])); // dci is zero
 		}
 	}
 	dca=realloc(dca, (dci+1)*sizeof(int));
+	bg2=realloc(bg2, (dci+1)*sizeof(bgr_t));
  	printf("Num of different chromcontigs=%i. How many of each? Let's see:\n", dci+1); 
 	printf("dcbf=%i\n", dcbf); 
 	for(i=0;i<=dci;++i) 
@@ -285,7 +322,7 @@ int *difca3(bgr_t *bgrow, int m, int *dcasz) /* An temmpt to merge bgraph quickl
 	printf("\n"); 
 	*dcasz=dci+1;
 	free(tstr);
-	return dca;
+	return bg2;
 }
 
 int main(int argc, char *argv[])
@@ -322,12 +359,13 @@ int main(int argc, char *argv[])
 		cumsz += dca[i];
 	}
 
+	bgr_t *bg2=difca3(bgrow, m, &dcasz);
 	/* now parsed, we can get rid of bgrow now, now that we have bgra */
     for(i=0;i<m;++i)
 		free(bgrow[i].n);
     free(bgrow);
 
-	prtbed2(bgra, dca, dcasz, n);
+	// prtbed2(bgra, dca, dcasz, n);
 
 	/* free bgra */
 	for(i=0;i<dcasz;++i) {
