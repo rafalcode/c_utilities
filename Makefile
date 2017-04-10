@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-O3
 DBGCFLAGS=-g -Wall
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -52,6 +52,8 @@ bgmergmc: bgmergmc.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 bgmergmc_d: bgmergmc.c
 	${CC} ${TDBGCFLAGS} -o $@ $^
+bgmergmcstealth: bgmergmcstealth.c
+	${CC} ${DBGCFLAGS} -o $@ $^
 
 bgread0a: bgread0a.c
 	${CC} ${DBGCFLAGS} -o $@ $^
