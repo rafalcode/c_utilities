@@ -15,6 +15,12 @@
 
 typedef unsigned char boole;
 
+typedef struct /* i2_t */
+{
+	int sc; /* number of same chromosomes */
+	int mc; /* min coverage associated */
+} i2_t; /* bedgraph row type */
+
 typedef struct /* bgr_t */
 {
 	char *n;
@@ -202,6 +208,25 @@ void prtbed3(bgr_t **bgra, int *dca, int dcasz, int n) /* the 2D version */
 	return;
 }
 
+void prtbed4(bgr_t **bgra, i2_t *dca, int dcasz, int n) /* the 2D version */
+{
+	int i, j;
+	for(i=0;i<dcasz;++i) {
+		for(j=0;j<dca[i].sc;++j) { // we're cycling though all of them, though we're really only interested in the first and last.
+			if(j==0) { 
+				printf("%s ", bgra[i][j].n);
+				printf("%li ", bgra[i][j].c[0]);
+			}
+		   	if(j==dca[i].sc-1) { // note this cannot be an else if, because if only one line j = 0 = dca[i]-1.
+				printf("%li ", bgra[i][j].c[1]);
+				printf("%i ", dca[i].mc);
+			}
+		}
+		printf("\n"); 
+	}
+	return;
+}
+
 int *difca(bgr_t *bgrow, int m, int *dcasz) /* find out how many differnt chromosomes there are */
 {
 	int i;
@@ -307,6 +332,45 @@ int *difca3(bgr_t *bgrow, int m, int *dcasz) /* An temmpt to merge bgraph quickl
 	return dca;
 }
 
+i2_t *difca4(bgr_t *bgrow, int m, int *dcasz) /* An temmpt to merge bgraph quickly, no hope */
+{
+	int i;
+	/* how many different chromosomes are there? the dc (different chromsosome array */
+	int dcbf=GBUF, dci=0;
+	i2_t *dca=calloc(dcbf, sizeof(i2_t));
+	size_t sz1=strlen(bgrow[0].n);
+	char *tstr=malloc((1+sz1)*sizeof(char)); /* tmp string */
+	/* deal with first outside of loop */
+	strcpy(tstr, bgrow[dci].n);
+	dca[dci].sc++;
+	dca[dci].mc=bgrow[0].c[2];
+	for(i=1;i<m;++i) {
+		/* the same now means same name and contiguous */
+		if( (!strcmp(tstr, bgrow[i].n)) & (bgrow[i].c[0] == bgrow[i-1].c[1]) ) {
+			dca[dci].sc++;
+			if(bgrow[i].c[2]<dca[dci].mc)
+				dca[dci].mc=bgrow[i].c[2];
+		} else {
+			CONDREALLOC(dci, dcbf, GBUF, dca, i2_t);
+			dci++;
+			dca[dci].sc++;
+			dca[dci].mc=bgrow[i].c[2];
+			/* new string could be differnt length*/
+			tstr=realloc(tstr, bgrow[i].nsz*sizeof(char)); /* tmp string */
+			strcpy(tstr, bgrow[i].n);
+		}
+	}
+	dca=realloc(dca, (dci+1)*sizeof(i2_t));
+	printf("Num of different chromcontigs=%i. How many of each? Let's see:\n", dci+1); 
+	printf("dcbf=%i\n", dcbf); 
+	for(i=0;i<=dci;++i) 
+		printf("%i/%i ",dca[i].sc, dca[i].mc); 
+	printf("\n"); 
+	*dcasz=dci+1;
+	free(tstr);
+	return dca;
+}
+
 int main(int argc, char *argv[])
 {
 	/* argument accounting */
@@ -320,25 +384,28 @@ int main(int argc, char *argv[])
 	bgr_t *bgrow=processinpf(argv[1], &m, &n);
 	// prtbed(bgrow, m, n);
 	int dcasz, cumsz;
-	int *dca=difca2(bgrow, m, &dcasz);
+	// int *dca=difca2(bgrow, m, &dcasz);
+	i2_t *dca=difca4(bgrow, m, &dcasz);
 
 	bgr_t **bgra=malloc(dcasz*sizeof(bgr_t*));
 	/* splits */
-	bgra[0]=malloc(dca[0]*sizeof(bgr_t)); /* first one is special */
-	for(j=0;j<dca[0];++j) {
+	bgra[0]=malloc(dca[0].sc*sizeof(bgr_t)); /* first one is special */
+	for(j=0;j<dca[0].sc;++j) {
 		bgra[0][j].n=malloc(bgrow[j].nsz*sizeof(char));
 		strcpy(bgra[0][j].n, bgrow[j].n);
-		memcpy(bgra[0][j].c, bgrow[j].c, 3*sizeof(long));
+		memcpy(bgra[0][j].c, bgrow[j].c, 2*sizeof(long));
+		bgra[0][j].c[2] = dca[0].mc;
 	}
-	cumsz=dca[0];
+	cumsz=dca[0].sc;
 	for(i=1;i<dcasz;++i) {
-		bgra[i]=malloc(dca[i]*sizeof(bgr_t));
-		for(j=0;j<dca[i];++j) {
+		bgra[i]=malloc(dca[i].sc*sizeof(bgr_t));
+		for(j=0;j<dca[i].sc;++j) {
 			bgra[i][j].n=malloc(bgrow[cumsz+j].nsz*sizeof(char));
 			strcpy(bgra[i][j].n, bgrow[cumsz+j].n);
-			memcpy(bgra[i][j].c, bgrow[cumsz+j].c, 3*sizeof(long));
+			memcpy(bgra[i][j].c, bgrow[cumsz+j].c, 2*sizeof(long));
+			bgra[i][j].c[2] = dca[i].mc;
 		}
-		cumsz += dca[i];
+		cumsz += dca[i].sc;
 	}
 
 	/* now parsed, we can get rid of bgrow now, now that we have bgra */
@@ -346,11 +413,11 @@ int main(int argc, char *argv[])
 		free(bgrow[i].n);
 	free(bgrow);
 
-	prtbed3(bgra, dca, dcasz, n);
+	prtbed4(bgra, dca, dcasz, n);
 
 	/* free bgra */
 	for(i=0;i<dcasz;++i) {
-		for(j=0;j<dca[i];++j)
+		for(j=0;j<dca[i].sc;++j)
 			free(bgra[i][j].n);
 		free(bgra[i]);
 	}
