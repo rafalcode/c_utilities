@@ -1,7 +1,8 @@
 CC=gcc
 CFLAGS=-O3
 DBGCFLAGS=-g -Wall
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgread0b
+TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -46,9 +47,11 @@ bgread3: bgread3.c
 # Actually bgread0 itself is pretty good. Can you believe 
 # I didn't realize I had done soem decent stuff on it.
 # Getting much closer to a bgmerge now:
-# behold bgread0b
-bgread0b: bgread0b.c
+# behold bgmergmc
+bgmergmc: bgmergmc.c
 	${CC} ${DBGCFLAGS} -o $@ $^
+bgmergmc_d: bgmergmc.c
+	${CC} ${TDBGCFLAGS} -o $@ $^
 
 bgread0a: bgread0a.c
 	${CC} ${DBGCFLAGS} -o $@ $^

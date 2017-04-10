@@ -4,8 +4,13 @@
 #include<stdlib.h>
 #include<string.h>
 
+#ifdef DBG
 #define GBUF 2
 #define WBUF 2
+#else
+#define GBUF 32
+#define WBUF 32
+#endif
 
 #define CONDREALLOC(x, b, c, a, t); \
 	if((x)>=((b)-1)) { \
@@ -242,11 +247,13 @@ i4_t *difca(bgr_t *bgrow, int m, int *dcasz, int minco) /* An temmpt to merge bg
 		}
 	}
 	dca=realloc(dca, (dci+1)*sizeof(i4_t));
+#ifdef DBG
 	printf("Num of different chromcontigs=%i. How many of each? Let's see:\n", dci+1); 
 	printf("dcbf=%i. 4-tupe is sc/mc/b1i/lgbi\n", dcbf); 
 	for(i=0;i<=dci;++i) 
 		printf("%i/%i/%i/%i ",dca[i].sc, dca[i].mc, dca[i].b1i, dca[i].lgbi); 
 	printf("\n"); 
+#endif
 	*dcasz=dci+1;
 	free(tstr);
 	return dca;
