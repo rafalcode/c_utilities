@@ -225,7 +225,6 @@ i4_t *difca(bgr_t *bgrow, int m, int *dcasz, int minco) /* An temmpt to merge bg
 		printf("Error. No bedgraph element was able to satisfy the minimum coverage value that was specified: abandoning ship.\n");
 		exit(EXIT_FAILURE);
 	}
-	printf("goodi=%i\n", goodi);
 
 	for(i=goodi+1;i<m;++i) {
 		/* the same now means same name and contiguous */
