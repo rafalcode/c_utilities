@@ -183,6 +183,52 @@ void prtbed2(bgr_t **bgra, int *dca, int dcasz, int n) /* the 2D version */
 	return;
 }
 
+void prtbed2(bgr_t **bgra, int *dca, int dcasz, int n) /* the 2D version */
+{
+	int i, j, k;
+	for(i=0;i<dcasz;++i) {
+		for(j=0;j<dca[i];++j) {
+			for(k=0;k<n;++k) {
+            	if(k==0)
+					printf("%s ", bgra[i][j].n);
+				else
+            		printf("%li ", bgra[i][j].c[k-1]);
+			}
+        	printf("\n"); 
+		}
+	}
+	return;
+}
+
+void prtbed3(bgr_t **bgra, int *dca, int dcasz, int n) /* the 2D version */
+{
+	int i, j, k;
+	for(i=0;i<dcasz;++i) {
+		for(j=0;j<dca[i];++j) {
+		if(dca[i]==1) {
+			for(k=0;k<n;++k) {
+            	if(k==0)
+					printf("%s ", bgra[i][j].n);
+				else
+            		printf("%li ", bgra[i][j].c[k-1]);
+			}
+		} else {
+            if(j==0) {
+			for(k=0;k<n;++k) {
+            	if(k==0)
+					printf("%s ", bgra[i][j].n);
+				else
+            		printf("%li ", bgra[i][j].c[k-1]);
+			}
+
+
+
+
+        }
+	}
+	return;
+}
+
 int *difca(bgr_t *bgrow, int m, int *dcasz) /* find out how many differnt chromosomes there are */
 {
 	int i;
@@ -301,7 +347,7 @@ int main(int argc, char *argv[])
     bgr_t *bgrow=processinpf(argv[1], &m, &n);
 	// prtbed(bgrow, m, n);
 	int dcasz, cumsz;
-	int *dca=difca2(bgrow, m, &dcasz);
+	int *dca=difca(bgrow, m, &dcasz);
 
 	bgr_t **bgra=malloc(dcasz*sizeof(bgr_t*));
 	/* splits */
@@ -323,9 +369,11 @@ int main(int argc, char *argv[])
 	}
 
 	/* now parsed, we can get rid of bgrow now, now that we have bgra */
+    prtbed(bgrow, m, n);
     for(i=0;i<m;++i)
 		free(bgrow[i].n);
     free(bgrow);
+    printf("----\n"); 
 
 	prtbed2(bgra, dca, dcasz, n);
 
