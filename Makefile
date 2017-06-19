@@ -98,6 +98,12 @@ vcolfrcr: vcolfrcr.c
 vcolfrcr_d: vcolfrcr.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 
+mptl0: mptl0.c
+	${CC} ${DBGCFLAGS} -DDBG -o $@ $^ -lpython2.7
+
+szfread: szfread.c
+	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
+
 .PHONY: clean
 
 clean:
