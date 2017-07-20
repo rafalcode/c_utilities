@@ -142,6 +142,7 @@ bgr_t *processinpf(char *fname, int *m, int *n)
 void miscdets(char *fn, bgr_t *bgrow, int m, int n)
 {
 	int i,j, sz, tbases=0, min=0x7FFF, max=0;
+	printf("Filename\t\t\t\tRegions\t\tNumbases\t\tMax\t\tMin\t\tAvg\n"); 
 	for(i=0;i<m;++i) {
 		// easy to think it should be c[2]-c[1] but the first token is sotred in the the n (name) member.
 		sz = bgrow[i].c[1] - bgrow[i].c[0];
@@ -151,7 +152,8 @@ void miscdets(char *fn, bgr_t *bgrow, int m, int n)
 			min=sz;
 		tbases += sz;
 	}
-	printf("File %s: %i total bases in %i regions, max=%i / min=%i / avg %4.2f bases per region.\n", fn, tbases, m, max, min,(float)tbases/m); 
+	// printf("File %s: %i total bases in %i regions, max=%i / min=%i / avg %4.2f bases per region.\n", fn, tbases, m, max, min,(float)tbases/m); 
+	printf("%s\t\t\t\%i\t\t%i\t\t%i\t\t%i\t\t%4.2f\n", fn, m, tbases, max, min,(float)tbases/m); 
 	return;
 }
 
