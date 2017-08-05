@@ -42,7 +42,6 @@ bgreadx: bgreadx.c
 bgreadx0: bgreadx0.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
-
 # poor start on parsing out different chromosome.
 # bgread2 worked inside the process function
 bgread2: bgread2.c
