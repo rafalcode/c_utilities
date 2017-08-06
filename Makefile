@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-O3
 DBGCFLAGS=-g -Wall
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -27,6 +27,9 @@ cleangrpo_d: cleangrpo.c
 matread: matread.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
+# FOllowing facination with contingency tables ... this simple ad transparent prog for them
+contabrd: contabrd.c
+	${CC} ${DBGCFLAGS} -o $@ $^ -lm
 
 # for readng bedgraph files
 # this one (not the 0,2 qand 3) seems to work
