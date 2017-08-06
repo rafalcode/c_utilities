@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-O3
 DBGCFLAGS=-g -Wall
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -40,6 +40,10 @@ bgreadx: bgreadx.c
 # OK. ther's a problem ... I was doign to this for intersect Bedgraph .. but it's coutnign repeated entries of course because htere's no control
 # so this effort is to control ... only to include entries that are not repeated (judgin by the ranges)
 bgreadx0: bgreadx0.c
+	${CC} ${DBGCFLAGS} -o $@ $^
+
+# The mac signal variations
+bgfiltf: bgfiltf.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
 # poor start on parsing out different chromosome.
