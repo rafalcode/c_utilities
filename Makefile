@@ -3,8 +3,8 @@ CFLAGS=-O3
 DBGCFLAGS=-g -Wall
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
 
-LIBS=-lgsl -lm
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0
+LIBS=-lgsl -lgslcblas -lm
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -50,8 +50,11 @@ bgreadx: bgreadx.c
 bgreadx0: bgreadx0.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
-# The mac signal variations
+# The mac signal variations ... first called bgfilt, but then forked this to create macsigf more specialised.
 bgfiltf: bgfiltf.c
+	${CC} ${DBGCFLAGS} -o $@ $^
+
+macsigf: macsigf.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
 # poor start on parsing out different chromosome.
