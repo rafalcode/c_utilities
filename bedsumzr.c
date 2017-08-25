@@ -43,6 +43,7 @@ typedef struct /* bgr_t */
     size_t nsz; /* size of the name r ID field */
     long c[2]; /* coords: 1) start 2) end */
     float co; /* signal value */
+	char **rc; /* rest of the columns as strings */
 } bgr_t; /* bedgraph row type */
 
 typedef struct /* wseq_t */
@@ -108,7 +109,7 @@ bgr_t *processinpf(char *fname, int *m, int *n)
 
     /* declarations */
     FILE *fp=fopen(fname,"r");
-    int i;
+    int i, nrc /* number of rest of columns */ ;
     size_t couc /*count chars per line */, couw=0 /* count words */, oldcouw = 0;
     int c;
     boole inword=0;
@@ -129,10 +130,15 @@ bgr_t *processinpf(char *fname, int *m, int *n)
                     bgrow[wa->numl].n=malloc(couc*sizeof(char));
                     bgrow[wa->numl].nsz=couc;
                     strcpy(bgrow[wa->numl].n, bufword);
-                } else if((couw-oldcouw)<3) /* it's not the first word, and it's 1st and second col */
+                } else if((couw-oldcouw)<3) { /* it's not the first word, and it's 1st and second col */
                     bgrow[wa->numl].c[couw-oldcouw-1]=atol(bufword);
-                else if( (couw-oldcouw)==3) { // assume float
+				} else if( (couw-oldcouw)==3) { // assume float
                     bgrow[wa->numl].co=atof(bufword);
+				} else {
+					nrc++;
+                    bgrow[wa->numl].rc=realloc(bgrow[wa->numl].rc, nrc*sizeof(char*));
+                    bgrow[wa->numl].rc[nrc-1]=malloc(couc*sizeof(char));
+                    strcpy(bgrow[wa->numl].rc[nrc-1], bufword);
                 }
                 couc=0;
                 couw++;
@@ -148,13 +154,16 @@ bgr_t *processinpf(char *fname, int *m, int *n)
                     memset(wa->wpla+(wa->lbuf-WBUF), 0, WBUF*sizeof(size_t));
                 }
                 wa->wpla[wa->numl] = couw-oldcouw; /* number of words in current line */
+				/*
                 if(couw-oldcouw >4) {
                     printf("Error, each row cannot exceed 4 words: revise your input file\n"); 
-                    /* need to release all memory too */
                     free_wseq(wa);
                     exit(EXIT_FAILURE);
                 }
+				*/
                 oldcouw=couw; /* restart words per line count */
+				printf("%i ", nrc); 
+				nrc=0;
                 wa->numl++; /* brand new line coming up */
             }
             inword=0;

@@ -4,7 +4,7 @@ DBGCFLAGS=-g -Wall
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
 
 LIBS=-lgsl -lgslcblas -lm
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -55,6 +55,10 @@ bgfiltf: bgfiltf.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
 macsigf: macsigf.c
+	${CC} ${DBGCFLAGS} -o $@ $^
+
+# wanted to make somethng robust to just three comlumns bedfiles.
+bedsumzr: bedsumzr.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
 # poor start on parsing out different chromosome.
