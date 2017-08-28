@@ -55,7 +55,7 @@ bgfiltf: bgfiltf.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
 macsigf: macsigf.c
-	${CC} ${DBGCFLAGS} -o $@ $^
+	${CC} ${CFLAGS} -o $@ $^
 
 # poor start on parsing out different chromosome.
 # bgread2 worked inside the process function
