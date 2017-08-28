@@ -11,7 +11,7 @@
 #define GBUF 32
 #define WBUF 32
 #endif
-#define NUMBUCKETS 20
+#define NUMBUCKETS 10
 
 #define CONDREALLOC(x, b, c, a, t); \
     if((x)>=((b)-1)) { \
@@ -292,11 +292,18 @@ int *hist_co(bgr_t *bgrow, int m, float mxco, float mnco, int numbuckets)
 void prthist(char *histname, int *bucketarr, int numbuckets, int m, float mxco, float mnco)
 {
     int i;
-    printf("%s value %d-bin hstgrm for: %-24.24s (totels=%04i):\n", histname, numbuckets, histname, m); 
-    printf("minval=%4.6f<-", mnco); 
+    // printf("HISTOGRAM: \"%s\" NUMBINS: %d for: %-24.24s (totels=%04i):\n", histname, numbuckets, histname, m); 
+    printf("HISTOGRAM: \"%s\" NUMBINS: %d RANGEEACHBIN: %4.4f TOTALELEMENTS: %04i:\n", histname, numbuckets, (mxco-mnco)/numbuckets, m); 
+    printf("minval=%4.4f |", mnco);
+    for(i=0;i<8*12;++i) 
+        putchar(' ');
+    printf("| maxval=%4.4f\n", mxco); 
+    for(i=0;i<14;++i) 
+        putchar(' ');
     for(i=0;i<numbuckets;++i) 
-        printf("| %i ", bucketarr[i]);
-    printf("|->maxval=%4.6f\n", mxco); 
+        printf("| %6i ", bucketarr[i]);
+    // printf("|->maxval=%4.6f\n", mxco); 
+    printf("|\n"); 
     return;
 }
 
