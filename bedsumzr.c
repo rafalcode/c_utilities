@@ -419,17 +419,20 @@ i4_t *difca(bgr_t *bgrow, int m, int *dcasz, float minsig) /* An temmpt to merge
 
 void prtusage()
 {
-    printf("bedsumzr: this is a bed file summarizer: you must specify the input file with -i, probably the bedgraph from a MACS2 intensity signal,\n");
-    printf("and a signal intensity value, specified by -f, which the bedgraph file will be filtered for.\n");
-    printf("Before filtering however, please run with the -d (details) option. This will showi a rough spread of the values,\n");
-    printf("so you can run a second time choosing filtering value (-f) more easily.\n");
+    printf("bedsumzr:\n");
+    printf("--------\n");
+    printf("This is a bed file summarizer: you must specify the input file with -i, bed or bedgraph accepted.\n");
+    printf("If you also specify the -d (details) option, general information on the bed file will be given.\n");
+    printf("(this also serves as a useful first pass, to see what can be done with the bed file).\n");
+    printf("If the 4th column is an intensity signal, you may specify a filter with -f, below which lines will be omitted.\n");
+    printf("A second filter specified by -h (higher) is available: only values below it will be printed.\n");
     return;
 }
 
 int main(int argc, char *argv[])
 {
     /* argument accounting */
-    if(argc == 1) {
+    if((argc == 1) | (argc ==2)) {
         prtusage();
         exit(EXIT_FAILURE);
     }
