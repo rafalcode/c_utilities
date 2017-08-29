@@ -45,8 +45,8 @@ typedef struct /* bgr_t */
     size_t nsz; /* size of the name r ID field */
     long c[2]; /* coords: 1) start 2) end */
     float co; /* signal value */
-	char *nf; /* no float */
-	char **rc; /* rest of the columns as strings */
+    char *nf; /* no float */
+    char **rc; /* rest of the columns as strings */
 } bgr_t; /* bedgraph row type */
 
 typedef struct /* wseq_t */
@@ -71,38 +71,6 @@ wseq_t *create_wseq_t(size_t initsz)
     return words;
 }
 
-int catchopts(opt_t *opts, int oargc, char **oargv)
-{
-    int c;
-    opterr = 0;
-
-    while ((c = getopt (oargc, oargv, "dpi:f:h:")) != -1)
-        switch (c) {
-            case 'd':
-                opts->dflg = 1;
-                break;
-            case 'p':
-                opts->pflg = 1;
-                break;
-            case 'i':
-                opts->istr = optarg;
-                break;
-            case 'f':
-                opts->fstr = optarg;
-                break;
-            case 'h':
-                opts->hstr = optarg;
-                break;
-            case '?':
-                fprintf (stderr, "Unknown option character `\\x%x'.\n", optopt);
-                return 1;
-            default:
-                fprintf (stderr, "Wrong arguments. Please launch without arguments to see help file.\n");
-                exit(EXIT_FAILURE);
-        }
-    return 0;
-}
-
 void free_wseq(wseq_t *wa)
 {
     free(wa->wln);
@@ -122,14 +90,14 @@ bgr_t *processinpf(char *fname, int *m, int *n, boole *isnf /* this relates to c
     size_t couc /*count chars per line */, couw=0 /* count words */, oldcouw = 0;
     int c;
     boole inword=0;
-	(*isnf)=0; // is no float? i.e. column 4 i snot a float ... initialise as zero */
+    (*isnf)=0; // is no float? i.e. column 4 i snot a float ... initialise as zero */
     wseq_t *wa=create_wseq_t(GBUF);
     size_t bwbuf=WBUF;
     char *bufword=calloc(bwbuf, sizeof(char)); /* this is the string we'll keep overwriting. */
 
     bgr_t *bgrow=malloc(GBUF*sizeof(bgr_t));
-	for(i=0;i<GBUF;++i) 
-		bgrow[i].rc=NULL;
+    for(i=0;i<GBUF;++i) 
+        bgrow[i].rc=NULL;
 
     while( (c=fgetc(fp)) != EOF) { /* grab a char */
         if( (c== '\n') | (c == ' ') | (c == '\t') | (c=='#')) { /* word closing events */
@@ -144,20 +112,20 @@ bgr_t *processinpf(char *fname, int *m, int *n, boole *isnf /* this relates to c
                     strcpy(bgrow[wa->numl].n, bufword);
                 } else if((couw-oldcouw)<3) { /* it's not the first word, and it's 1st and second col */
                     bgrow[wa->numl].c[couw-oldcouw-1]=atol(bufword);
-				} else if( (couw-oldcouw)==3) { // assume float
-					for(i=0;i<couc-1;++i) { // note above how final char is a \0: don't check it!
-						if( (!*isnf) & ((bufword[i] <48) | (bufword[i] > 57)) & (bufword[i] != 46) ) {
-							*isnf=1;
-						}
-					}
-					if(!(*isnf))
-                    	bgrow[wa->numl].co=atof(bufword);
-					else {
-                    	bgrow[wa->numl].nf=malloc(couc*sizeof(char));
-                    	strcpy(bgrow[wa->numl].nf, bufword);
-					}
-				} else {
-					nrc++;
+                } else if( (couw-oldcouw)==3) { // assume float
+                    for(i=0;i<couc-1;++i) { // note above how final char is a \0: don't check it!
+                        if( (!*isnf) & ((bufword[i] <48) | (bufword[i] > 57)) & (bufword[i] != 46) ) {
+                            *isnf=1;
+                        }
+                    }
+                    if(!(*isnf))
+                        bgrow[wa->numl].co=atof(bufword);
+                    else {
+                        bgrow[wa->numl].nf=malloc(couc*sizeof(char));
+                        strcpy(bgrow[wa->numl].nf, bufword);
+                    }
+                } else {
+                    nrc++;
                     bgrow[wa->numl].rc=realloc(bgrow[wa->numl].rc, nrc*sizeof(char*));
                     bgrow[wa->numl].rc[nrc-1]=malloc(couc*sizeof(char));
                     strcpy(bgrow[wa->numl].rc[nrc-1], bufword);
@@ -173,14 +141,14 @@ bgr_t *processinpf(char *fname, int *m, int *n, boole *isnf /* this relates to c
                     wa->lbuf += WBUF;
                     wa->wpla=realloc(wa->wpla, wa->lbuf*sizeof(size_t));
                     bgrow=realloc(bgrow, wa->lbuf*sizeof(bgr_t));
-					for(i=wa->lbuf-WBUF;i<wa->lbuf;++i) 
-						bgrow[i].rc=NULL;
+                    for(i=wa->lbuf-WBUF;i<wa->lbuf;++i) 
+                        bgrow[i].rc=NULL;
                     memset(wa->wpla+(wa->lbuf-WBUF), 0, WBUF*sizeof(size_t));
                 }
                 wa->wpla[wa->numl] = couw-oldcouw; /* number of words in current line */
 
                 oldcouw=couw; /* restart words per line count */
-				nrc=0;
+                nrc=0;
                 wa->numl++; /* brand new line coming up */
             }
             inword=0;
@@ -333,13 +301,13 @@ void prtbed(bgr_t *bgrow, int m, int n, boole isnf)
             if(j==0)
                 printf("%s\t", bgrow[i].n);
             else if(j==3) {
-				if(!isnf)
-                	printf("%2.6f ", bgrow[i].co);
-				else 
-                	printf("%s\t", bgrow[i].nf);
-			} else if ( (j==1) | (j==2) ) 
+                if(!isnf)
+                    printf("%2.6f ", bgrow[i].co);
+                else 
+                    printf("%s\t", bgrow[i].nf);
+            } else if ( (j==1) | (j==2) ) 
                 printf("%li ", bgrow[i].c[j-1]);
-			else 
+            else 
                 printf("%s\t", bgrow[i].rc[j-4]);
         }
         printf("\n"); 
@@ -436,10 +404,52 @@ void prtusage()
     return;
 }
 
+int catchopts(opt_t *opts, int oargc, char **oargv)
+{
+    int i, c;
+    opterr = 0;
+
+    while ((c = getopt (oargc, oargv, "dpi:f:h:")) != -1)
+        switch (c) {
+            case 'd':
+                opts->dflg = 1;
+                break;
+            case 'p':
+                opts->pflg = 1;
+                break;
+            case 'i':
+                opts->istr = optarg;
+                break;
+            case 'f':
+                opts->fstr = optarg;
+                break;
+            case 'h':
+                opts->hstr = optarg;
+                break;
+            case '?':
+                fprintf (stderr, "Unknown option character `\\x%x'.\n", optopt);
+                return 1;
+            default:
+                fprintf (stderr, "Wrong arguments. Please launch without arguments to see help file.\n");
+                exit(EXIT_FAILURE);
+        }
+    boole nonopt=0;
+    for(i=optind;i<oargc;++i) {
+        printf("Error: \"%s\"?: Arguments only accepted if specified with \"-<letter>\" option argument.\n", oargv[i]);
+        nonopt=1;
+    }   
+    if(nonopt) {
+        printf("\nArgument errors: usage instructions are as follows:\n\n"); 
+        prtusage();
+    }   
+
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     /* argument accounting */
-    if((argc == 1) | (argc ==2)) {
+    if(argc == 1) {
         prtusage();
         exit(EXIT_FAILURE);
     }
@@ -447,17 +457,17 @@ int main(int argc, char *argv[])
     float minsig, maxsig;
     opt_t opts={0};
     catchopts(&opts, argc, argv);
-	boole filterval=0; // if we have a filter ... convenience boolean
+    boole filterval=0; // if we have a filter ... convenience boolean
     if(opts.fstr) {
         minsig=atof(opts.fstr);
-		filterval=1;
-		if(opts.hstr) {
-			filterval=2;
-			maxsig=atof(opts.hstr);
-		}
-	}
+        filterval=1;
+        if(opts.hstr) {
+            filterval=2;
+            maxsig=atof(opts.hstr);
+        }
+    }
 
-	boole isnf;
+    boole isnf;
     bgr_t *bgrow=processinpf(opts.istr, &m, &n, &isnf);
     if((opts.dflg) & (n>3) ) { // bed must have a 4th column with (often) mac signal values 
         prtmacsig(bgrow, m, n);
@@ -465,27 +475,27 @@ int main(int argc, char *argv[])
     }
 
     if( (!isnf) & (filterval==1) & (n>3) ) { // bed must have a 4th column with (often) mac signal values 
-    	prtobed(bgrow, m, n, minsig);
+        prtobed(bgrow, m, n, minsig);
         goto final;
     } else if( (!isnf) & (filterval==2) & (n>3) ) { // bed must have a 4th column with (often) mac signal values 
-    	prtobed2(bgrow, m, n, minsig, maxsig);
+        prtobed2(bgrow, m, n, minsig, maxsig);
         goto final;
-	}
+    }
 
-	if(opts.pflg)
-    	prtbed(bgrow, m, n, isnf);
+    if(opts.pflg)
+        prtbed(bgrow, m, n, isnf);
 
 final: for(i=0;i<m;++i) {
-		   if(n>4) {
-		   	for(j=0;j<n-4;++j) {
-           		free(bgrow[i].rc[j]);
-			}
-           	free(bgrow[i].rc);
-		   }
-		   if(isnf)
-           	free(bgrow[i].nf);
+           if(n>4) {
+               for(j=0;j<n-4;++j) {
+                   free(bgrow[i].rc[j]);
+               }
+               free(bgrow[i].rc);
+           }
+           if(isnf)
+               free(bgrow[i].nf);
            free(bgrow[i].n);
-	   }
+       }
        free(bgrow);
 
        return 0;
