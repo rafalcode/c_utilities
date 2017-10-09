@@ -55,7 +55,7 @@ bgfiltf: bgfiltf.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
 macsigf: macsigf.c
-	${CC} ${DBGCFLAGS} -o $@ $^
+	${CC} ${CFLAGS} -o $@ $^
 
 # filter and merge a bed file into regions defined by another bed file.
 bgmergbl: bgmergbl.c
