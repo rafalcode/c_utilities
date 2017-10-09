@@ -57,6 +57,10 @@ bgfiltf: bgfiltf.c
 macsigf: macsigf.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
+# filter and merge a bed file into regions defined by another bed file.
+bgmergbl: bgmergbl.c
+	${CC} ${DBGCFLAGS} -o $@ $^
+
 # wanted to make somethng robust to just three comlumns bedfiles.
 bedsumzr: bedsumzr.c
 	${CC} ${DBGCFLAGS} -o $@ $^
