@@ -53,7 +53,7 @@ typedef struct /* bgr_t2 */
     char *n;
     size_t nsz; /* size of the name r ID field */
     long c[2]; /* coords: 1) start 2) end */
-    char *f; /* f for feautre .. 4th col */
+    char *f; /* f for feature .. 4th col */
     size_t fsz; /* size of the feature field*/
 } bgr_t2; /* bedgraph row type 2i. column is the feature */
 
@@ -384,17 +384,36 @@ void prtdets(bgr_t *bgrow, int m, int n, char *label)
 void m2beds(bgr_t *bgrow, bgr_t2 *bed2, int m2, int m) /* match up 2 beds */
 {
     int i, j;
-    printf("bgr_t is %i rows by %i columns and is as follows:\n", m, n); 
-    for(i=0;i<m2;++i) {
-        for(j=0;j<m;++j) {
-            if(bgrow[i].n == bed2[j].n) {
-            else if(j==3)
-                printf("%2.6f ", bgrow[i].co);
-            else
-                printf("%li ", bgrow[i].c[j-1]);
-        }
-        printf("\n"); 
-    }
+	int reghits; /* hits for region: number of line in bed1 which coincide with a region in bed2 */
+	int cloci; /* as opposed to hit, catch the number of loci */
+	int rangecov;
+	double assocval;
+	int istarthere=0, catchingi=0;
+	boole caught;
+    for(j=0;j<m2;++j) {
+		caught=0;
+		reghits=0;
+		cloci=0;
+        for(i=istarthere;i<m;++i) {
+            if( !(strcmp(bgrow[i].n, bed2[j].n)) & (bgrow[i].c[0] >= bed2[j].c[0]) & (bgrow[i].c[1] <= bed2[j].c[1]) ) {
+				reghits++;
+				rangecov=bgrow[i].c[1] - bgrow[i].c[0]; // range covered by this hit
+				cloci+=rangecov;
+				assocval+=rangecov * bgrow[i].co;
+				catchingi=i;
+				caught=1;
+			} else if (caught) { // will catch first untruth after a series of truths.
+				caught=2;
+				break; // bed1 is order we can forget about trying to match anymore.
+			}
+		}
+		if(caught==2)
+			istarthere=catchingi+1;
+        printf("reghits for bl_%i (%s) = %i, being %i loci and overall assoc val %4.2f\n", j, bed2[j].f, reghits, cloci, assocval);
+		printf("istart %i\n", istarthere); 
+		if(istarthere >= m)
+			break;
+	}
     return;
 }
 
@@ -519,7 +538,8 @@ int main(int argc, char *argv[])
         prtdets(bgrow, m, n, "Target bedgraph (1st) file");
         goto final;
     }
-    prtbed2(bed2, m2, MXCOL2VIEW);
+    // prtbed2(bed2, m2, MXCOL2VIEW);
+	m2beds(bgrow, bed2, m2, m);
 
 final: for(i=0;i<m;++i)
            free(bgrow[i].n);
