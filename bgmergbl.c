@@ -386,14 +386,15 @@ void m2beds(bgr_t *bgrow, bgr_t2 *bed2, int m2, int m) /* match up 2 beds */
     int i, j;
 	int reghits; /* hits for region: number of line in bed1 which coincide with a region in bed2 */
 	int cloci; /* as opposed to hit, catch the number of loci */
-	int rangecov;
-	double assocval;
+	int rangecov=0;
+	double assocval=0;
 	int istarthere=0, catchingi=0;
 	boole caught;
     for(j=0;j<m2;++j) {
 		caught=0;
 		reghits=0;
 		cloci=0;
+		assocval=0;
         for(i=istarthere;i<m;++i) {
             if( !(strcmp(bgrow[i].n, bed2[j].n)) & (bgrow[i].c[0] >= bed2[j].c[0]) & (bgrow[i].c[1] <= bed2[j].c[1]) ) {
 				reghits++;
@@ -409,8 +410,7 @@ void m2beds(bgr_t *bgrow, bgr_t2 *bed2, int m2, int m) /* match up 2 beds */
 		}
 		if(caught==2)
 			istarthere=catchingi+1;
-        printf("reghits for bl_%i (%s) = %i, being %i loci and overall assoc val %4.2f\n", j, bed2[j].f, reghits, cloci, assocval);
-		printf("istart %i\n", istarthere); 
+        printf("reghits for blidx %i / name %s / size %li = %i, being %i loci and overall assoc val %4.2f\n", j, bed2[j].f, bed2[j].c[1]-bed2[j].c[0], reghits, cloci, assocval);
 		if(istarthere >= m)
 			break;
 	}
