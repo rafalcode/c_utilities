@@ -383,34 +383,37 @@ void prtdets(bgr_t *bgrow, int m, int n, char *label)
 
 void m2beds(bgr_t *bgrow, bgr_t2 *bed2, int m2, int m) /* match up 2 beds */
 {
+	/* TODO: there could be an issue with intensity l;ines that span the end of one region and the start of another
+	 * Need to look into that. this will only introduce a small error though.
+	 */
     int i, j;
-	int reghits; /* hits for region: number of line in bed1 which coincide with a region in bed2 */
+	int reghits; /* hits for region: number of lines in bed1 which coincide with a region in bed2 */
 	int cloci; /* as opposed to hit, catch the number of loci */
 	int rangecov=0;
-	double assocval=0;
+	double assoctval=0;
 	int istarthere=0, catchingi=0;
 	boole caught;
     for(j=0;j<m2;++j) {
 		caught=0;
 		reghits=0;
 		cloci=0;
-		assocval=0;
+		assoctval=0;
         for(i=istarthere;i<m;++i) {
             if( !(strcmp(bgrow[i].n, bed2[j].n)) & (bgrow[i].c[0] >= bed2[j].c[0]) & (bgrow[i].c[1] <= bed2[j].c[1]) ) {
 				reghits++;
 				rangecov=bgrow[i].c[1] - bgrow[i].c[0]; // range covered by this hit
 				cloci+=rangecov;
-				assocval+=rangecov * bgrow[i].co;
+				assoctval+=rangecov * bgrow[i].co;
 				catchingi=i;
 				caught=1;
 			} else if (caught) { // will catch first untruth after a series of truths.
 				caught=2;
-				break; // bed1 is order we can forget about trying to match anymore.
+				break; // bed1 is ordered so we can forget about trying to match anymore.
 			}
 		}
 		if(caught==2)
 			istarthere=catchingi+1;
-        printf("reghits for blidx %i / name %s / size %li = %i, being %i loci and overall assoc val %4.2f\n", j, bed2[j].f, bed2[j].c[1]-bed2[j].c[0], reghits, cloci, assocval);
+        printf("Bed2idx %i / name %s / size %li got %i hits from bed1 , being %i loci and total assoc (prob .intensty) val %4.2f\n", j, bed2[j].f, bed2[j].c[1]-bed2[j].c[0], reghits, cloci, assoctval);
 		if(istarthere >= m)
 			break;
 	}
