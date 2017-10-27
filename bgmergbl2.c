@@ -696,10 +696,7 @@ void m2beds(bgr_t *bgrow, bgr_t2 *bed2, int m2, int m) /* match up 2 beds */
 
 void mbedp(dpf_t *dpf, bgr_t2 *bed2, int m2, int m) /* match up 2 beds */
 {
-	/* TODO: there could be an issue with intensity l;ines that span the end of one region and the start of another
-	 * Need to look into that. this will only introduce a small error though.
-	 */
-	int i, j;
+	int i, j, min, max;
 	int reghits; /* hits for region: number of lines in bed1 which coincide with a region in bed2 */
 	int cloci; /* as opposed to hit, catch the number of loci */
 	long assoctval=0;
@@ -710,12 +707,18 @@ void mbedp(dpf_t *dpf, bgr_t2 *bed2, int m2, int m) /* match up 2 beds */
 		reghits=0;
 		cloci=0;
 		assoctval=0;
+		min=9999999;
+		max=0;
 		for(i=istarthere;i<m;++i) {
 			if( !(strcmp(dpf[i].n, bed2[j].n)) & (dpf[i].p >= bed2[j].c[0]) & (dpf[i].p < bed2[j].c[1]) ) {
 				reghits++;
 				cloci++;
 				assoctval+= dpf[i].d;
 				catchingi=i;
+				if(dpf[i].d<min)
+					min=dpf[i].d;
+				if(dpf[i].d>max)
+					max=dpf[i].d;
 				caught=1;
 			} else if (caught) { // will catch first untruth after a series of truths.
 				caught=2;
@@ -724,7 +727,12 @@ void mbedp(dpf_t *dpf, bgr_t2 *bed2, int m2, int m) /* match up 2 beds */
 		}
 		if(caught==2)
 			istarthere=catchingi+1;
+#ifdef DBG
 		printf("Bed2idx %i / name %s / size %li got %i hits from dpf , being %i loci and accumulated depth val of %lu\n", j, bed2[j].f, bed2[j].c[1]-bed2[j].c[0], reghits, cloci, assoctval);
+#else
+		printf("%s\t%li\t%li\t%s\t%i\t%i\t%li\t%4.4f\n", bed2[j].n, bed2[j].c[0], bed2[j].c[1], bed2[j].f, min, max, assoctval, (float)assoctval/cloci);
+
+#endif
 		if(istarthere >= m)
 			break;
 	}
