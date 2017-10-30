@@ -222,15 +222,17 @@ aaw_c *processinpf(char *fname)
 int main(int argc, char *argv[])
 {
     /* argument accounting */
-    if(argc!=2) {
-        printf("Error. Pls supply argument (name of text file).\n");
+    if(argc!=3) {
+        printf("Error. Pls supply 2 arguments: the name of the vtt files to be merged.\n");
+        printf("vtt files are YT captions. These should be from the same vid.\n");
         exit(EXIT_FAILURE);
     }
 #ifdef DBG2
     printf("typeszs: aaw_c: %zu aw_c: %zu w_c: %zu\n", sizeof(aaw_c), sizeof(aw_c), sizeof(w_c));
 #endif
 
-    aaw_c *aawc=processinpf(argv[1]);
+    aaw_c *aawc0=processinpf(argv[1]);
+    aaw_c *aawc2=processinpf(argv[2]);
 #ifdef DBG
     prtaawcdbg(aawc);
 #else

@@ -4,7 +4,7 @@ DBGCFLAGS=-g -Wall
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
 
 LIBS=-lgsl -lgslcblas -lm
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -106,6 +106,10 @@ genread: genread.c
 genread_d: genread.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 
+vttmrg: vttmrg.c
+	${CC} ${CFLAGS} -o $@ $^
+
+# debug version ... no optimisation, very small buffers.
 # a redoing of genread but for for general text
 # instead of ignoring whitespace, it must be recorded.
 txtread: txtread.c
