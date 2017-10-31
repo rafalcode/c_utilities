@@ -559,8 +559,9 @@ void bed2in2(char *bed2fn, bgr_t2 *bed2, int m, int n, ia_t *ia) // split into 2
 	sprintf(outfn2, "%.*s_p2.bed", rootsz, bed2fn);
 	FILE *of1=fopen(outfn1, "w");
 	FILE *of2=fopen(outfn2, "w");
-	printf("bgr_t is %i rows by %i columns and is as follows:\n", m, n); 
 	for(i=0;i<m;++i) {
+        if(k==ia->z)
+            break;
 		if(i==ia->a[k]){
 			for(j=0;j<n;++j) {
 				if(j==0)
@@ -690,7 +691,7 @@ void prtbed2s(bgr_t2 *bed2, int m, int n, words_t *bedword, int m3, int n3, char
 	return;
 }
 
-ia_t *gensplbdx(bgr_t2 *bed2, int m, int n, words_t *bedword, int m3, int n3) /* generate split bed index */
+ia_t *gensplbd2(bgr_t2 *bed2, int m, int n, words_t *bedword, int m3, int n3) /* generate split bed index */
 {
 	/* TODO what you want is a copy of the data structure:
 	 * NOPE! what you want is an array of indices */
@@ -713,6 +714,9 @@ ia_t *gensplbdx(bgr_t2 *bed2, int m, int n, words_t *bedword, int m3, int n3) /*
 		}
 	}
 	ia->a=realloc(ia->a, ia->z*sizeof(int)); /*normalize */
+    for(i=0;i<ia->z;++i) {
+        printf("%i:%i\n", i, ia->a[i]); 
+    }
 	return ia;
 }
 
@@ -723,6 +727,15 @@ void prtbed2f(bgr_t2 *bgrow, int m, int n, char *label) /* just print the featur
 	for(i=0;i<m;++i)
 		printf("%s\n", bgrow[i].f);
 	printf("\n"); 
+	return;
+}
+
+void prtbed2a(bgr_t2 *bgrow, int m, int n, char *label) /* print all bed2's fields */
+{
+	int i;
+	printf("Feature (bed2) file %s is %i rows by %i columns and is as follows:\n", label, m, n); 
+	for(i=0;i<m;++i)
+		printf("%s\t%li\t%li\t%s\n", bgrow[i].n, bgrow[i].c[0], bgrow[i].c[1], bgrow[i].f);
 	return;
 }
 
@@ -944,8 +957,9 @@ int main(int argc, char *argv[])
 
 	ia_t *ia=NULL;
 	if((opts.ustr) && (opts.fstr) && opts.sflg) {
-		ia=gensplbdx(bed2, m2, n2, bedword, m3, n3);
-		bed2in2(opts.fstr, bed2, m2, n2, ia);
+		prtbed2a(bed2, m2, n2, "Feature (bed2) file feature names");
+		ia=gensplbd2(bed2, m2, MXCOL2VIEW, bedword, m3, n3);
+		bed2in2(opts.fstr, bed2, m2, MXCOL2VIEW, ia);
 	}
 
 final:
@@ -971,6 +985,10 @@ final:
 			free(bedword[i].n);
 		free(bedword);
 	}
+	if((opts.ustr) && (opts.fstr) && opts.sflg) {
+        free(ia->a);
+        free(ia);
+    }
 
 	return 0;
 }
