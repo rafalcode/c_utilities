@@ -156,6 +156,7 @@ void prtaawcdata(aaw_c *aawc) /* print line and word details, but not the words 
         }
     }
     printf("\n"); 
+	printf("L is a line, l is length of word, S is normal string, C closing punct, Z, starting cap, Y Starting cap and closing punct.\n"); 
 }
 
 void prtaawcplain(aaw_c *aawc) /* print line and word details, but not the words themselves */
@@ -244,8 +245,8 @@ int main(int argc, char *argv[])
 #ifdef DBG
     prtaawcdbg(aawc);
 #else
-    // prtaawcdata(aawc); // just the metadata
-    prtaawcplain(aawc); // printout original text as well as you can.
+    prtaawcdata(aawc); // just the metadata
+    // prtaawcplain(aawc); // printout original text as well as you can.
 #endif
     // printf("Numlines: %zu\n", aawc->numl); 
 

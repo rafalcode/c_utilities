@@ -6,8 +6,8 @@
 #include<unistd.h> // required for optopt, opterr and optarg.
 
 #ifdef DBG
-#define GBUF 2
-#define WBUF 2
+#define GBUF 4
+#define WBUF 4
 #else
 #define GBUF 32
 #define WBUF 32
@@ -26,6 +26,12 @@
 	}
 
 typedef unsigned char boole;
+
+typedef struct /* ia_t integer array type, includes iab the buffer */
+{
+	int *a;
+	unsigned b /* int array buf */, z /* int array size*/;
+} ia_t;
 
 typedef struct  /* opt_t, a struct for the options */
 {
@@ -525,6 +531,64 @@ dpf_t *processdpf(char *fname, int *m, int *n) /*fourth column is string, other 
 	return dpf;
 }
 
+void prtbd2ia(bgr_t2 *bed2, int n, ia_t *ia)
+{
+	int i, j;
+	for(i=0;i<ia->z;++i) {
+		for(j=0;j<n;++j) {
+			if(j==0)
+				printf("%s ", bed2[ia->a[i]].n);
+			else if(j==3)
+				printf("%s ", bed2[ia->a[i]].f);
+			else
+				printf("%li ", bed2[ia->a[i]].c[j-1]);
+			}
+			printf("\n"); 
+	}
+	return;
+}
+
+void bed2in2(char *bed2fn, bgr_t2 *bed2, int m, int n, ia_t *ia) // split into 2 files
+{
+	int i, j, k=0;
+	size_t lfn=strlen(bed2fn);
+	char *outfn1=calloc(4+lfn ,sizeof(char));
+	char *outfn2=calloc(4+lfn, sizeof(char));
+	int rootsz=(int)(strchr(bed2fn, '.')-bed2fn);
+	sprintf(outfn1, "%.*s_p1.bed", rootsz, bed2fn);
+	sprintf(outfn2, "%.*s_p2.bed", rootsz, bed2fn);
+	FILE *of1=fopen(outfn1, "w");
+	FILE *of2=fopen(outfn2, "w");
+	printf("bgr_t is %i rows by %i columns and is as follows:\n", m, n); 
+	for(i=0;i<m;++i) {
+		if(i==ia->a[k]){
+			for(j=0;j<n;++j) {
+				if(j==0)
+					fprintf(of2, "%s\t", bed2[i].n);
+				else if(j==3)
+					fprintf(of2, "%s\n", bed2[i].f);
+				else
+					fprintf(of2, "%li\t", bed2[i].c[j-1]);
+			}
+			k++;
+		} else {
+			for(j=0;j<n;++j) {
+				if(j==0)
+					fprintf(of1, "%s\t", bed2[i].n);
+				else if(j==3)
+					fprintf(of1, "%s\n", bed2[i].f);
+				else
+					fprintf(of1, "%li\t", bed2[i].c[j-1]);
+			}
+		}
+	}
+	fclose(of1);
+	fclose(of2);
+	free(outfn1);
+	free(outfn2);
+	return;
+}
+
 void prtobed(bgr_t *bgrow, int m, int n, float minsig) // print over bed ... a value that is over a certain signal
 {
 	int i, j;
@@ -624,6 +688,32 @@ void prtbed2s(bgr_t2 *bed2, int m, int n, words_t *bedword, int m3, int n3, char
 		}
 	}
 	return;
+}
+
+ia_t *gensplbdx(bgr_t2 *bed2, int m, int n, words_t *bedword, int m3, int n3) /* generate split bed index */
+{
+	/* TODO what you want is a copy of the data structure:
+	 * NOPE! what you want is an array of indices */
+	int i, k;
+	ia_t *ia=calloc(1, sizeof(ia_t));
+	ia->b=GBUF;
+	ia->a=calloc(ia->b, sizeof(int));
+	boole foundifeat;
+	for(i=0;i<m;++i) {
+		foundifeat=0;
+		for(k=0;k<m3;++k) {
+			if(!strcmp(bedword[k].n, bed2[i].f) ) {
+				foundifeat=1;
+				CONDREALLOC(ia->z, ia->b, GBUF, ia->a, int);
+				ia->a[ia->z]=i;
+				ia->z++;
+			}
+			if(foundifeat)
+				break;
+		}
+	}
+	ia->a=realloc(ia->a, ia->z*sizeof(int)); /*normalize */
+	return ia;
 }
 
 void prtbed2f(bgr_t2 *bgrow, int m, int n, char *label) /* just print the feature names iof the f-bed (bed2) file */
@@ -849,8 +939,14 @@ int main(int argc, char *argv[])
 	if((opts.pstr) && (opts.fstr) )
 		mbedp(dpf, bed2, m2, m4);
 
-	if((opts.ustr) && (opts.fstr) && opts.sflg)
-		prtbed2s(bed2, m2, MXCOL2VIEW, bedword, m3, n3, "bed2 features that are in interesting feature file");
+	// if((opts.ustr) && (opts.fstr) && opts.sflg)
+	// 	prtbed2s(bed2, m2, MXCOL2VIEW, bedword, m3, n3, "bed2 features that are in interesting-feature-file");
+
+	ia_t *ia=NULL;
+	if((opts.ustr) && (opts.fstr) && opts.sflg) {
+		ia=gensplbdx(bed2, m2, n2, bedword, m3, n3);
+		bed2in2(opts.fstr, bed2, m2, n2, ia);
+	}
 
 final:
 	if(opts.pstr) {

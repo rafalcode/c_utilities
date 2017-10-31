@@ -27,6 +27,12 @@
 
 typedef unsigned char boole;
 
+typedef struct /* ia_t integer array type, includes iab the buffer */
+{
+	int *ia;
+	unsigned iab /* int array buf */, iaz /* int array size*/;
+} ia_t;
+
 typedef struct  /* opt_t, a struct for the options */
 {
 	boole dflg; /* details / information only */
