@@ -1,5 +1,6 @@
 CC=gcc
-CFLAGS=-O3
+# CFLAGS=-O3
+CFLAGS=-g -Wall
 DBGCFLAGS=-g -Wall
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
 
