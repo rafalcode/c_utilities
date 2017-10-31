@@ -663,6 +663,23 @@ void prtdets(bgr_t *bgrow, int m, int n, char *label)
 	return;
 }
 
+void prtdets2(bgr_t2 *bed2, int m, int n, char *label)
+{
+	int i;
+	float mxco=.0, mnco=10e20;
+	printf("bgr_t is %i rows by %i columns and is as follows:\n", m, n); 
+	for(i=0;i<m;++i) {
+		if(bgrow[i].co > mxco)
+			mxco=bgrow[i].co;
+		if(bgrow[i].co < mnco)
+			mnco = bgrow[i].co;
+	}
+	int *hco=hist_co(bgrow, m, mxco, mnco, NUMBUCKETS);
+	prthist(label, hco, NUMBUCKETS, m, mxco, mnco);
+	free(hco);
+	return;
+}
+
 void prtbed2s(bgr_t2 *bed2, int m, int n, words_t *bedword, int m3, int n3, char *label)
 {
 	/* TODO what you want is a copy of the data structure */
@@ -902,10 +919,14 @@ i4_t *difca(bgr_t *bgrow, int m, int *dcasz, float minsig) /* An temmpt to merge
 
 void prtusage()
 {
-	printf("bgmergbl: this takes a bedgraph file, specified by -i, probably the bedgraph from a MACS2 intensity signal,\n");
-	printf("and another bedgraph file, specified by -f, and merges the first into lines defined by the second.\n");
-	printf("Before filtering however, please run with the -d (details) option. This will showi a rough spread of the values,\n");
-	printf("so you can run a second time choosing filtering value (-f) more easily.\n");
+	printf("bgmergbl2:\n");
+	printf("---------\n");
+	printf("A program to take a bedgraph file, specified by -i, probably the bedgraph from a MACS2 intensity signal,\n");
+	printf("and a feature file in bed format, specified by -f, and merges the first into lines defined by the second.\n");
+	printf("In this way the intensity signal for a whole feature may be given\n\n");
+	printf("Additionally, a file with feature names (perhaps a subset of the features in the feature bed file is accepted\n");
+	printf("with the -u option. If the -s flag is also given the feature bed file will be split into two files, including and\n");
+	printf("the features of interest: so it is also a bedfile splitter.\n");
 	return;
 }
 
@@ -923,7 +944,7 @@ int main(int argc, char *argv[])
 	bgr_t *bgrow=NULL; /* usually macs signal */
 	bgr_t2 *bed2=NULL; /* usually bed file from gff */
 	words_t *bedword=NULL; /* usually feature names of interest */
-	dpf_t *dpf=NULL; /* usually feature names of interest */
+	dpf_t *dpf=NULL; /* a depth file, usually from samtools v1 depth tool */
 	if(opts.istr)
 		bgrow=processinpf(opts.istr, &m, &n);
 	if(opts.fstr)
