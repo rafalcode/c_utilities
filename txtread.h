@@ -61,12 +61,12 @@ typedef struct /* aaw_c: array of array of words container */
 
 /* Macro fo GET Leading Char TYPE: 3C is <, 28 is ( */
 #define GETLCTYPE(c, typ); \
-            if(((c) == 0x3A) | ((c) == 0x2E) | (((c) >= 0x30) && ((c) <= 0x39))) { \
-                if( ((c) == 0x2C) | ((c) == 0x2E) | (((c) >= 0x30) && ((c) <= 0x39))) \
+            if(((c) == ':') | ((c) == '-') | ((c) == '.') | (((c) >= '0') && ((c) <= '9'))) { \
+                if( ((c) == '-') | (((c) >= 0x30) && ((c) <= 0x39))) \
                     typ = PNI; \
                 else \
-                    typ = TNM; \
-            } else if(((c) >= 0x41) && ((c) <= 0x5A)) \
+                    typ = TNUM; \
+            } else if(((c) >= 'A') && ((c) <= 'Z')) \
                     typ = SCST;
 
 /* the 2nd version of this macro was the original, but it makes the a leading + or - quite important, despite the fact that these are quite

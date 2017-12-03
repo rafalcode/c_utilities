@@ -5,7 +5,7 @@ DBGCFLAGS=-g -Wall
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
 
 LIBS=-lgsl -lgslcblas -lm
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -30,7 +30,7 @@ cleangrpo_d: cleangrpo.c
 matread: matread.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
-# at reading a pairwise matrix.
+# at reading a nxn pairwise matrix.
 pwmatr: pwmatr.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
@@ -126,6 +126,16 @@ txtread_d: txtread.c
 # not sophis, but fast.
 txtread_t: txtread.c
 	${CC} -DTNM -o $@ $^
+
+# based on txtread.c: rough ..reads in and converts to pairwise
+# that doesn't uite mean what it says: actually matches n-1 members against n-1 members
+# this is quite rigid: it expects the first row to be n-1 strings
+tma2pwma: tma2pwma.c
+	${CC} -g -Wall -o $@ $^
+tma2pwma_d: tma2pwma.c
+	${CC} -g -Wall -DDBG -o $@ $^
+tma2pwma_d2: tma2pwma.c
+	${CC} -g -Wall -DDBG2 -o $@ $^
 
 
 # dreadn="Data READ Numbers" we want both ints and floats to be read in. OK: we can use an array of unions for that.
