@@ -5,7 +5,7 @@ DBGCFLAGS=-g -Wall
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
 
 LIBS=-lgsl -lgslcblas -lm
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -29,6 +29,11 @@ cleangrpo_d: cleangrpo.c
 # it's called matread, but in fact it's an array reader. A 1-D matrix..
 matread: matread.c
 	${CC} ${DBGCFLAGS} -o $@ $^
+
+# at reading a pairwise matrix.
+pwmatr: pwmatr.c
+	${CC} ${DBGCFLAGS} -o $@ $^
+
 
 # FOllowing facination with contingency tables ... this simple ad transparent prog for them
 contabrd: contabrd.c
