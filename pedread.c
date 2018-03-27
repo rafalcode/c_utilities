@@ -2,13 +2,14 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include "genread.h"
+#include "pedread.h"
+
+#define GRABNUMGENOSONTHISLINE 1
 
 w_c *crea_wc(unsigned initsz)
 {
     w_c *wc=malloc(sizeof(w_c));
     wc->lp1=initsz;
-    wc->t=STRG;
     wc->w=malloc(wc->lp1*sizeof(char));
     return wc;
 }
@@ -112,31 +113,6 @@ void free_aawc(aaw_c **aw)
     free(taw);
 }
 
-void prtaawcdbg(aaw_c *aawc)
-{
-    int i, j, k;
-    for(i=0;i<aawc->numl;++i) {
-        printf("l.%u(%u): ", i, aawc->aaw[i]->al); 
-        for(j=0;j<aawc->aaw[i]->al;++j) {
-            printf("w_%u: ", j); 
-            if(aawc->aaw[i]->aw[j]->t == NUMS) {
-                printf("NUM! "); 
-                continue;
-            } else if(aawc->aaw[i]->aw[j]->t == PNI) {
-                printf("PNI! "); 
-                continue;
-            } else if(aawc->aaw[i]->aw[j]->t == STCP) {
-                printf("STCP! "); 
-                continue;
-            }
-            for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
-                putchar(aawc->aaw[i]->aw[j]->w[k]);
-            printf("/%u ", aawc->aaw[i]->aw[j]->lp1-1); 
-        }
-        printf("\n"); 
-    }
-}
-
 void prtaawcdata(aaw_c *aawc) /* print line and word details, but not the words themselves */
 {
     int i, j;
@@ -145,18 +121,12 @@ void prtaawcdata(aaw_c *aawc) /* print line and word details, but not the words 
         for(j=0;j<aawc->aaw[i]->al;++j) {
             printf("l%ut", aawc->aaw[i]->aw[j]->lp1-1);
             switch(aawc->aaw[i]->aw[j]->t) {
-                case NUMS: printf("N "); break;
-                case PNI: printf("I "); break;
-                case STRG: printf("S "); break;
-                case STCP: printf("C "); break; /* closing punctuation */
-                case SCST: printf("Z "); break; /* starting capital */
-                case SCCP: printf("Y "); break; /* starting capital and closing punctuation */
-                case ALLC: printf("A "); break; /* horrid! all capitals */
+                case AA: case CC: case GG: case TT: printf("Hom "); break;
+                default: printf("Het ");
             }
         }
     }
     printf("\n"); 
-	printf("L is a line, l is length of word, S is normal string, C closing punct, Z, starting cap, Y Starting cap and closing punct.\n"); 
 }
 
 void prtaawcplain(aaw_c *aawc) /* print line and word details, but not the words themselves */
@@ -169,6 +139,17 @@ void prtaawcplain(aaw_c *aawc) /* print line and word details, but not the words
     }
 }
 
+void prt2dets(aaw_c *aawc, sampga_t *sga) /* print details of the two datastrucs we have running here */
+{
+    int i;
+    printf("Straight printout of words per line:\n");
+    for(i=0;i<aawc->numl;++i) {
+        printf("%u ", aawc->aaw[i]->al); 
+    }
+    printf("totlines=%zu\n", aawc->numl);
+    printf("uniform genotype number per sample=%u\n", sga->gasz);
+}
+
 void prtaawcsum0(aaw_c *aawc) /* a summary, or one way of doing one */
 {
     int i;
@@ -179,7 +160,7 @@ void prtaawcsum0(aaw_c *aawc) /* a summary, or one way of doing one */
     printf("totlines=%zu\n", aawc->numl);
 }
 
-aaw_c *processinpf(char *fname)
+aaw_c *processinpf(char *fname, sampga_t *sga)
 {
     /* declarations */
     FILE *fp=fopen(fname,"r");
@@ -196,7 +177,6 @@ aaw_c *processinpf(char *fname)
             if( inword==1) { /* cue word-ending procedure */
                 aawc->aaw[aawc->numl]->aw[couw]->w[couc++]='\0';
                 aawc->aaw[aawc->numl]->aw[couw]->lp1=couc;
-                SETCPTYPE(oldc, aawc->aaw[aawc->numl]->aw[couw]->t);
                 norm_wc(aawc->aaw[aawc->numl]->aw+couw);
                 couw++; /* verified: this has to be here */
             }
@@ -206,7 +186,8 @@ aaw_c *processinpf(char *fname)
                     aawc->aaw=realloc(aawc->aaw, lbuf*sizeof(aw_c*));
                     for(i=lbuf-LBUF; i<lbuf; ++i)
                         aawc->aaw[i]=crea_awc(WABUF);
-                }
+                } else if(aawc->numl == GRABNUMGENOSONTHISLINE)
+                    sga->gasz = couw-6;
                 aawc->aaw[aawc->numl]->al=couw;
                 norm_awc(aawc->aaw+aawc->numl);
                 aawc->numl++;
@@ -219,14 +200,11 @@ aaw_c *processinpf(char *fname)
             couc=0;
             cbuf=CBUF;
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-            GETLCTYPE(c, aawc->aaw[aawc->numl]->aw[couw]->t); /* MACRO: the firt character gives a clue */
             inword=1;
         } else if(inword) { /* simply store */
             if(couc == cbuf-1)
                 reall_wc(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-            /* if word is a candidate for a NUM or PNI (i.e. via its first character), make sure it continues to obey rules: a MACRO */
-            IWMODTYPEIF(c, aawc->aaw[aawc->numl]->aw[couw]->t);
         }
         oldc=c;
     } /* end of big for statement */
@@ -248,16 +226,20 @@ int main(int argc, char *argv[])
         printf("Error. Pls supply argument (name of text file).\n");
         exit(EXIT_FAILURE);
     }
+    sampga_t *sga=malloc(sizeof(sampga_t));
 #ifdef DBG2
     printf("typeszs: aaw_c: %zu aw_c: %zu w_c: %zu\n", sizeof(aaw_c), sizeof(aw_c), sizeof(w_c));
 #endif
 
-    aaw_c *aawc=processinpf(argv[1]);
+    aaw_c *aawc=processinpf(argv[1], sga);
 #ifdef DBG
     prtaawcdbg(aawc);
 #else
-    prtaawcsum0(aawc);
+    // prtaawcsum0(aawc);
+    prt2dets(aawc, sga);
 #endif
     free_aawc(&aawc);
+//    free(sga->ga);
+    free(sga);
     return 0;
 }
