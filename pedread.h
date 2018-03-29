@@ -40,6 +40,7 @@ typedef struct /* sample genotype array type */
     char **iid; /* an array of individ IDs */
     unsigned nsamps, gasz; /* number of samples, uniform length of genotype array */
     t_t** ga; /* an array length nsamps, of genotype arrays each of length gasz */
+    boole tseles; /* tab sep allele-pairs, like from Neogen */
 } sampga_t; /* sample genotype array */
 
 typedef struct /* word type */

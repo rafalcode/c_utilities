@@ -150,6 +150,130 @@ void prt2dets(aaw_c *aawc, sampga_t *sga) /* print details of the two datastrucs
     printf("uniform genotype number per sample=%u\n", sga->gasz);
 }
 
+void rendsga(aaw_c *aawc, sampga_t *sga) /* render the sga from the aawc */
+{
+    int i, j, k, m, startaawcidx;
+    
+    if(aawc->aaw[0]->al != aawc->aaw[1]->al) {
+        sga->nsamps = aawc->numl-1;
+        startaawcidx = 1;
+    } else {
+        sga->nsamps = aawc->numl;
+        startaawcidx = 0;
+    }
+    sga->iid=malloc(sga->nsamps*sizeof(char*));
+    sga->ga=malloc(sga->nsamps*sizeof(t_t*));
+    for(i=startaawcidx;i< aawc->numl;++i) {
+        j= i-startaawcidx;
+        sga->ga[j]=malloc(sizeof(t_t));
+        sga->iid[j]=malloc(aawc->aaw[i]->aw[1]->lp1*sizeof(char));
+        strcpy(sga->iid[j], aawc->aaw[i]->aw[1]->w);
+        if(sga->tseles) {
+            for(k=6;k<aawc->aaw[i]->al-1; k+=2) {
+                m=(k-6)/2;
+                if( (aawc->aaw[i]->aw[k]->w[0] == 'A') & (aawc->aaw[i]->aw[k+1]->w[0] == 'A') )
+                    sga->ga[j][m] = AA;
+                else if( (aawc->aaw[i]->aw[k]->w[0] == 'C') & (aawc->aaw[i]->aw[k+1]->w[0] == 'C') )
+                    sga->ga[j][m] = CC;
+                else if( (aawc->aaw[i]->aw[k]->w[0] == 'G') & (aawc->aaw[i]->aw[k+1]->w[0] == 'G') )
+                    sga->ga[j][m] = GG;
+                else if( (aawc->aaw[i]->aw[k]->w[0] == 'T') & (aawc->aaw[i]->aw[k+1]->w[0] == 'T') )
+                    sga->ga[j][m] = TT;
+                else if( (aawc->aaw[i]->aw[k]->w[0] == 'A') & (aawc->aaw[i]->aw[k+1]->w[0] == 'C') )
+                    sga->ga[j][m] = AC;
+                else if( (aawc->aaw[i]->aw[k]->w[0] == 'A') & (aawc->aaw[i]->aw[k+1]->w[0] == 'G') )
+                    sga->ga[j][m] = AG;
+                else if( (aawc->aaw[i]->aw[k]->w[0] == 'A') & (aawc->aaw[i]->aw[k+1]->w[0] == 'T') )
+                    sga->ga[j][m] = AT;
+                else if( (aawc->aaw[i]->aw[k]->w[0] == 'C') & (aawc->aaw[i]->aw[k+1]->w[0] == 'A') )
+                    sga->ga[j][m] = CA;
+                else if( (aawc->aaw[i]->aw[k]->w[0] == 'C') & (aawc->aaw[i]->aw[k+1]->w[0] == 'G') )
+                    sga->ga[j][m] = CG;
+                else if( (aawc->aaw[i]->aw[k]->w[0] == 'C') & (aawc->aaw[i]->aw[k+1]->w[0] == 'T') )
+                    sga->ga[j][m] = CT;
+                else if( (aawc->aaw[i]->aw[k]->w[0] == 'G') & (aawc->aaw[i]->aw[k+1]->w[0] == 'A') )
+                    sga->ga[j][m] = GA;
+                else if( (aawc->aaw[i]->aw[k]->w[0] == 'G') & (aawc->aaw[i]->aw[k+1]->w[0] == 'C') )
+                    sga->ga[j][m] = GC;
+                else if( (aawc->aaw[i]->aw[k]->w[0] == 'G') & (aawc->aaw[i]->aw[k+1]->w[0] == 'T') )
+                    sga->ga[j][m] = GT;
+                else if( (aawc->aaw[i]->aw[k]->w[0] == 'T') & (aawc->aaw[i]->aw[k+1]->w[0] == 'A') )
+                    sga->ga[j][m] = TA;
+                else if( (aawc->aaw[i]->aw[k]->w[0] == 'T') & (aawc->aaw[i]->aw[k+1]->w[0] == 'C') )
+                    sga->ga[j][m] = TC;
+                else if( (aawc->aaw[i]->aw[k]->w[0] == 'T') & (aawc->aaw[i]->aw[k+1]->w[0] == 'G') )
+                    sga->ga[j][m] = TG;
+            }
+        } else {
+            for(k=6;k<aawc->aaw[i]->al; k++) {
+                m=k-6;
+                if( !strncmp(aawc->aaw[i]->aw[k]->w, "A A", 3))
+                    sga->ga[j][m] = AA;
+                else if( !strncmp(aawc->aaw[i]->aw[k]->w, "C C", 3))
+                    sga->ga[j][m] = CC;
+                else if( !strncmp(aawc->aaw[i]->aw[k]->w, "G G", 3))
+                    sga->ga[j][m] = GG;
+                else if( !strncmp(aawc->aaw[i]->aw[k]->w, "T T", 3))
+                    sga->ga[j][m] = TT;
+                else if( !strncmp(aawc->aaw[i]->aw[k]->w, "A C", 3))
+                    sga->ga[j][m] = AC;
+                else if( !strncmp(aawc->aaw[i]->aw[k]->w, "A G", 3))
+                    sga->ga[j][m] = AG;
+                else if( !strncmp(aawc->aaw[i]->aw[k]->w, "A T", 3))
+                    sga->ga[j][m] = AT;
+                else if( !strncmp(aawc->aaw[i]->aw[k]->w, "C A", 3))
+                    sga->ga[j][m] = CA;
+                else if( !strncmp(aawc->aaw[i]->aw[k]->w, "C G", 3))
+                    sga->ga[j][m] = CG;
+                else if( !strncmp(aawc->aaw[i]->aw[k]->w, "C T", 3))
+                    sga->ga[j][m] = CT;
+                else if( !strncmp(aawc->aaw[i]->aw[k]->w, "G A", 3))
+                    sga->ga[j][m] = GA;
+                else if( !strncmp(aawc->aaw[i]->aw[k]->w, "G C", 3))
+                    sga->ga[j][m] = GC;
+                else if( !strncmp(aawc->aaw[i]->aw[k]->w, "G T", 3))
+                    sga->ga[j][m] = GT;
+                else if( !strncmp(aawc->aaw[i]->aw[k]->w, "T A", 3))
+                    sga->ga[j][m] = TA;
+                else if( !strncmp(aawc->aaw[i]->aw[k]->w, "T C", 3))
+                    sga->ga[j][m] = TC;
+                else if( !strncmp(aawc->aaw[i]->aw[k]->w, "T G", 3))
+                    sga->ga[j][m] = TG;
+            }
+        }
+    }
+}
+
+void prtsga(sampga_t *sga) /* print the sga as a ped, no header, alleles are tab separated */
+{
+    int i, j;
+    
+    for(i=0;i<sga->nsamps;++i) {
+        printf("%s\t", sga->iid[i]);
+        for(j=0;j<sga->gasz;++j) {
+            switch(sga->ga[i][j]) {
+                case AA: printf("AA\t"); break;
+                case CC: printf("CC\t"); break;
+                case GG: printf("GG\t"); break;
+                case TT: printf("TT\t"); break;
+                case AC: printf("AC\t"); break;
+                case AG: printf("AG\t"); break;
+                case AT: printf("AT\t"); break;
+                case CA: printf("CA\t"); break;
+                case CG: printf("CG\t"); break;
+                case CT: printf("CT\t"); break;
+                case GA: printf("GA\t"); break;
+                case GC: printf("GC\t"); break;
+                case GT: printf("GT\t"); break;
+                case TA: printf("TA\t"); break;
+                case TC: printf("TC\t"); break;
+                case TG: printf("TG\t"); break;
+            }
+        }
+        printf("\n"); 
+    }
+}
+
 void prtaawcsum0(aaw_c *aawc) /* a summary, or one way of doing one */
 {
     int i;
@@ -175,6 +299,10 @@ aaw_c *processinpf(char *fname, sampga_t *sga)
         // if( (c== '\n') | (c == ' ') | (c == '\t') ) {
         if( (c== '\n') | (c == '\t') ) { /* in ped files, genotypes spearated by tabs and each snp separated by spaces. */
             if( inword==1) { /* cue word-ending procedure */
+                if( (aawc->numl == GRABNUMGENOSONTHISLINE) & (couw == 6) ) {
+                    if(couc == 1) /* i.e. our tab sep tokens are only 1 char long */
+                        sga->tseles=1;
+                }
                 aawc->aaw[aawc->numl]->aw[couw]->w[couc++]='\0';
                 aawc->aaw[aawc->numl]->aw[couw]->lp1=couc;
                 norm_wc(aawc->aaw[aawc->numl]->aw+couw);
@@ -186,8 +314,12 @@ aaw_c *processinpf(char *fname, sampga_t *sga)
                     aawc->aaw=realloc(aawc->aaw, lbuf*sizeof(aw_c*));
                     for(i=lbuf-LBUF; i<lbuf; ++i)
                         aawc->aaw[i]=crea_awc(WABUF);
-                } else if(aawc->numl == GRABNUMGENOSONTHISLINE)
-                    sga->gasz = couw-6;
+                } else if(aawc->numl == GRABNUMGENOSONTHISLINE) {
+                    if(sga->tseles)
+                        sga->gasz = (couw-6)/2;
+                    else
+                        sga->gasz = couw-6;
+                }
                 aawc->aaw[aawc->numl]->al=couw;
                 norm_awc(aawc->aaw+aawc->numl);
                 aawc->numl++;
@@ -215,6 +347,10 @@ aaw_c *processinpf(char *fname, sampga_t *sga)
         free_awc(aawc->aaw+i);
     }
     aawc->aaw=realloc(aawc->aaw, aawc->numl*sizeof(aw_c*));
+    if(aawc->numl ==1) {
+        printf("Warning: this PED file only has one line. This program uses the second\n"); 
+        printf("line to test existence of header, so this is not a very suitable target file.\n");
+    }
 
     return aawc;
 }
@@ -226,6 +362,7 @@ int main(int argc, char *argv[])
         printf("Error. Pls supply argument (name of text file).\n");
         exit(EXIT_FAILURE);
     }
+    int i;
     sampga_t *sga=malloc(sizeof(sampga_t));
 #ifdef DBG2
     printf("typeszs: aaw_c: %zu aw_c: %zu w_c: %zu\n", sizeof(aaw_c), sizeof(aw_c), sizeof(w_c));
@@ -238,8 +375,19 @@ int main(int argc, char *argv[])
     // prtaawcsum0(aawc);
     prt2dets(aawc, sga);
 #endif
-    free_aawc(&aawc);
-//    free(sga->ga);
+
+    /* let's see if the rendga works properly */
+    rendsga(aawc, sga);
+    free_aawc(&aawc); /* finished with this chappie now */
+//    prtsga(sga);
+
+    /* now free the sga sans function */
+    for(i=0;i<sga->nsamps;++i) {
+        free(sga->iid[i]);
+        free(sga->ga[i]);
+    }
+    free(sga->iid);
+    free(sga->ga);
     free(sga);
     return 0;
 }
