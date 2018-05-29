@@ -112,6 +112,12 @@ genread: genread.c
 genread_d: genread.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 
+genread0: genread0.c
+	${CC} ${CFLAGS} -o $@ $^
+# debug version ... no optimisation, very small buffers.
+genread0_d: genread0.c
+	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
+
 # ped files, these are tricky ... have very long lines, let's modify genread to sanuty check them
 pedread: pedread.c
 	${CC} ${CFLAGS} -o $@ $^
