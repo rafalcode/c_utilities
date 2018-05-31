@@ -1,8 +1,107 @@
-/* modification of matread but operating on words instead of floats */
+/* modification of genread0.c which was for ped file, this is for map files
+ * and putting in a hasfunction too */
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include "pedcmp.h"
+#include "mprd.h"
+
+struct strchainode
+{
+    aw_c **aaw;
+    struct strchainode *n;
+};
+typedef struct strchainode snod;
+
+unsigned hashit(char *str, unsigned tsz) /* Dan Bernstein's one */
+{
+    unsigned long hash = 5381;
+    int c;
+
+    char *tstr=str;
+    while ((c = *tstr++))
+        hash = ((hash << 5) + hash) + c; /*  hash * 33 + c */
+
+    return hash % tsz;
+}
+
+snod **tochainharr(aaw_c *aawc, unsigned tsz)
+{
+    unsigned i;
+
+    snod **stab=malloc(tsz*sizeof(snod *));
+    for(i=0;i<tsz;++i) 
+        stab[i]=NULL; /* _is_ a valid ptr, but it's unallocated. Initialization is possible though. */
+    snod *tsnod0, *tsnod2;
+    char *ctmp0=calloc(128, sizeof(char));
+
+    unsigned tint;
+    for(i=0; i<aawc->numl; ++i) {
+        // OK, we;re going to hash the SNP name, the 2nd idx
+        // tint=hashit(aawc->aaw[i]->aw[1], tsz); 
+        sprintf(ctmp0, "C%02i_P%08i", atoi(aawc->aaw[i]->aw[0]), atoi(aawc->aaw[i]->aw[3]));
+        tint=hashit(ctmp0, tsz); 
+
+        if( (stab[tint] == NULL) ) {
+            stab[tint]=malloc(sizeof(snod));
+            stab[tint]->aaw=aawc->aaw+i;
+            stab[tint]->n=NULL;
+            continue;
+        }
+        tsnod2=stab[tint];
+        while( (tsnod2 != NULL) ) {
+            if(!strcmp(tsnod2->sqip->idl, sqisz[i].idl)) {
+                goto nxt;
+            }
+            tsnod0=tsnod2;
+            tsnod2=tsnod2->n;
+        }
+        tsnod0->n=malloc(sizeof(snod));
+        tsnod0->n->sqip=aawc->aaw+i;
+        tsnod0->n->n=NULL;
+nxt:        continue;
+    }
+    free(ctmp0);
+    return stab;
+}
+
+void prtchaharr(snod **stab, unsigned tsz)
+{
+    unsigned i;
+    snod *tsnod2;
+    for(i=0;i<tsz;++i) {
+        printf("Tablepos %i: ", i); 
+        tsnod2=stab[i];
+        while(tsnod2) {
+            printf("\"%s\" ", tsnod2->sqip->idl); 
+            tsnod2=tsnod2->n;
+        }
+        printf("\n"); 
+    }
+    return;
+}
+
+void freechainharr(snod **stab, size_t tsz)
+{
+    int i;
+    snod *tsnod0, *tsnod2;
+    for(i=0; i<tsz; ++i) {
+        if( (stab[i] != NULL) ) {
+            while( (stab[i]->n != NULL) ) {
+                tsnod0=stab[i];
+                tsnod2=stab[i]->n;
+                while((tsnod2->n != NULL) ){
+                    tsnod0=tsnod2;
+                    tsnod2=tsnod2->n;
+                }
+                free(tsnod0->n);
+                tsnod0->n=NULL;
+            }
+            free(stab[i]);
+        }
+    }
+    free(stab);
+    return;
+}
 
 w_c *crea_wc(unsigned initsz)
 {
@@ -142,133 +241,16 @@ void prtaawcdbg2(aaw_c *aawc)
 {
     int j, k;
     size_t i;
-    printf("Legend: Begin with Line number, numwords in brackets, words uscore number, length of words:\n\n");
-    for(i=0;i<aawc->numl;++i) {
+    printf("Legend: Begin with Line index, numwords in brackets, words uscore idx, then length of word:\n\n");
+//    for(i=0;i<aawc->numl;++i) {
+    for(i=0;i<10;++i) {
         if(aawc->aaw[i]->aw[0]->w[0] == '#')
             continue;
-        printf("%zu) IID: %s GT:", i, aawc->aaw[i]->aw[1]->w);
-        for(j=6;j<aawc->aaw[i]->al;j+=2) {
-            putchar(' ');
-            for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
-                putchar(aawc->aaw[i]->aw[j]->w[k]);
-            putchar('/');
-            for(k=0;k<aawc->aaw[i]->aw[j+1]->lp1-1; k++)
-                putchar(aawc->aaw[i]->aw[j+1]->w[k]);
+        printf("l_%zu: ", i); 
+        for(j=0;j<aawc->aaw[i]->al;j++) {
+            printf("w_%i:%i ", j, aawc->aaw[i]->aw[j]->lp1-1);
         }
         printf("\n");
-    }
-}
-
-void cmpaawc(aaw_c *aawc, aaw_c *aawc2)
-{
-    float talls;
-    char k1, k2;
-    int j;
-    size_t i;
-    size_t ii;
-    boole foundm;
-    size_t a[8]; // counts which are "of interest"
-    for(i=0;i<aawc->numl;++i) {
-        if(aawc->aaw[i]->aw[0]->w[0] == '#')
-            continue;
-        foundm=0;
-        for(ii=0;ii<aawc2->numl;++ii) {
-            if(foundm)
-                break;
-            if(strcmp(aawc->aaw[i]->aw[1]->w, aawc2->aaw[ii]->aw[1]->w))
-                continue;
-            else
-                foundm=1;
-            // OK now so now we have a match on the IIDs
-            // check num genos at very least
-            if(aawc->aaw[i]->al != aawc2->aaw[ii]->al)
-                printf("Error: Numgenotypes must match. Not aborting, but please re-check and re-run!\n");
-            printf("\"%s\" present in both. COUNTS: ", aawc->aaw[i]->aw[1]->w);
-            for(j=0;j<8;++j) 
-                a[j]= 0;
-            for(j=6;j<aawc->aaw[i]->al;j++) {
-                k1 = aawc->aaw[i]->aw[j]->w[0];
-                k2 = aawc2->aaw[ii]->aw[j]->w[0];
-                if(k1 != k2) {
-                    a[0]++; // idx 1, there's been a mismatch in the alleles
-                    if(k1 == '0')
-                        a[1]++; // idx 2, on top of mismatch, file1 has a 0
-                    else if(k2 == '0')
-                        a[2]++; // idx 3, file 2 has a missing value
-                    else if((k1 != 'A') && (k1 != 'C') && (k1 != 'G') && (k1 != 'T'))
-                        a[3]++; // idx 4, file 1 has an ambig value
-                    else if((k2 != 'A') && (k2 != 'C') && (k2 != 'G') && (k2 != 'T'))
-                        a[4]++; // idx 5, file 2 has an ambig value
-                } else {
-                    a[5]++; // idx 6, no mismatch
-                    if(k1 == '0')
-                        a[6]++;
-                    else if((k1 != 'A') && (k1 != 'C') && (k1 != 'G') && (k1 != 'T'))
-                        a[7]++; // idx 4, file 1 has an ambig value
-                }
-            }
-            printf("#mismatches %zu, #missingvF1/F2 %zu/%zu, #ambigF1/F2 %zu/%zu #matches %zu, #missingv %zu; ambig %zu PERCENTAGES: ", a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]);
-
-            talls=(float)aawc->aaw[i]->al-6;
-            printf("F1missingambig=%4.4f, F2missingambig=%4.4f, F1F2mismatch=%4.4f mismatchduemissv=%4.4f\n", (float)(a[1]+a[3]+a[6]+a[7])/talls, (float)(a[2]+a[4]+a[6]+a[7])/talls, (float)a[0]/talls, (float)(a[1]+a[2])/a[0]);
-        }
-    }
-}
-
-void cmpaawc2(aaw_c *aawc, aaw_c *aawc2)
-{
-    float talls;
-    char k1, k2;
-    int j;
-    size_t i;
-    size_t ii;
-    boole foundm;
-    size_t a[8]; // counts which are "of interest"
-    printf("Samplename\t#mismatches\t#missingvF1\t#missingF2\t#ambigF1\t#ambigF2\t#matches\t#matchesmissingv\tmatchesambig\tF1missingambig\tF2missingambig\tF1F2mismatch\tmismatchduemissv\n");
-    for(i=0;i<aawc->numl;++i) {
-        if(aawc->aaw[i]->aw[0]->w[0] == '#')
-            continue;
-        foundm=0;
-        for(ii=0;ii<aawc2->numl;++ii) {
-            if(foundm)
-                break;
-            if(strcmp(aawc->aaw[i]->aw[1]->w, aawc2->aaw[ii]->aw[1]->w))
-                continue;
-            else
-                foundm=1;
-            // OK now so now we have a match on the IIDs
-            // check num genos at very least
-            if(aawc->aaw[i]->al != aawc2->aaw[ii]->al)
-                printf("Error: Numgenotypes must match. Not aborting, but please re-check and re-run!\n");
-            printf("%s\t", aawc->aaw[i]->aw[1]->w);
-            for(j=0;j<8;++j) 
-                a[j]= 0;
-            for(j=6;j<aawc->aaw[i]->al;j++) {
-                k1 = aawc->aaw[i]->aw[j]->w[0];
-                k2 = aawc2->aaw[ii]->aw[j]->w[0];
-                if(k1 != k2) {
-                    a[0]++; // idx 1, there's been a mismatch in the alleles
-                    if(k1 == '0')
-                        a[1]++; // idx 2, on top of mismatch, file1 has a 0
-                    else if(k2 == '0')
-                        a[2]++; // idx 3, file 2 has a missing value
-                    else if((k1 != 'A') && (k1 != 'C') && (k1 != 'G') && (k1 != 'T'))
-                        a[3]++; // idx 4, file 1 has an ambig value
-                    else if((k2 != 'A') && (k2 != 'C') && (k2 != 'G') && (k2 != 'T'))
-                        a[4]++; // idx 5, file 2 has an ambig value
-                } else {
-                    a[5]++; // idx 6, no mismatch
-                    if(k1 == '0')
-                        a[6]++;
-                    else if((k1 != 'A') && (k1 != 'C') && (k1 != 'G') && (k1 != 'T'))
-                        a[7]++; // idx 4, file 1 has an ambig value
-                }
-            }
-            printf("%zu\t%zu\t%zu\t%zu\t%zu\t%zu\t%zu\t%zu", a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]);
-
-            talls=(float)aawc->aaw[i]->al-6;
-            printf("\t%4.4f\t%4.4f\t%4.4f\t%4.4f\n", 100.*(a[1]+a[3]+a[6]+a[7])/talls, 100.*(a[2]+a[4]+a[6]+a[7])/talls, 100.*a[0]/talls, 100.*(a[1]+a[2])/a[0]);
-        }
     }
 }
 
@@ -368,8 +350,8 @@ aaw_c *processinpf(char *fname)
 int main(int argc, char *argv[])
 {
     /* argument accounting */
-    if(argc!=3) {
-        printf("Error. Pls supply two pedfiles as arguments: they will be compared.\n");
+    if(argc!=2) {
+        printf("Error. Pls supply argument (name of text file).\n");
         exit(EXIT_FAILURE);
     }
 #ifdef DBG2
@@ -377,18 +359,22 @@ int main(int argc, char *argv[])
 #endif
 
     aaw_c *aawc=processinpf(argv[1]);
-    aaw_c *aawc2=processinpf(argv[2]);
 #ifdef DBG
-    // prtaawcdbg2(aawc);
-    cmpaawc2(aawc, aawc2);
+    prtaawcdbg2(aawc);
 #else
     prtaawcdata(aawc); // just the metadata
     // prtaawcplain(aawc); // printout original text as well as you can.
 #endif
     // printf("Numlines: %zu\n", aawc->numl); 
 
+// OK hash ops
+
+    unsigned htsz=2*aawc->numl/3; /* our hash table size */
+
+
+
+
     free_aawc(&aawc);
-    free_aawc(&aawc2);
 
     return 0;
 }

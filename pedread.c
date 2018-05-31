@@ -296,8 +296,8 @@ aaw_c *processinpf(char *fname, sampga_t *sga)
     aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
 
     while( (c=fgetc(fp)) != EOF) {
-        // if( (c== '\n') | (c == ' ') | (c == '\t') ) {
-        if( (c== '\n') | (c == '\t') ) { /* in ped files, genotypes spearated by tabs and each snp separated by spaces. */
+        if( (c== '\n') | (c == ' ') | (c == '\t') ) {
+        // if( (c== '\n') | (c == '\t') ) { /* in ped files, genotypes spearated by tabs and each snp separated by spaces. */
             if( inword==1) { /* cue word-ending procedure */
                 if( (aawc->numl == GRABNUMGENOSONTHISLINE) & (couw == 6) ) {
                     if(couc == 1) /* i.e. our tab sep tokens are only 1 char long */
@@ -314,7 +314,8 @@ aaw_c *processinpf(char *fname, sampga_t *sga)
                     aawc->aaw=realloc(aawc->aaw, lbuf*sizeof(aw_c*));
                     for(i=lbuf-LBUF; i<lbuf; ++i)
                         aawc->aaw[i]=crea_awc(WABUF);
-                } else if(aawc->numl == GRABNUMGENOSONTHISLINE) {
+                }
+                if(aawc->numl == GRABNUMGENOSONTHISLINE) {
                     if(sga->tseles)
                         sga->gasz = (couw-6)/2;
                     else

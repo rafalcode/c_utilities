@@ -118,6 +118,30 @@ genread0: genread0.c
 genread0_d: genread0.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 
+# using genread0 to do a ped comparator
+pedcmp: pedcmp.c
+	${CC} ${CFLAGS} -o $@ $^
+pedcmp_d: pedcmp.c
+	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
+
+# from genread
+mprd: mprd.c
+	${CC} ${CFLAGS} -o $@ $^
+mprd_d: mprd.c
+	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
+
+# Nah, fork from matread,: after all map is v close to a Nx4 matrix.
+mprd2: mprd2.c
+	${CC} ${CFLAGS} -o $@ $^
+mprd2_d: mprd2.c
+	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
+
+# Wow, yet nohter one this time forked from szfind
+mprd3: mprd3.c
+	${CC} ${CFLAGS} -o $@ $^
+mprd3_d: mprd3.c
+	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
+
 # ped files, these are tricky ... have very long lines, let's modify genread to sanuty check them
 pedread: pedread.c
 	${CC} ${CFLAGS} -o $@ $^
