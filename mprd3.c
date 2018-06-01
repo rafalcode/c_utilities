@@ -35,6 +35,99 @@ typedef struct /* wseq_t */
     size_t *wpla; /* words per line array: the number of words on each line */
 } wseq_t;
 
+struct strchainode
+{
+    mp_t *mp;
+    struct strchainode *n;
+};
+typedef struct strchainode snod;
+
+unsigned hashit(char *str, unsigned tsz) /* Dan Bernstein's one */
+{
+    unsigned long hash = 5381;
+    int c;
+
+    char *tstr=str;
+    while ((c = *tstr++))
+        hash = ((hash << 5) + hash) + c; /*  hash * 33 + c */
+
+    return hash % tsz;
+}
+
+snod **tochainharr(mp_t *mp, int m, unsigned tsz)
+{
+    unsigned i;
+
+    snod **stab=malloc(tsz*sizeof(snod *));
+    for(i=0;i<tsz;++i) 
+        stab[i]=NULL; /* _is_ a valid ptr, but it's unallocated. Initialization is possible though. */
+    snod *tsnod0, *tsnod2;
+
+    unsigned tint;
+    for(i=0; i< m; ++i) {
+        tint=hashit(mp[i].n, tsz); 
+
+        if( (stab[tint] == NULL) ) {
+            stab[tint]=malloc(sizeof(snod));
+            stab[tint]->mp=mp+i;
+            stab[tint]->n=NULL;
+            continue;
+        }
+        tsnod2=stab[tint];
+        while( (tsnod2 != NULL) ) {
+            if(!strcmp(tsnod2->mp->n, mp[i].n)) {
+                goto nxt;
+            }
+            tsnod0=tsnod2;
+            tsnod2=tsnod2->n;
+        }
+        tsnod0->n=malloc(sizeof(snod));
+        tsnod0->n->mp=mp+i;
+        tsnod0->n->n=NULL;
+nxt:        continue;
+    }
+    return stab;
+}
+
+void prtchaharr(snod **stab, unsigned tsz)
+{
+    unsigned i;
+    snod *tsnod2;
+    for(i=0;i<tsz;++i) {
+        printf("Tablepos %i: ", i); 
+        tsnod2=stab[i];
+        while(tsnod2) {
+            printf("\"%s\" ", tsnod2->mp->n); 
+            tsnod2=tsnod2->n;
+        }
+        printf("\n"); 
+    }
+    return;
+}
+
+void freechainharr(snod **stab, size_t tsz)
+{
+    int i;
+    snod *tsnod0, *tsnod2;
+    for(i=0; i<tsz; ++i) {
+        if( (stab[i] != NULL) ) {
+            while( (stab[i]->n != NULL) ) {
+                tsnod0=stab[i];
+                tsnod2=stab[i]->n;
+                while((tsnod2->n != NULL) ){
+                    tsnod0=tsnod2;
+                    tsnod2=tsnod2->n;
+                }
+                free(tsnod0->n);
+                tsnod0->n=NULL;
+            }
+            free(stab[i]);
+        }
+    }
+    free(stab);
+    return;
+}
+
 wseq_t *create_wseq_t(size_t initsz)
 {
     wseq_t *words=malloc(sizeof(wseq_t));
@@ -191,7 +284,14 @@ int main(int argc, char *argv[])
         printf("Error: Mandatory uniform number of columsn for plink map files is %i\n", MNCOLS); 
         goto abo;
     }
-	prt(mp,m,n);
+
+    // hash it all
+    unsigned htsz=2*m/3;
+    if(!(htsz%2)) // prime is usually recomended, but let's go for at least odd.
+        htsz++;
+    snod **mph = tochainharr(mp, m, htsz);
+    prtchaharr(mph, htsz);
+    freechainharr(mph, htsz);
 
 abo: 
     for(i=0;i<m;++i)

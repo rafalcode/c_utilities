@@ -124,6 +124,11 @@ pedcmp: pedcmp.c
 pedcmp_d: pedcmp.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 
+mapedstats: mapedstats.c
+	${CC} ${CFLAGS} -o $@ $^
+mapedstats_d: mapedstats.c
+	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
+
 # from genread
 mprd: mprd.c
 	${CC} ${CFLAGS} -o $@ $^
