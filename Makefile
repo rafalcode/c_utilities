@@ -206,6 +206,9 @@ mptl0: mptl0.c
 szfread: szfread.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 
+revperm: revperm.c
+	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
+
 .PHONY: clean
 
 clean:
