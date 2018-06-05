@@ -19,6 +19,7 @@ typedef unsigned char boole;
 typedef struct /* mp_t */
 {
 	char *n;
+	char *nn; /* numbered name CXX_XXXXX, etc. will alway sbe 16 chars in length */
 	size_t nsz; /* size of the name r ID field */
     char cnu; // first column the chromosome number.
     float cmo; // the centimorgans
@@ -97,7 +98,8 @@ void prtchaharr(snod **stab, unsigned tsz)
         printf("Tablepos %i: ", i); 
         tsnod2=stab[i];
         while(tsnod2) {
-            printf("\"%s\" ", tsnod2->mp->n); 
+            // printf("\"%s\" ", tsnod2->mp->n); 
+            printf("\"%s\"(%s) ", tsnod2->mp->n, tsnod2->mp->nn); 
             tsnod2=tsnod2->n;
         }
         printf("\n"); 
@@ -178,6 +180,9 @@ mp_t *processinpf(char *fname, int *m, int *n)
                 	mp[wa->numl].cmo=atof(bufword);
                 } else if((couw - oldcouw) ==3) {
                 	mp[wa->numl].pos=atol(bufword);
+                    // we're ready to fill in nn: C%02i_P%09i
+                	mp[wa->numl].nn=calloc(16, sizeof(char));
+                    sprintf(mp[wa->numl].nn, "C%02i_P%09li", (int)mp[wa->numl].cnu, mp[wa->numl].pos);
                 } else if((couw - oldcouw) ==1) {
                 	mp[wa->numl].n=malloc(couc*sizeof(char));
                 	mp[wa->numl].nsz=couc;
@@ -294,8 +299,10 @@ int main(int argc, char *argv[])
     freechainharr(mph, htsz);
 
 abo: 
-    for(i=0;i<m;++i)
+    for(i=0;i<m;++i) {
 		free(mp[i].n);
+		free(mp[i].nn);
+    }
     free(mp);
 
     return 0;
