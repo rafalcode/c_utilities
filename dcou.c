@@ -35,6 +35,27 @@ dia_t *crea_dia(void)
     return d;
 }
 
+void reall_dia(dia_t **d)
+{
+    dia_t *dd = *d;
+    dd->bf += GBUF;
+    dd->is=realloc(dd->is, dd->bf*sizeof(unsigned));
+    *d=dd;
+    return;
+}
+
+void reall_adia(adia_t **ad)
+{
+    int i;
+    adia_t *add = *ad;
+    add->bf += GBUF;
+    add->d=realloc(add->d, add->bf*sizeof(dia_t));
+    for(i=add->sz;i<add->bf;++i) 
+        add->d[i]=crea_dia();
+    *ad=add;
+    return;
+}
+
 adia_t *crea_adia(void)
 {
     int i;
@@ -72,6 +93,7 @@ int main(int argc, char *argv[])
     int na[12]={3,2 ,5, 2, 6,5, 2, 1,2 ,7, 8, 7};
 
     adia_t *ad = crea_adia();
+    reall_adia(&ad);
     free_adia(&ad);
 
     return 0;
