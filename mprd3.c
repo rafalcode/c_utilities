@@ -24,6 +24,7 @@ typedef struct /* mp_t */
     char cnu; // first column the chromosome number.
     float cmo; // the centimorgans
 	long pos; /* just the one number */
+    int pr; // index as it appearas in map file. By natural must aligned with assoc ped file
 } mp_t; /* map type */
 
 typedef struct /* wseq_t */
@@ -40,6 +41,8 @@ struct strchainode
 {
     mp_t *mp;
     struct strchainode *n;
+    unsigned char gd; // genuine duplicate ... see tochainharr2
+    int idx; // the index corresponding to this mp element: it's the sort of thing youex
 };
 typedef struct strchainode snod;
 
@@ -57,6 +60,8 @@ unsigned hashit(char *str, unsigned tsz) /* Dan Bernstein's one */
 
 snod **tochainharr(mp_t *mp, int m, unsigned tsz)
 {
+    // this version of thefunction will has on the name
+    // look for the "2" version 
     unsigned i;
 
     snod **stab=malloc(tsz*sizeof(snod *));
@@ -90,6 +95,52 @@ nxt:        continue;
     return stab;
 }
 
+snod **tochainharr2(mp_t *mp, int m, unsigned tsz)
+{
+    // this "2" version of the function hashes on nn, the C##_P###etc names
+    unsigned i;
+    boole seendup; // this sepearates genuine dupes from hash table collisions.
+
+    snod **stab=malloc(tsz*sizeof(snod *));
+    for(i=0;i<tsz;++i) 
+        stab[i]=NULL; /* _is_ a valid ptr, but it's unallocated. Initialization is possible though. */
+    snod *tsnod0, *tsnod2;
+
+    unsigned tint;
+    for(i=0; i< m; ++i) {
+        seendup=0;
+        tint=hashit(mp[i].nn, tsz); 
+
+        if( (stab[tint] == NULL) ) {
+            stab[tint]=malloc(sizeof(snod));
+            stab[tint]->mp=mp+i;
+            stab[tint]->idx=i;
+            stab[tint]->n=NULL;
+            stab[tint]->gd=0; // first entry not a genuine dupe.
+            continue;
+        }
+        tsnod2=stab[tint];
+        while( (tsnod2 != NULL) ) {
+            /// this bit is controversial, if strings are rtruly the same, leave the original in
+            // however, this time I want to include dupes so set the gd
+            if(!strcmp(tsnod2->mp->nn, mp[i].nn)) {
+                tsnod2->gd = 1;
+                tsnod2->mp->pr = tsnod2->idx;
+                mp[i].pr = tsnod2->mp->pr;
+                seendup =1;
+            }
+            tsnod0=tsnod2;
+            tsnod2=tsnod2->n;
+        }
+        tsnod0->n=malloc(sizeof(snod));
+        tsnod0->n->mp=mp+i;
+        tsnod0->n->idx=i;
+        tsnod0->n->gd = (seendup)?1:0;
+        tsnod0->n->n=NULL;
+    }
+    return stab;
+}
+
 void prtchaharr(snod **stab, unsigned tsz)
 {
     unsigned i;
@@ -100,6 +151,22 @@ void prtchaharr(snod **stab, unsigned tsz)
         while(tsnod2) {
             // printf("\"%s\" ", tsnod2->mp->n); 
             printf("\"%s\"(%s) ", tsnod2->mp->n, tsnod2->mp->nn); 
+            tsnod2=tsnod2->n;
+        }
+        printf("\n"); 
+    }
+    return;
+}
+
+void prtchaharr2(snod **stab, unsigned tsz)
+{
+    unsigned i;
+    snod *tsnod2;
+    for(i=0;i<tsz;++i) {
+        printf("Tablepos %i: ", i); 
+        tsnod2=stab[i];
+        while(tsnod2) {
+            printf("%s(I:%i,D:%i,PR:%i) ", tsnod2->mp->nn, tsnod2->idx, (int)tsnod2->gd, tsnod2->mp->pr);
             tsnod2=tsnod2->n;
         }
         printf("\n"); 
@@ -183,6 +250,7 @@ mp_t *processinpf(char *fname, int *m, int *n)
                     // we're ready to fill in nn: C%02i_P%09i
                 	mp[wa->numl].nn=calloc(16, sizeof(char));
                     sprintf(mp[wa->numl].nn, "C%02i_P%09li", (int)mp[wa->numl].cnu, mp[wa->numl].pos);
+                	mp[wa->numl].pr=-1; // default val -1 is no pairing.
                 } else if((couw - oldcouw) ==1) {
                 	mp[wa->numl].n=malloc(couc*sizeof(char));
                 	mp[wa->numl].nsz=couc;
@@ -292,10 +360,15 @@ int main(int argc, char *argv[])
 
     // hash it all
     unsigned htsz=2*m/3;
-    if(!(htsz%2)) // prime is usually recomended, but let's go for at least odd.
+    // try to grab a prime ... well just avoid 5-multiples, 3-multiples, and evens
+    if(!(htsz%5)) 
+        htsz++; // incrment by 1 if multiple of 5
+    if(!(htsz%3)) 
         htsz++;
-    snod **mph = tochainharr(mp, m, htsz);
-    prtchaharr(mph, htsz);
+    if(!(htsz%2)) 
+        htsz++;
+    snod **mph = tochainharr2(mp, m, htsz);
+    prtchaharr2(mph, htsz);
     freechainharr(mph, htsz);
 
 abo: 
@@ -304,6 +377,6 @@ abo:
 		free(mp[i].nn);
     }
     free(mp);
-
+    printf("Run summary: nsnps=%i htsz=%u\n", m, htsz); 
     return 0;
 }

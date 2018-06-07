@@ -13,3 +13,8 @@ a name (string) and then a series of integers, which can be any number, but of c
 I'd like to deal with filelistings files.
 There would have only one word per line.
 
+
+# mprd3.c
+* a plink-alike stats reader
+* ran into issue of hashing on chr/pos strings, which is fine for
+* plink must be 
