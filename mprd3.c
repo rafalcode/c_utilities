@@ -16,7 +16,20 @@
 
 typedef unsigned char boole;
 
-typedef struct /* mp_t */
+typedef struct /* dia_t */
+{
+    unsigned **is /* indices */, bf, sz;
+    int lidx; // category label index
+    char posstr[17]; /* position string, the thing we're hashing on */
+} dia_t; /* dupe index array */
+
+typedef struct /* adia_t */
+{
+    dia_t **d;
+    unsigned bf, sz;
+} adia_t; /* dupe index array */
+
+typedef struct /* mp_t, map type, one line in the map file */
 {
 	char *n;
 	char *nn; /* numbered name CXX_XXXXX, etc. will alway sbe 16 chars in length */
@@ -24,7 +37,9 @@ typedef struct /* mp_t */
     char cnu; // first column the chromosome number.
     float cmo; // the centimorgans
 	long pos; /* just the one number */
-    int pr; // index as it appearas in map file. By natural must aligned with assoc ped file
+    int pr; // index as it appear as in map file. By nature, must aligned with assoc ped file
+    /* why is the above necessary? the index of the array of these should be enough?
+     * or do we need something explicit for the hash table? */
 } mp_t; /* map type */
 
 typedef struct /* wseq_t */
@@ -42,8 +57,10 @@ struct strchainode
     mp_t *mp;
     struct strchainode *n;
     unsigned char gd; // genuine duplicate ... see tochainharr2
+    int gdn; /* the number corresponding to the duplicate category */
     int idx; // the index corresponding to this mp element: it's the sort of thing youex
 };
+
 typedef struct strchainode snod;
 
 unsigned hashit(char *str, unsigned tsz) /* Dan Bernstein's one */
@@ -56,6 +73,107 @@ unsigned hashit(char *str, unsigned tsz) /* Dan Bernstein's one */
         hash = ((hash << 5) + hash) + c; /*  hash * 33 + c */
 
     return hash % tsz;
+}
+
+void prt_adia(adia_t *ad)
+{
+    int i, j;
+    printf("%i duplicate categories were detected.\n", ad->sz);
+    printf("What now follows is the arrangement of the elements into their corresponding categories\n\n"); 
+    for(i=0;i<ad->sz;++i) {
+        printf("%i: ", (*ad->d)[i].lidx);
+        printf("sz=%u: ", (*ad->d)[i].sz);
+        for(j=0;j<(*ad->d)[i].sz;++j) 
+            printf("%u ", (*(*ad->d)[i].is)[j]);
+        printf("\n"); 
+    }
+    printf("\n"); 
+    return;
+}
+
+void assign_dia(dia_t *d, unsigned lidx)
+{
+    int i;
+    d->bf=GBUF;
+    d->sz=0;
+    d->lidx=lidx;
+    d->is=malloc(sizeof(unsigned*));
+    (*d->is)=malloc(d->bf*sizeof(unsigned));
+    for(i=0;i<d->bf;++i) 
+        (*d->is)[i]=9;
+    return;
+}
+
+void reall_dia(dia_t *d)
+{
+    d->bf += GBUF;
+    (*d->is)=realloc((*d->is), d->bf*sizeof(unsigned));
+    return;
+}
+
+void reall_adia(adia_t *ad)
+{
+    int i;
+    ad->bf += GBUF;
+    (*ad->d)=realloc((*ad->d), ad->bf*sizeof(dia_t));
+    for(i=ad->bf-GBUF;i<ad->bf;++i)
+        assign_dia((*ad->d)+i, 8);
+    return;
+}
+
+adia_t *crea_adia(void)
+{
+    int i;
+    adia_t *ad=malloc(sizeof(adia_t));
+    ad->bf=GBUF;
+    ad->sz=0;
+    ad->d=malloc(sizeof(dia_t*));
+    (*ad->d)=malloc(ad->bf*sizeof(dia_t));
+    for(i=0;i<ad->bf;i++) {
+        assign_dia((*ad->d)+i, 7);
+        // assign_dia(add->d+i);
+        //     td=(*ad->d)+i;
+        //     td=crea_dia();
+        //     // ((*add->d)+i)=crea_dia();
+    }
+    return ad;
+}
+
+void free_dia(dia_t *d)
+{
+    free((*d->is));
+    free(d->is);
+    return;
+}
+
+void norm_dia(dia_t *d)
+{
+    (*d->is)=realloc((*d->is), d->sz*sizeof(unsigned));
+    return;
+}
+
+void free_adia(adia_t *ad)
+{
+    int i;
+    // for(i=0;i<add->sz;i++) // only if normalized.
+    for(i=0;i<ad->sz;i++)
+        free_dia((*ad->d)+i);
+    free((*ad->d));
+    free(ad->d);
+    free(ad);
+    return;
+}
+
+void norm_adia(adia_t *ad)
+{
+    int i;
+    for(i=ad->sz;i<ad->bf;i++)
+        free_dia((*ad->d)+i);
+    (*ad->d)=realloc((*ad->d), ad->sz*sizeof(dia_t));
+    // then we want to shorten the individual arrays (dia_t) to their proper size
+    for(i=0;i<ad->sz;i++)
+        norm_dia((*ad->d)+i);
+    return;
 }
 
 snod **tochainharr(mp_t *mp, int m, unsigned tsz)
@@ -95,7 +213,37 @@ nxt:        continue;
     return stab;
 }
 
-snod **tochainharr2(mp_t *mp, int m, unsigned tsz)
+void loc_cat(adia_t *ad, int i, int c) /* locate the category */
+{
+    int j;
+    boole seencatgry=0;
+    for(j=0;j<ad->sz;++j) {
+        if(c == (*ad->d)[j].lidx) {
+            if((*ad->d)[j].sz == (*ad->d)[j].bf)
+                reall_dia((*ad->d)+j);
+            (*(*ad->d)[j].is)[(*ad->d)[j].sz] = i;
+            (*ad->d)[j].sz++;
+            seencatgry=1;
+        }
+        if(seencatgry)
+            break;
+    }
+    /* have gone through all the available clusters with no luck, time to create a new one.
+     * Note, you still need to check for seencatgry ... 
+     * not immediately obvious why, given break statement */
+    if(!seencatgry) {
+        if(ad->sz == ad->bf)
+            reall_adia(ad);
+        (*ad->d)[ad->sz].lidx = c;
+        (*(*ad->d)[ad->sz].is)[(*ad->d)[ad->sz].sz] = i;
+        (*ad->d)[ad->sz].sz++;
+        ad->sz++;
+    }
+    return;
+}
+
+
+snod **tochainharr2(mp_t *mp, int m, unsigned tsz, adia_t *ad)
 {
     // this "2" version of the function hashes on nn, the C##_P###etc names
     unsigned i;
@@ -105,10 +253,13 @@ snod **tochainharr2(mp_t *mp, int m, unsigned tsz)
     for(i=0;i<tsz;++i) 
         stab[i]=NULL; /* _is_ a valid ptr, but it's unallocated. Initialization is possible though. */
     snod *tsnod0, *tsnod2;
+    // adia_t *ad = crea_adia();
 
     unsigned tint;
+    int gdk=0; /* the k-index for counting up the genuine duplicates */
     for(i=0; i< m; ++i) {
         seendup=0;
+
         tint=hashit(mp[i].nn, tsz); 
 
         if( (stab[tint] == NULL) ) {
@@ -124,7 +275,14 @@ snod **tochainharr2(mp_t *mp, int m, unsigned tsz)
             /// this bit is controversial, if strings are rtruly the same, leave the original in
             // however, this time I want to include dupes so set the gd
             if(!strcmp(tsnod2->mp->nn, mp[i].nn)) {
-                tsnod2->gd = 1;
+                if(!tsnod2->gd) { // new duplicate type therefore new category
+                    tsnod2->gdn = gdk;
+                    gdk++;
+                    tsnod2->gd = 1;
+                }
+                if(!tsnod2->gd) { // new duplicate type therefore new category
+                    loc_cat(ad, i, gdk);
+                }
                 tsnod2->mp->pr = tsnod2->idx;
                 mp[i].pr = tsnod2->mp->pr;
                 seendup =1;
@@ -136,6 +294,7 @@ snod **tochainharr2(mp_t *mp, int m, unsigned tsz)
         tsnod0->n->mp=mp+i;
         tsnod0->n->idx=i;
         tsnod0->n->gd = (seendup)?1:0;
+        /* not setting gdk here, the loc_cat will catch it */
         tsnod0->n->n=NULL;
     }
     return stab;
@@ -171,6 +330,7 @@ void prtchaharr2(snod **stab, unsigned tsz)
         }
         printf("\n"); 
     }
+    printf("\n"); 
     return;
 }
 
@@ -367,8 +527,15 @@ int main(int argc, char *argv[])
         htsz++;
     if(!(htsz%2)) 
         htsz++;
-    snod **mph = tochainharr2(mp, m, htsz);
+    adia_t *ad=crea_adia();
+    snod **mph = tochainharr2(mp, m, htsz, ad);
     prtchaharr2(mph, htsz);
+
+    norm_adia(ad);
+    prt_adia(ad);
+
+    free_adia(ad);
+
     freechainharr(mph, htsz);
 
 abo: 
