@@ -35,6 +35,7 @@ typedef struct /* adia_t */
 void prt_adia(adia_t *ad)
 {
     int i, j;
+    printf("What now follows is the arrangement of the elements into their corresponding categories\n\n"); 
     for(i=0;i<ad->sz;++i) {
         printf("%i: ", (*ad->d)[i].lidx);
         printf("sz=%u: ", (*ad->d)[i].sz);
@@ -42,31 +43,11 @@ void prt_adia(adia_t *ad)
             printf("%u ", (*(*ad->d)[i].is)[j]);
         printf("\n"); 
     }
+    printf("\n"); 
     return;
 }
 
-dia_t *crea_dia(void)
-{
-    dia_t *d=malloc(sizeof(dia_t));
-    d->bf=GBUF;
-    d->sz=0;
-    d->is=malloc(sizeof(unsigned*));
-    (*d->is)=malloc(d->bf*sizeof(unsigned));
-    return d;
-}
-
-void assign_dia(dia_t **d)
-{
-    dia_t *dd = *d;
-    dd->bf=GBUF;
-    dd->sz=0;
-    // dd->is=malloc(sizeof(unsigned*));
-    (*dd->is)=malloc(dd->bf*sizeof(unsigned));
-    *d=dd;
-    return;
-}
-
-void assign_dia2(dia_t *d, unsigned lidx)
+void assign_dia(dia_t *d, unsigned lidx)
 {
     int i;
     d->bf=GBUF;
@@ -86,36 +67,13 @@ void reall_dia(dia_t *d)
     return;
 }
 
-void reall_adia(adia_t **ad)
-{
-    int i;
-    // dia_t *td=NULL;
-    adia_t *add = *ad;
-    add->bf += GBUF;
-    (*add->d)=realloc((*add->d), add->bf*sizeof(dia_t));
-    for(i=add->bf-GBUF;i<add->bf;++i) {
-        // td=(*add->d)+i;
-        // td=crea_dia();
-        // (*add->d)[i]=crea_dia();
-        // assign_dia((*add->d+i));
-        assign_dia(add->d+i);
-    }
-    *ad=add;
-    return;
-}
-
-void reall_adia2(adia_t *ad)
+void reall_adia(adia_t *ad)
 {
     int i;
     ad->bf += GBUF;
     (*ad->d)=realloc((*ad->d), ad->bf*sizeof(dia_t));
-    for(i=ad->bf-GBUF;i<ad->bf;++i) {
-        // td=(*add->d)+i;
-        // td=crea_dia();
-        // (*add->d)[i]=crea_dia();
-        // assign_dia((*add->d+i));
-        assign_dia2((*ad->d)+i, 8);
-    }
+    for(i=ad->bf-GBUF;i<ad->bf;++i)
+        assign_dia((*ad->d)+i, 8);
     return;
 }
 
@@ -128,7 +86,7 @@ adia_t *crea_adia(void)
     ad->d=malloc(sizeof(dia_t*));
     (*ad->d)=malloc(ad->bf*sizeof(dia_t));
     for(i=0;i<ad->bf;i++) {
-        assign_dia2((*ad->d)+i, 7);
+        assign_dia((*ad->d)+i, 7);
         // assign_dia(add->d+i);
         //     td=(*ad->d)+i;
         //     td=crea_dia();
@@ -169,42 +127,37 @@ int main(int argc, char *argv[])
     letcla_t *la=malloc(ne*sizeof(letcla_t));
     int nc=atoi(argv[2]); /* num clusters which will be randomly assigned: may not include all of them */
 
+    printf("What follow is a list of %i elements which are randomly assigned one\n", ne);
+    printf("of %i categories. The label is just a spurious label, while ht enumber is the assigned category.\n\n", nc); 
     for(i=0;i<ne;++i) {
         la[i].l=(char)(65+26*((float)rand()/RAND_MAX)); // did have 65.5 here but [ kept coming up
         la[i].c=(int)(1+nc*((float)rand()/RAND_MAX));
         printf("(%c:%i) ", la[i].l, la[i].c); 
     }
-    printf("\n"); 
+    printf("\n\n"); 
 
-    adia_t *ad = crea_adia(); // seems to get past this stage OK.
+    adia_t *ad = crea_adia();
 
-    //     // unfinished:
-    //     for(i=0;i<24;++i) 
-    //         if(na[i]%2) {
-    //             if(ad->sz == ad->bf)
-    //                 reall_adia(&ad);
-    //             ad->d[ad->sz]->is[ad->d[ad->sz]->sz] =na[i];
-    // 
-    //
-    boole seenclu;
+    boole seencatgry;
     for(i=0;i<ne;++i) {
-        seenclu=0;
+        seencatgry=0;
         for(j=0;j<ad->sz;++j) {
             if(la[i].c == (*ad->d)[j].lidx) {
                 if((*ad->d)[j].sz == (*ad->d)[j].bf)
                     reall_dia((*ad->d)+j);
                 (*(*ad->d)[j].is)[(*ad->d)[j].sz] = i;
                 (*ad->d)[j].sz++;
-                seenclu=1;
-                // ad->d[ad->sz]->is[ad->d[ad->sz]->sz] =la[i].l;
+                seencatgry=1;
             }
-            if(seenclu)
+            if(seencatgry)
                 break;
         }
-        // have gone through all the available clusters with no luck, time to create a new one.
-        if(!seenclu) {
+        /* have gone through all the available clusters with no luck, time to create a new one.
+         * Note, you still need to check for seencatgry ... 
+         * not immediately obvious why, given break statement */
+        if(!seencatgry) {
             if(ad->sz == ad->bf)
-                reall_adia2(ad);
+                reall_adia(ad);
             (*ad->d)[ad->sz].lidx = la[i].c;
             (*(*ad->d)[ad->sz].is)[(*ad->d)[ad->sz].sz] = i;
             (*ad->d)[ad->sz].sz++;
@@ -218,5 +171,4 @@ int main(int argc, char *argv[])
     free(la);
 
     return 0;
-
 }
