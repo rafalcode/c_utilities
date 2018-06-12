@@ -99,7 +99,12 @@ void free_dia(dia_t *d)
 {
     free((*d->is));
     free(d->is);
-    // free(d);
+    return;
+}
+
+void norm_dia(dia_t *d)
+{
+    (*d->is)=realloc((*d->is), d->sz*sizeof(unsigned));
     return;
 }
 
@@ -107,11 +112,23 @@ void free_adia(adia_t *ad)
 {
     int i;
     // for(i=0;i<add->sz;i++) // only if normalized.
-    for(i=0;i<ad->bf;i++)
+    for(i=0;i<ad->sz;i++)
         free_dia((*ad->d)+i);
     free((*ad->d));
     free(ad->d);
     free(ad);
+    return;
+}
+
+void norm_adia(adia_t *ad)
+{
+    int i;
+    for(i=ad->sz;i<ad->bf;i++)
+        free_dia((*ad->d)+i);
+    (*ad->d)=realloc((*ad->d), ad->sz*sizeof(dia_t));
+    // then we want to shorten the individual arrays (dia_t) to their proper size
+    for(i=0;i<ad->sz;i++)
+        norm_dia((*ad->d)+i);
     return;
 }
 
@@ -127,8 +144,8 @@ int main(int argc, char *argv[])
     letcla_t *la=malloc(ne*sizeof(letcla_t));
     int nc=atoi(argv[2]); /* num clusters which will be randomly assigned: may not include all of them */
 
-    printf("What follow is a list of %i elements which are randomly assigned one\n", ne);
-    printf("of %i categories. The label is just a spurious label, while ht enumber is the assigned category.\n\n", nc); 
+    printf("What follows is a list of %i elements which are randomly assigned one\n", ne);
+    printf("of %i categories. The label is just a spurious marker, while the number is the assigned category.\n\n", nc); 
     for(i=0;i<ne;++i) {
         la[i].l=(char)(65+26*((float)rand()/RAND_MAX)); // did have 65.5 here but [ kept coming up
         la[i].c=(int)(1+nc*((float)rand()/RAND_MAX));
@@ -165,6 +182,7 @@ int main(int argc, char *argv[])
         }
     }
 
+    norm_adia(ad);
     prt_adia(ad);
 
     free_adia(ad);
