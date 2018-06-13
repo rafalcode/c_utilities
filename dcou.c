@@ -49,8 +49,8 @@ void reall_adia(adia_t **ad)
     int i;
     adia_t *add = *ad;
     add->bf += GBUF;
-    add->d=realloc(add->d, add->bf*sizeof(dia_t));
-    for(i=add->sz;i<add->bf;++i) 
+    add->d=realloc(add->d, add->bf*sizeof(dia_t*));
+    for(i=add->bf-GBUF;i<add->bf;++i) 
         add->d[i]=crea_dia();
     *ad=add;
     return;
@@ -93,6 +93,7 @@ int main(int argc, char *argv[])
     int na[12]={3,2 ,5, 2, 6,5, 2, 1,2 ,7, 8, 7};
 
     adia_t *ad = crea_adia();
+    reall_adia(&ad);
     reall_adia(&ad);
     free_adia(&ad);
 

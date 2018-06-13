@@ -37,9 +37,8 @@ typedef struct /* mp_t, map type, one line in the map file */
     char cnu; // first column the chromosome number.
     float cmo; // the centimorgans
 	long pos; /* just the one number */
-    int pr; // index as it appear as in map file. By nature, must aligned with assoc ped file
-    /* why is the above necessary? the index of the array of these should be enough?
-     * or do we need something explicit for the hash table? */
+    boole gd;
+    int gdn;
 } mp_t; /* map type */
 
 typedef struct /* wseq_t */
@@ -56,8 +55,6 @@ struct strchainode
 {
     mp_t *mp;
     struct strchainode *n;
-    unsigned char gd; // genuine duplicate ... see tochainharr2
-    int gdn; /* the number corresponding to the duplicate category */
     int idx; // the index corresponding to this mp element: it's the sort of thing youex
 };
 
@@ -247,7 +244,6 @@ snod **tochainharr2(mp_t *mp, int m, unsigned tsz, adia_t *ad)
 {
     // this "2" version of the function hashes on nn, the C##_P###etc names
     unsigned i;
-    boole seendup; // this sepearates genuine dupes from hash table collisions.
 
     snod **stab=malloc(tsz*sizeof(snod *));
     for(i=0;i<tsz;++i) 
@@ -256,9 +252,8 @@ snod **tochainharr2(mp_t *mp, int m, unsigned tsz, adia_t *ad)
     // adia_t *ad = crea_adia();
 
     unsigned tint;
-    int gdk=0; /* the k-index for counting up the genuine duplicates */
+    int gdk=1; /* the k-index for counting up the genuine duplicates, zero ignored as it means no duplicate. */
     for(i=0; i< m; ++i) {
-        seendup=0;
 
         tint=hashit(mp[i].nn, tsz); 
 
@@ -267,7 +262,6 @@ snod **tochainharr2(mp_t *mp, int m, unsigned tsz, adia_t *ad)
             stab[tint]->mp=mp+i;
             stab[tint]->idx=i;
             stab[tint]->n=NULL;
-            stab[tint]->gd=0; // first entry not a genuine dupe.
             continue;
         }
         tsnod2=stab[tint];
@@ -275,17 +269,20 @@ snod **tochainharr2(mp_t *mp, int m, unsigned tsz, adia_t *ad)
             /// this bit is controversial, if strings are rtruly the same, leave the original in
             // however, this time I want to include dupes so set the gd
             if(!strcmp(tsnod2->mp->nn, mp[i].nn)) {
-                if(!tsnod2->gd) { // new duplicate type therefore new category
-                    tsnod2->gdn = gdk;
+                if(!tsnod2->mp->gd) { // new duplicate type therefore new category
+                    tsnod2->mp->gd = 1;
+                    tsnod2->mp->gdn = gdk;
+                    loc_cat(ad, tsnod2->idx, tsnod2->mp->gdn);
+                    mp[i].gd = 1;
+                    mp[i].gdn = gdk;
+                    loc_cat(ad, i, mp[i].gdn);
                     gdk++;
-                    tsnod2->gd = 1;
+                } else {
+                    // for several repeats, this could happen a few times.
+                    mp[i].gd = 1;
+                    mp[i].gdn = tsnod2->mp->gdn;
+                    loc_cat(ad, i, mp[i].gdn);
                 }
-                if(!tsnod2->gd) { // new duplicate type therefore new category
-                    loc_cat(ad, i, gdk);
-                }
-                tsnod2->mp->pr = tsnod2->idx;
-                mp[i].pr = tsnod2->mp->pr;
-                seendup =1;
             }
             tsnod0=tsnod2;
             tsnod2=tsnod2->n;
@@ -293,8 +290,6 @@ snod **tochainharr2(mp_t *mp, int m, unsigned tsz, adia_t *ad)
         tsnod0->n=malloc(sizeof(snod));
         tsnod0->n->mp=mp+i;
         tsnod0->n->idx=i;
-        tsnod0->n->gd = (seendup)?1:0;
-        /* not setting gdk here, the loc_cat will catch it */
         tsnod0->n->n=NULL;
     }
     return stab;
@@ -325,7 +320,7 @@ void prtchaharr2(snod **stab, unsigned tsz)
         printf("Tablepos %i: ", i); 
         tsnod2=stab[i];
         while(tsnod2) {
-            printf("%s(I:%i,D:%i,PR:%i) ", tsnod2->mp->nn, tsnod2->idx, (int)tsnod2->gd, tsnod2->mp->pr);
+            printf("%s(I:%i,C:%i) ", tsnod2->mp->nn, tsnod2->idx, (int)tsnod2->mp->gdn);
             tsnod2=tsnod2->n;
         }
         printf("\n"); 
@@ -409,8 +404,9 @@ mp_t *processinpf(char *fname, int *m, int *n)
                 	mp[wa->numl].pos=atol(bufword);
                     // we're ready to fill in nn: C%02i_P%09i
                 	mp[wa->numl].nn=calloc(16, sizeof(char));
+                	mp[wa->numl].gd=0; // default genuine dup category is 0, which means no dup.
+                	mp[wa->numl].gdn=0; // default genuine dup category is 0, which means no dup.
                     sprintf(mp[wa->numl].nn, "C%02i_P%09li", (int)mp[wa->numl].cnu, mp[wa->numl].pos);
-                	mp[wa->numl].pr=-1; // default val -1 is no pairing.
                 } else if((couw - oldcouw) ==1) {
                 	mp[wa->numl].n=malloc(couc*sizeof(char));
                 	mp[wa->numl].nsz=couc;
