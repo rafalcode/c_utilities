@@ -3,8 +3,13 @@
 #include<stdlib.h>
 #include<string.h>
 
+#ifdef DBG
 #define GBUF 2
 #define WBUF 2
+#else
+#define GBUF 64
+#define WBUF 64
+#endif
 #define MNCOLS 4 // mandatory number of columns
 
 #define CONDREALLOC(x, b, c, a, t); \
@@ -74,6 +79,7 @@ unsigned hashit(char *str, unsigned tsz) /* Dan Bernstein's one */
 
 void prt_adia(adia_t *ad)
 {
+    /* gives the raw output of the duplicate table, for debugging */
     int i, j;
     printf("%i duplicate categories were detected.\n", ad->sz);
     printf("What now follows is the arrangement of the elements into their corresponding categories\n\n"); 
@@ -82,6 +88,23 @@ void prt_adia(adia_t *ad)
         printf("sz=%u: ", (*ad->d)[i].sz);
         for(j=0;j<(*ad->d)[i].sz;++j) 
             printf("%u ", (*(*ad->d)[i].is)[j]);
+        printf("\n"); 
+    }
+    printf("\n"); 
+    return;
+}
+
+void prt_adia2(adia_t *ad, mp_t *mp) // m not actually required.
+{
+    int i, j;
+    unsigned tu;
+    printf("Duplicate-Pos-in-MAP-file Report:\n");
+    for(i=0;i<ad->sz;++i) {
+        printf("Dupset %i: ", (*ad->d)[i].lidx);
+        for(j=0;j<(*ad->d)[i].sz;++j) {
+            tu = (*(*ad->d)[i].is)[j]; // temp variable to make reading easier.
+            printf("%s/Idx=%u ", mp[tu].nn, tu);
+        }
         printf("\n"); 
     }
     printf("\n"); 
@@ -525,10 +548,17 @@ int main(int argc, char *argv[])
         htsz++;
     adia_t *ad=crea_adia();
     snod **mph = tochainharr2(mp, m, htsz, ad);
+#ifdef DBG
+    // the small tests tend to show up really bad hash tables ... much better with bigger testdata
     prtchaharr2(mph, htsz);
+#endif
 
     norm_adia(ad);
+#ifdef DBG
     prt_adia(ad);
+#else
+    prt_adia2(ad, mp);
+#endif
 
     free_adia(ad);
 

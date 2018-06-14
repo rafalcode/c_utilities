@@ -5,7 +5,7 @@ DBGCFLAGS=-g -Wall
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
 
 LIBS=-lgsl -lgslcblas -lm
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -146,6 +146,13 @@ mprd3: mprd3.c
 	${CC} ${CFLAGS} -o $@ $^
 mprd3_d: mprd3.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
+
+# MAP-PED Matchup: print genotypes for the duplicates.
+mpdmu: mpdmu.c
+	${CC} ${CFLAGS} -o $@ $^
+mpdmu_d: mpdmu.c
+	${CC} ${DBGCFLAGS} -o $@ $^
+
 # for duplicate coutning unit test
 dcou: dcou.c
 	${CC} ${CFLAGS} -o $@ $^
@@ -155,6 +162,10 @@ dcou2: dcou2.c
 dcou3: dcou3.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
+# OK this is custom made for selecting the best tech rep for a duplicated SNP.
+# various duplicates are generated.
+dcou4: dcou4.c
+	${CC} ${DBGCFLAGS} -o $@ $^
 
 # ped files, these are tricky ... have very long lines, let's modify genread to sanuty check them
 pedread: pedread.c
