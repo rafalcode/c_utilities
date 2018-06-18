@@ -330,11 +330,11 @@ int main(int argc, char *argv[])
 
     aaw_c *aawc=processinpf(argv[1]);
 #ifdef DBG
-    statsaawc(aawc);
-    // prtaawcdbg2(aawc);
-#else
     prtaawcdata(aawc); // just the metadata
     // prtaawcplain(aawc); // printout original text as well as you can.
+#else
+    statsaawc(aawc);
+    // prtaawcdbg2(aawc);
 #endif
     // printf("Numlines: %zu\n", aawc->numl); 
 
