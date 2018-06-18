@@ -164,6 +164,8 @@ dcou3: dcou3.c
 
 # OK this is custom made for selecting the best tech rep for a duplicated SNP.
 # various duplicates are generated.
+# ok various Techrep SNPs are simulated, i.e' each SNP has various TR's which give a number 
+# of GTs. Majority wins. Precursor to mpdmu.c
 dcou4: dcou4.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 

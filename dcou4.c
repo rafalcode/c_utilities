@@ -15,6 +15,11 @@
 
 typedef unsigned char boole;
 
+typedef struct /* i2g_t */
+{
+    unsigned **i, sz, bf;
+} i2g_t; /* map indices to go/ filter out */
+
 typedef struct /* dgia_t */
 {
     unsigned **is /* indices */, bf, sz;
@@ -26,6 +31,50 @@ typedef struct /* adgia_t */
     dgia_t **dg;
     unsigned bf, sz;
 } adgia_t; /* dupe index array */
+
+i2g_t *crea_i2(void)
+{
+    i2g_t *i2=malloc(sizeof(i2g_t));
+    i2->bf=GBUF;
+    i2->sz=0;
+    i2->i=malloc(sizeof(unsigned*));
+    (*i2->i)=malloc(i2->bf*sizeof(unsigned));
+    return i2;
+}
+
+void append_i2(i2g_t *i2, unsigned i)
+{
+    if(i2->sz == i2->bf) {
+        i2->bf += GBUF;
+        (*i2->i)=realloc((*i2->i), i2->bf*sizeof(unsigned));
+    }
+    (*i2->i)[i2->sz]=i;
+    i2->sz++;
+    return;
+}
+
+void prt_i2(i2g_t *i2)
+{
+    int i;
+    for(i=0;i<i2->sz;i++)
+        printf("%u ", (*i2->i)[i]);
+    printf("\n"); 
+    return;
+}
+
+void norm_i2(i2g_t *i2)
+{
+    (*i2->i)=realloc((*i2->i), i2->sz*sizeof(unsigned));
+    return;
+}
+
+void free_i2(i2g_t *i2)
+{
+    free((*i2->i));
+    free(i2->i);
+    free(i2);
+    return;
+}
 
 void prt_adgia(adgia_t *adg)
 {
@@ -42,7 +91,7 @@ void prt_adgia(adgia_t *adg)
     return;
 }
 
-void proc_adgia(adgia_t *adg)
+void proc_adgia(adgia_t *adg, i2g_t *i2, unsigned strint, unsigned szint)
 {
     int i;
     int mxsz=0;
@@ -50,26 +99,37 @@ void proc_adgia(adgia_t *adg)
     unsigned sidx; /* If there's a winner TRSNP, this is hte first available SNP index for it */
     gt_t uwgt; /* the unique "winning" genotype */
 
-    if( (1==adg->sz) & (1==(*adg->dg)[0].sz) ) {
-        printf("Not a duplicate, only one version of this SNP.\n"); 
+    if(1==adg->sz) {
+        /* if there's only one GT then, irrespective how many times it
+         * appears, the first index registering it should be given */
+       // if(1==(*adg->dg)[0].sz) { // this check not nec.
+       // printf("Not a duplicate, only one version of this SNP AND only one GT for it.\n"); 
+        sidx = (*(*adg->dg)[0].is)[0]; /* the first TR of these will do (they're all the same). */
+        append_i2(i2, strint + sidx); // the first index.
         return;
     }
 
+    // get the maximum represented GT
     for(i=0;i<adg->sz;++i)
         if(mxsz < (*adg->dg)[i].sz)
             mxsz = (*adg->dg)[i].sz;
 
     for(i=0;i<adg->sz;++i)
         if(mxsz == (*adg->dg)[i].sz) {
+            ocmx++;
+            // we're only seeing if there is more than one max GT, but as we're here we'll also 
+            // record it so it's ready when there's only 1 with max.
             uwgt = (*adg->dg)[i].gt;
             sidx = (*(*adg->dg)[i].is)[0]; /* the first TR of these will do (they're all the same). */
-            ocmx++;
+            // append_i2(i2, sidx + strint);
         }
 
     if(ocmx!=1)
         printf("Conflicting GT of equal count weight: All Tech Reps for this SNP must be removed.\n"); 
+        // and no appending to i2 is done.
     else
-        printf("SNP Idx %i with GT %s is the winning Tech Rep for this SNP.\n", sidx, gtna[uwgt]);
+        append_i2(i2, strint + sidx); // the first index.
+        // printf("SNP Idx %i with GT %s is the winning Tech Rep for this SNP.\n", sidx, gtna[uwgt]);
 
     return;
 }
@@ -194,9 +254,13 @@ int main(int argc, char *argv[])
     int mne=atoi(argv[2]); /* num elements to be categorized, the elements will be letters */
 
     gt_t **gta=malloc(ne*sizeof(gt_t*));
-    int *gtaz=malloc(ne*sizeof(int)); /* sizes for each */
+    unsigned *gtaz=malloc(ne*sizeof(unsigned)); /* sizes for each */
+    unsigned *gtacz=malloc((ne+1)*sizeof(unsigned)); /* sizes for each, cumulative */
+    /* the cumulative fixes a global index for all the GTs and decides which one should be kept. */
+    gtacz[0]=0;
     for(i=0;i<ne;++i) {
         gtaz[i] = 1+mne*((float)rand()/RAND_MAX);
+        gtacz[i+1] = gtaz[i] + gtacz[i];
         gta[i]=malloc(gtaz[i]*sizeof(size_t));
         for(j=0;j<gtaz[i];++j) 
             gta[i][j]=(gt_t)(17*((float)rand()/RAND_MAX)); // did have 65.5 here but [ kept coming up
@@ -210,6 +274,8 @@ int main(int argc, char *argv[])
     }
 
     adgia_t *adg =NULL;
+    i2g_t *i2=crea_i2();
+    unsigned strint;
    
     for(i=0;i<ne;++i) {
         adg=crea_adgia();
@@ -217,14 +283,20 @@ int main(int argc, char *argv[])
             loc_cat(adg, j, gta[i][j]);
         norm_adgia(adg);
         prt_adgia(adg);
-        proc_adgia(adg);
+        strint=gtacz[i];
+        proc_adgia(adg, i2, strint, szint);
         free_adgia(adg);
     }
 
+    norm_i2(i2);
+    prt_i2(i2);
+
+    free_i2(i2);
     for(i=0;i<ne;++i)
         free(gta[i]);
     free(gta);
     free(gtaz);
+    free(gtacz);
 
     return 0;
 }
