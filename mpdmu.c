@@ -30,6 +30,7 @@ typedef struct /* i2g_t */
 typedef struct /* dgia_t */
 {
     unsigned **is /* indices */, bf, sz;
+    unsigned **js /* second-level indices ... refers to the global index */;
     gt_t gt; // category label index
 } dgia_t; /* dupe index array */
 
@@ -195,21 +196,6 @@ void free_i2(i2g_t *i2)
     return;
 }
 
-void prt_adgia(adgia_t *adg)
-{
-    int i, j;
-    printf("What now follows is the arrangement of the elements into their corresponding categories\n\n"); 
-    for(i=0;i<adg->sz;++i) {
-        printf("%s: ", gtna[(*adg->dg)[i].gt]);
-        printf("sz=%u: ", (*adg->dg)[i].sz);
-        for(j=0;j<(*adg->dg)[i].sz;++j) 
-            printf("%u ", (*(*adg->dg)[i].is)[j]);
-        printf("\n"); 
-    }
-    printf("\n"); 
-    return;
-}
-
 void assign_dgia(dgia_t *dg, gt_t gt)
 {
     int i;
@@ -217,9 +203,13 @@ void assign_dgia(dgia_t *dg, gt_t gt)
     dg->sz=0;
     dg->gt=gt;
     dg->is=malloc(sizeof(unsigned*));
+    dg->js=malloc(sizeof(unsigned*));
     (*dg->is)=malloc(dg->bf*sizeof(unsigned));
-    for(i=0;i<dg->bf;++i) 
+    (*dg->js)=malloc(dg->bf*sizeof(unsigned));
+    for(i=0;i<dg->bf;++i) { 
         (*dg->is)[i]=9; // a dbug friendly init value
+        (*dg->js)[i]=9; 
+    }
     return;
 }
 
@@ -227,6 +217,7 @@ void reall_dgia(dgia_t *dg)
 {
     dg->bf += GBUF;
     (*dg->is)=realloc((*dg->is), dg->bf*sizeof(unsigned));
+    (*dg->js)=realloc((*dg->js), dg->bf*sizeof(unsigned));
     return;
 }
 
@@ -256,13 +247,16 @@ adgia_t *crea_adgia(void)
 void free_dgia(dgia_t *dg)
 {
     free((*dg->is));
+    free((*dg->js));
     free(dg->is);
+    free(dg->js);
     return;
 }
 
 void norm_dgia(dgia_t *dg)
 {
     (*dg->is)=realloc((*dg->is), dg->sz*sizeof(unsigned));
+    (*dg->js)=realloc((*dg->js), dg->sz*sizeof(unsigned));
     return;
 }
 
@@ -540,7 +534,7 @@ void dupstats2(aaw_c *aawc, mp_t *mp, adia_t *ad) // find a way to print out gen
     return;
 }
 
-void loc_catg(adgia_t *adg, int i, gt_t gt) /* locate the category */
+void loc_catg(adgia_t *adg, int i, unsigned tu, gt_t gt) /* locate the category */
 {
     int j;
     boole seencatgry=0;
@@ -549,6 +543,7 @@ void loc_catg(adgia_t *adg, int i, gt_t gt) /* locate the category */
             if((*adg->dg)[j].sz == (*adg->dg)[j].bf)
                 reall_dgia((*adg->dg)+j);
             (*(*adg->dg)[j].is)[(*adg->dg)[j].sz] = i;
+            (*(*adg->dg)[j].js)[(*adg->dg)[j].sz] = tu;
             (*adg->dg)[j].sz++;
             seencatgry=1;
         }
@@ -563,8 +558,22 @@ void loc_catg(adgia_t *adg, int i, gt_t gt) /* locate the category */
             reall_adgia(adg);
         (*adg->dg)[adg->sz].gt = gt;
         (*(*adg->dg)[adg->sz].is)[(*adg->dg)[adg->sz].sz] = i;
+        (*(*adg->dg)[adg->sz].js)[(*adg->dg)[adg->sz].sz] = tu;
         (*adg->dg)[adg->sz].sz++;
         adg->sz++;
+    }
+    return;
+}
+
+void prt_adgia(adgia_t *adg)
+{
+    int i, j;
+    for(i=0;i<adg->sz;++i) {
+        printf("\t\t%s", gtna[(*adg->dg)[i].gt]);
+        printf("(#:%u): ", (*adg->dg)[i].sz);
+        for(j=0;j<(*adg->dg)[i].sz;++j) 
+            printf("%u|%u ", (*(*adg->dg)[i].is)[j], (*(*adg->dg)[i].js)[j]);
+        printf("\n"); 
     }
     return;
 }
@@ -581,31 +590,45 @@ void proc_adgia(adgia_t *adg, i2g_t *i2)
          * appears, the first index registering it should be given */
        // if(1==(*adg->dg)[0].sz) { // this check not nec.
        // printf("Not a duplicate, only one version of this SNP AND only one GT for it.\n"); 
-        sidx = (*(*adg->dg)[0].is)[0]; /* the first TR of these will do (they're all the same). */
+       if( (*adg->dg)[0].gt == ZZ)
+        printf("\t\t\tAll TRs missing/ambiguous. Reject all.\n");
+       else {
+        sidx = (*(*adg->dg)[0].js)[0]; /* the first TR of these will do (they're all the same GT) */
+        printf("\t\t\tRetain idx %u\n", sidx); 
         append_i2(i2, sidx); // the first index.
+       }
         return;
     }
 
     // get the maximum represented GT
-    for(i=0;i<adg->sz;++i)
+    int zzi=-1;
+    for(i=0;i<adg->sz;++i) {
+        // ignore but record the idz of the ZZ GT if it exists.
+       if( (*adg->dg)[i].gt == ZZ) {
+           zzi=i;
+           continue;
+       }
         if(mxsz < (*adg->dg)[i].sz)
-            mxsz = (*adg->dg)[i].sz;
+            mxsz = (*adg->dg)[i].sz; 
+    }
 
     for(i=0;i<adg->sz;++i)
-        if(mxsz == (*adg->dg)[i].sz) {
+        if( (mxsz == (*adg->dg)[i].sz) & ( (*adg->dg)[i].gt != ZZ) ) {
             ocmx++;
             // we're only seeing if there is more than one max GT, but as we're here we'll also 
             // record it so it's ready when there's only 1 with max.
-            sidx = (*(*adg->dg)[i].is)[0]; /* the first TR of these will do (they're all the same). */
+            sidx = (*(*adg->dg)[i].js)[0]; /* the first TR of these will do (they're all the same). */
             // append_i2(i2, sidx + strint);
         }
 
     if(ocmx!=1)
-        printf("Conflicting GT of equal count weight: All Tech Reps for this SNP must be removed.\n"); 
+        printf("\t\t\tInconclusive TRs: all must be removed.\n");
         // and no appending to i2 is done.
-    else
+    else {
+        printf("\t\t\tMajority rules: retain %u.\n", sidx);
         append_i2(i2, sidx); // the first index.
         // printf("SNP Idx %i with GT %s is the winning Tech Rep for this SNP.\n", sidx, gtna[uwgt]);
+    }
 
     return;
 }
@@ -626,18 +649,20 @@ void dupstats3(aaw_c *aawc, mp_t *mp, adia_t *ad) // grab the best TRs
             continue;
         numsamps++;
         i2=crea_i2();
-        printf("Dups which conflict for sample: %s\n", aawc->aaw[i]->aw[1]->w); // sample name
+        printf("TR Sets for sample: %s\n", aawc->aaw[i]->aw[1]->w); // sample name
         for(j=0;j<ad->sz;++j) { // for each dup category, group better said.
+            printf("\tTR#%i:\n", j);
             tu = (*(*ad->d)[j].is)[0]; // temp variable to make reading easier.
             jj=tu*2+6;
             // gta=malloc((*ad->d)[j].sz*sizeof(gt_t));
             adg=crea_adgia();
             for(k=0;k<(*ad->d)[j].sz;++k) {
                 tu = (*(*ad->d)[j].is)[k]; // temp variable to make reading easier.
-                jj=tu*2+6;
+                jj=tu*2+6; // typical conversion of map to ped indices
                 a1 = aawc->aaw[i]->aw[jj]->w[0];
                 a2 = aawc->aaw[i]->aw[jj+1]->w[0];
-                loc_catg(adg, k, from2l(a1,a2));
+                // you need to get the "tu" in here it's the global coordinate of the TRSNP.
+                loc_catg(adg, k, tu, from2l(a1,a2));
                 // gta[k]=from2l(a1, a2);
             }
             norm_adgia(adg);
@@ -1073,7 +1098,6 @@ mp_t *processinpf(char *fname, int *m, int *n)
 
     /* normalization stage */
     wa->quan=couw;
-	printf("couw %zu\n", couw); 
     wa->wln = realloc(wa->wln, wa->quan*sizeof(size_t)); /* normalize */
     mp = realloc(mp, wa->quan*sizeof(mp_t)); /* normalize */
     wa->wpla= realloc(wa->wpla, wa->numl*sizeof(size_t));
