@@ -1,89 +1,19 @@
-/* size file read .... read a file with contig names and then sizez */
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
-#include "mpdmu.h"
+#include "mpdmu.h" // has the header stuff, and structs.
 
-#ifdef DBG
-#define GBUF 2
-#define WBUF 2
-#else
-#define GBUF 64
-#define WBUF 64
-#endif
-#define MNCOLS 4 // mandatory number of columns
-
-#define CONDREALLOC(x, b, c, a, t); \
-    if((x)>=((b)-1)) { \
-        (b) += (c); \
-        (a)=realloc((a), (b)*sizeof(t)); \
-		memset(((a)+(b)-(c)), 0, (c)*sizeof(t)); \
-    }
-
-typedef unsigned char boole;
-
-typedef struct /* i2g_t */
+int catchopts(optstruct *opstru, int oargc, char **oargv)
 {
-    unsigned **i, sz, bf;
-} i2g_t; /* map indices to go/ filter out */
-
-typedef struct /* dgia_t */
-{
-    unsigned **is /* indices */, bf, sz;
-    unsigned **js /* second-level indices ... refers to the global index */;
-    gt_t gt; // category label index
-} dgia_t; /* dupe index array */
-
-typedef struct /* adgia_t */
-{
-    dgia_t **dg;
-    unsigned bf, sz;
-} adgia_t; /* dupe index array */
-
-typedef struct /* dia_t */
-{
-    unsigned **is /* indices */, bf, sz;
-    int lidx; // category label index
-    char posstr[17]; /* position string, the thing we're hashing on */
-} dia_t; /* dupe index array */
-
-typedef struct /* adia_t */
-{
-    dia_t **d;
-    unsigned bf, sz;
-} adia_t; /* dupe index array */
-
-typedef struct /* mp_t, map type, one line in the map file */
-{
-	char *n;
-	char *nn; /* numbered name CXX_XXXXX, etc. will alway sbe 16 chars in length */
-	size_t nsz; /* size of the name r ID field */
-    char cnu; // first column the chromosome number.
-    float cmo; // the centimorgans
-	long pos; /* just the one number */
-    boole gd;
-    int gdn;
-} mp_t; /* map type */
-
-typedef struct /* wseq_t */
-{
-    size_t *wln;
-    size_t wsbuf;
-    size_t quan;
-    size_t lbuf; /* a buffer for the number of lines */
-    size_t numl; /* number of lines, i.e. rows */
-    size_t *wpla; /* words per line array: the number of words on each line */
-} wseq_t;
-
-struct strchainode
-{
-    mp_t *mp;
-    struct strchainode *n;
-    int idx; // the index corresponding to this mp element: it's the sort of thing youex
-};
-
-typedef struct strchainode snod;
-
+    int c;
+    opterr = 0;
+    while ((c = getopt (oargc, oargv, "t")) != -1)
+        switch (c) {
+            case 't': // want output as tped and tfam
+                opstru->tflag = 1;
+                break;
+            default:
+                abort();
+        }
+    return 0;
+}
 
 gt_t from2l(char A1, char A2)
 {
@@ -472,7 +402,7 @@ void dupstats(aaw_c *aawc, mp_t *mp, adia_t *ad) // find a way to print out geno
             continue;
         numsamps++;
         printf("Sample: %s\n", aawc->aaw[i]->aw[1]->w); // sample name
-        // for(j=6;j<aawc->aaw[i]->al;j+=2) {
+        // for(j=6;j<aawc->aaw[i]->al;j+=2) 
         for(j=0;j<ad->sz;++j) { // for each dup category
             printf("\tDS:%i) ", j); 
             for(k=0;k<(*ad->d)[j].sz;++k) {
@@ -588,15 +518,15 @@ void proc_adgia(adgia_t *adg, i2g_t *i2)
     if(1==adg->sz) {
         /* if there's only one GT then, irrespective how many times it
          * appears, the first index registering it should be given */
-       // if(1==(*adg->dg)[0].sz) { // this check not nec.
-       // printf("Not a duplicate, only one version of this SNP AND only one GT for it.\n"); 
-       if( (*adg->dg)[0].gt == ZZ)
-        printf("\t\t\tAll TRs missing/ambiguous. Reject all.\n");
-       else {
-        sidx = (*(*adg->dg)[0].js)[0]; /* the first TR of these will do (they're all the same GT) */
-        printf("\t\t\tRetain idx %u\n", sidx); 
-        append_i2(i2, sidx); // the first index.
-       }
+        // if(1==(*adg->dg)[0].sz) // this check not nec.
+        // printf("Not a duplicate, only one version of this SNP AND only one GT for it.\n"); 
+        if( (*adg->dg)[0].gt == ZZ)
+            printf("\t\t\tAll TRs missing/ambiguous. Reject all.\n");
+        else {
+            sidx = (*(*adg->dg)[0].js)[0]; /* the first TR of these will do (they're all the same GT) */
+            printf("\t\t\tRetain idx %u\n", sidx); 
+            append_i2(i2, sidx); // the first index.
+        }
         return;
     }
 
@@ -604,10 +534,10 @@ void proc_adgia(adgia_t *adg, i2g_t *i2)
     int zzi=-1;
     for(i=0;i<adg->sz;++i) {
         // ignore but record the idz of the ZZ GT if it exists.
-       if( (*adg->dg)[i].gt == ZZ) {
-           zzi=i;
-           continue;
-       }
+        if( (*adg->dg)[i].gt == ZZ) {
+            zzi=i;
+            continue;
+        }
         if(mxsz < (*adg->dg)[i].sz)
             mxsz = (*adg->dg)[i].sz; 
     }
@@ -623,7 +553,7 @@ void proc_adgia(adgia_t *adg, i2g_t *i2)
 
     if(ocmx!=1)
         printf("\t\t\tInconclusive TRs: all must be removed.\n");
-        // and no appending to i2 is done.
+    // and no appending to i2 is done.
     else {
         printf("\t\t\tMajority rules: retain %u.\n", sidx);
         append_i2(i2, sidx); // the first index.
@@ -874,7 +804,6 @@ void loc_cat(adia_t *ad, int i, int c) /* locate the category */
     return;
 }
 
-
 snod **tochainharr2(mp_t *mp, int m, unsigned tsz, adia_t *ad)
 {
     // this "2" version of the function hashes on nn, the C##_P###etc names
@@ -1030,22 +959,22 @@ mp_t *processinpf(char *fname, int *m, int *n)
                 wa->wln[couw]=couc;
                 bufword[couc++]='\0';
                 bufword = realloc(bufword, couc*sizeof(char)); /* normalize */
-				/* for the struct, we want to know if it's the first word in a line, like so: */
-				if(couw==oldcouw) {
-                	mp[wa->numl].cnu=(char)atoi(bufword);
+                /* for the struct, we want to know if it's the first word in a line, like so: */
+                if(couw==oldcouw) {
+                    mp[wa->numl].cnu=(char)atoi(bufword);
                 } else if((couw - oldcouw) ==2) {
-                	mp[wa->numl].cmo=atof(bufword);
+                    mp[wa->numl].cmo=atof(bufword);
                 } else if((couw - oldcouw) ==3) {
-                	mp[wa->numl].pos=atol(bufword);
+                    mp[wa->numl].pos=atol(bufword);
                     // we're ready to fill in nn: C%02i_P%09i
-                	mp[wa->numl].nn=calloc(16, sizeof(char));
-                	mp[wa->numl].gd=0; // default genuine dup category is 0, which means no dup.
-                	mp[wa->numl].gdn=0; // default genuine dup category is 0, which means no dup.
+                    mp[wa->numl].nn=calloc(16, sizeof(char));
+                    mp[wa->numl].gd=0; // default genuine dup category is 0, which means no dup.
+                    mp[wa->numl].gdn=0; // default genuine dup category is 0, which means no dup.
                     sprintf(mp[wa->numl].nn, "C%02i_P%09li", (int)mp[wa->numl].cnu, mp[wa->numl].pos);
                 } else if((couw - oldcouw) ==1) {
-                	mp[wa->numl].n=malloc(couc*sizeof(char));
-                	mp[wa->numl].nsz=couc;
-                	strcpy(mp[wa->numl].n, bufword);
+                    mp[wa->numl].n=malloc(couc*sizeof(char));
+                    mp[wa->numl].nsz=couc;
+                    strcpy(mp[wa->numl].n, bufword);
                 }
                 couc=0;
                 couw++;
@@ -1061,12 +990,12 @@ mp_t *processinpf(char *fname, int *m, int *n)
                     memset(wa->wpla+(wa->lbuf-WBUF), 0, WBUF*sizeof(size_t));
                 }
                 wa->wpla[wa->numl] = couw-oldcouw; /* number of words in current line */
-				if(couw-oldcouw >4) {
-					printf("Error, each row cannot exceed 4 words: revise your input file\n"); 
-					/* need to release all memory too */
-            		free_wseq(wa);
-					exit(EXIT_FAILURE);
-				}
+                if(couw-oldcouw >4) {
+                    printf("Error, each row cannot exceed 4 words: revise your input file\n"); 
+                    /* need to release all memory too */
+                    free_wseq(wa);
+                    exit(EXIT_FAILURE);
+                }
                 oldcouw=couw; /* restart words per line count */
                 wa->numl++; /* brand new line coming up */
             }
@@ -1176,30 +1105,47 @@ aaw_c *processinpf2(char *fname)
 
 void prt(mp_t *mp, int m, int n)
 {
-	int i, j;
+    int i, j;
     printf("var mp type mp_t is %i rows by %i columns and is as follows:\n", m, n); 
     for(i=0;i<m;++i) {
         for(j=0;j<n;++j) {
             if(j==1)
-				printf("%s\t", mp[i].n);
-			else if (j==3)
-            	printf("%li\n", mp[i].pos);
-			else if (j==0)
-            	printf("%i\t", (char)mp[i].cnu);
-			else if (j==2)
-            	printf("%2.1f ", mp[i].cmo);
-		}
+                printf("%s\t", mp[i].n);
+            else if (j==3)
+                printf("%li\n", mp[i].pos);
+            else if (j==0)
+                printf("%i\t", (char)mp[i].cnu);
+            else if (j==2)
+                printf("%2.1f ", mp[i].cmo);
+        }
     }
-	return;
+    return;
 }
+
+void prtusage(void)
+{
+    printf("Usage notice. Pls supply at least 2 arguments: 1) Name of plink map file 2) Name of plink ped file.\n");
+    printf("For output as a .tped and .tfam pair, add the \"-t\" option as (NB!) 3rd argument.\n"); 
+    return;
+}
+
 
 int main(int argc, char *argv[])
 {
     /* argument accounting */
-    if(argc!=3) {
-        printf("Error. Pls supply 2 arguments: 1) Name of plink map file 2) Name of plink ped file.\n");
+    if(argc<3) {
+        prtusage();
         exit(EXIT_FAILURE);
     }
+    optstruct opstru={0};
+    int argignore=2; //
+    int oargc=argc-argignore;
+    char **oargv=argv+argignore;
+    catchopts(&opstru, oargc, oargv);
+    if(opstru.tflag)
+        printf("tflag was called\n"); 
+    else
+        printf("No tflag called\n"); 
 
     int i, m, n;
     mp_t *mp=processinpf(argv[1], &m, &n);
@@ -1227,7 +1173,7 @@ int main(int argc, char *argv[])
     prt_adia(ad);
 #else
     dupstats3(aawc, mp, ad);
-//    prt_adia2(ad, mp);
+    //    prt_adia2(ad, mp);
 #endif
 
     free_adia(ad);
@@ -1236,8 +1182,8 @@ int main(int argc, char *argv[])
 abo: 
     free_aawc(&aawc);
     for(i=0;i<m;++i) {
-		free(mp[i].n);
-		free(mp[i].nn);
+        free(mp[i].n);
+        free(mp[i].nn);
     }
     free(mp);
     return 0;
