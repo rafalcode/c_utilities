@@ -635,30 +635,25 @@ void proc_adgia(adgia_t *adg, i2g_t *i2)
 
 void proc_adgia3(adgia_t *adg, i2g_t *i2, mp_t *mp, aaw_c *aawc, int curri, i2g_t2 *mid)
 {
-    /* an advanced proc adgia ... for dupstats3 */
+    /* an advanced proc adgia ... for dupstats3
+     * NB mid is passed through with master indices but no gt's for them */
     int i;
     int mxsz=0;
     int ocmx=0;
     unsigned sidx; /* If there's a winner TRSNP, this is hte first available SNP index for it */
     gt_t rgt; // the GT to represent.
 
-    if(1==adg->sz) {
-        /* if there's only one GT then, irrespective how many times it
-         * appears, the first index registering it should be given */
-        // if(1==(*adg->dg)[0].sz) // this check not nec.
-        // printf("Not a duplicate, only one version of this SNP AND only one GT for it.\n"); 
-        if( (*adg->dg)[0].gt == ZZ) { // however it could be ZZ all round.
-            // printf("\t\t\tAll TRs missing/ambiguous. Reject all.\n");
-            // printf("\t\t\tSet to %s for this sample\n", gtna[(*adg->dg)[0].gt]);
-            // (*mid->gt)[curri] = (*adg->dg)[0].gt; // no need, it's the default value
-            // printf("\t\t\tSet dupset_%i (rep by globmapidx %u) to %s for this sample\n", curri, (*mid->i)[curri], (*mid->gt)[curri]);
+    if(1==adg->sz) { // the case where the techrep only has one GT variant
+        if( (*adg->dg)[0].gt == ZZ) { // however, it could be ZZ all round.
+#ifdef DBG2
             printf("\t\t\tSet dupset_%i (rep by globmapidx %u) to %s for this sample\n", curri, (*mid->i)[curri], gtna[(*mid->gt)[curri]]);
+#endif
         } else {
             sidx = (*(*adg->dg)[0].js)[0]; /* the first TR of these will do (they're all the same GT) */
-            // printf("\t\t\tWill want to set idx %u to %s from following: ", sidx, gtna[(*adg->dg)[0].gt]); 
             (*mid->gt)[curri] = (*adg->dg)[0].gt;
-            // printf("\t\t\tSet to %s for dupmid %u for this sample\n", gtna[(*adg->dg)[0].gt], (*mid->i)[curri]);
+#ifdef DBG2
             printf("\t\t\tSet dupset_%i (rep by globmapidx %u) to %s for this sample\n", curri, (*mid->i)[curri], gtna[(*mid->gt)[curri]]);
+#endif
             append_i2(i2, sidx); // the first index.
         }
         return; //get out early
@@ -672,7 +667,6 @@ void proc_adgia3(adgia_t *adg, i2g_t *i2, mp_t *mp, aaw_c *aawc, int curri, i2g_
         if(mxsz < (*adg->dg)[i].sz)
             mxsz = (*adg->dg)[i].sz; 
     }
-    printf("max for this is %i\n", mxsz);
     for(i=0;i<adg->sz;++i)
         if( (mxsz == (*adg->dg)[i].sz) && ( (*adg->dg)[i].gt != ZZ) ) {
             ocmx++;
@@ -683,10 +677,12 @@ void proc_adgia3(adgia_t *adg, i2g_t *i2, mp_t *mp, aaw_c *aawc, int curri, i2g_
             // append_i2(i2, sidx + strint);
         }
 
-    if(ocmx!=1) {
+    if(ocmx!=1) { // so more than one GT is of the max length
         // printf("\t\t\tInconclusive TRs: all following must be set to missing (A1=0, A2=0): ");
         // printf("\t\t\tSet to %s for this sample\n", "ZZ");
+#ifdef DBG2
         printf("\t\t\tSet dupset_%i (rep by globmapidx %u) to %s for this sample\n", curri, (*mid->i)[curri], gtna[(*mid->gt)[curri]]);
+#endif
         // for(i=0;i<adg->sz;++i) 
         //     for(j=0;j<(*adg->dg)[i].sz;++j) 
         //         printf("%u ", (*(*adg->dg)[i].js)[j]);
@@ -700,11 +696,12 @@ void proc_adgia3(adgia_t *adg, i2g_t *i2, mp_t *mp, aaw_c *aawc, int curri, i2g_
         //         printf("%u ", (*(*adg->dg)[i].js)[j]);
         // printf("\n");
         (*mid->gt)[curri] = rgt;
+#ifdef DBG2
         printf("\t\t\tSet dupset_%i (rep by globmapidx %u) to %s for this sample\n", curri, (*mid->i)[curri], gtna[(*mid->gt)[curri]]);
+#endif
         append_i2(i2, sidx); // the first index.
         // printf("SNP Idx %i with GT %s is the winning Tech Rep for this SNP.\n", sidx, gtna[uwgt]);
     }
-
     return;
 }
 
@@ -783,9 +780,10 @@ void dupstats4(aaw_c *aawc, mp_t *mp, adia_t *ad, i2g_t2 *mid, int *retnumsamps)
                 // gta[k]=from2l(a1, a2);
             }
             norm_adgia(adg);
+#ifdef DBG2
             prt_adgia(adg);
-            // proc_adgia(adg, i2);
             printf("\tTR#%i (master index %u):\n", j, (*mid->i)[j]);
+#endif
             proc_adgia3(adg, i2, mp, aawc, j, mid);
             free_adgia(adg);
             cleangt_i22(mid);
@@ -1030,7 +1028,7 @@ void prtchaharr(snod **stab, unsigned tsz)
         tsnod2=stab[i];
         while(tsnod2) {
             // printf("\"%s\" ", tsnod2->mp->n); 
-            printf("\"%s\"(%s) ", tsnod2->mp->n, tsnod2->mp->nn); 
+            printf("\"%s\"(%s:%i) ", tsnod2->mp->n, tsnod2->mp->nn, (int)tsnod2->mp->gd); 
             tsnod2=tsnod2->n;
         }
         printf("\n"); 
@@ -1132,7 +1130,7 @@ mp_t *processinpf(char *fname, int *m, int *n)
                     mp[wa->numl].nn=calloc(16, sizeof(char));
                     mp[wa->numl].gd=0; // default genuine dup category is 0, which means no dup.
                     mp[wa->numl].gdn=0; // default genuine dup category is 0, which means no dup.
-                    sprintf(mp[wa->numl].nn, "C%s_P%09li", mp[wa->numl].cnu, mp[wa->numl].pos);
+                    sprintf(mp[wa->numl].nn, "C%s_P%010li", mp[wa->numl].cnu, mp[wa->numl].pos);
                 } else if((couw - oldcouw) ==1) {
                     mp[wa->numl].n=malloc(couc*sizeof(char));
                     mp[wa->numl].nsz=couc;
@@ -1361,6 +1359,7 @@ void prt_map(mp_t *mp, int m, char *fname)
         fprintf(of, "%s\t%s\t%i\t%li\n", mp[i].cnu, mp[i].n, mp[i].cmo, mp[i].pos);
     }
     fclose(of);
+    free(ofn);
     return;
 }
 
@@ -1444,6 +1443,7 @@ int main(int argc, char *argv[])
     i2g_t2 *mid=crea_i22(); // master index of dupsets
     snod **mph = tochainharr2(mp, m, htsz, ad, mid);
     norm_i22(mid);
+    prtchaharr(mph, htsz);
 
     norm_adia(ad);
     // prt_adia(ad);
