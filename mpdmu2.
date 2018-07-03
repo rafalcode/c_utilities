@@ -1,4 +1,4 @@
-#include "mpdmu2.h" // has the header stuff, and structs.
+#include "mpdmu.h" // has the header stuff, and structs.
 
 int catchopts(optstruct *opstru, int oargc, char **oargv)
 {
@@ -13,15 +13,6 @@ int catchopts(optstruct *opstru, int oargc, char **oargv)
                 abort();
         }
     return 0;
-}
-
-char *newna(char *fname)
-{
-    char *tc=strrchr(fname, '.');
-    char *retc=calloc(3+strlen(fname), sizeof(char));
-    sprintf(retc, "%.*s_2%s", (int)(tc-fname), fname, tc);
-    return retc;
-
 }
 
 gt_t from2l(char A1, char A2)
@@ -104,7 +95,7 @@ i2g_t *crea_i2(void)
 i2g_t2 *crea_i22(void)
 {
     int i;
-    i2g_t2 *i22=malloc(sizeof(i2g_t2));
+    i2g_t *i22=malloc(sizeof(i2g_t2));
     i22->bf=GBUF;
     i22->sz=0;
     i22->i=malloc(sizeof(unsigned*));
@@ -170,14 +161,6 @@ void prt_i22(i2g_t2 *i22) // try not to use this before ->gt's have been set.
     for(i=0;i<i22->sz;i++)
         printf("%u:%s ", (*i22->i)[i], gtna[(*i22->gt)[i]]);
     printf("\n");
-    return;
-}
-
-void cleangt_i22(i2g_t2 *i22) // try not to use this before ->gt's have been set.
-{
-    int i;
-    for(i=0;i<i22->sz;i++)
-        (*i22->gt)[i] = ZZ;
     return;
 }
 
@@ -572,7 +555,7 @@ void prt_adgia(adgia_t *adg)
 {
     int i, j;
     for(i=0;i<adg->sz;++i) {
-        printf("\t%s", gtna[(*adg->dg)[i].gt]);
+        printf("\t\t%s", gtna[(*adg->dg)[i].gt]);
         printf("(#:%u): ", (*adg->dg)[i].sz);
         for(j=0;j<(*adg->dg)[i].sz;++j) 
             printf("%u|%u ", (*(*adg->dg)[i].is)[j], (*(*adg->dg)[i].js)[j]);
@@ -603,9 +586,12 @@ void proc_adgia(adgia_t *adg, i2g_t *i2)
         return;
     }
 
+    // get the maximum represented GT
+    int zzi=-1;
     for(i=0;i<adg->sz;++i) {
         // ignore but record the idz of the ZZ GT if it exists.
         if( (*adg->dg)[i].gt == ZZ) {
+            zzi=i;
             continue;
         }
         if(mxsz < (*adg->dg)[i].sz)
@@ -633,10 +619,10 @@ void proc_adgia(adgia_t *adg, i2g_t *i2)
     return;
 }
 
-void proc_adgia3(adgia_t *adg, i2g_t *i2, mp_t *mp, aaw_c *aawc, int curri, i2g_t2 *mid)
+void proc_adgia3(adgia_t *adg, i2g_t *i2, mp_t *mp, aaw_c *aawc, int curri)
 {
     /* an advanced proc adgia ... for dupstats3 */
-    int i;
+    int i, j;
     int mxsz=0;
     int ocmx=0;
     unsigned sidx; /* If there's a winner TRSNP, this is hte first available SNP index for it */
@@ -647,34 +633,35 @@ void proc_adgia3(adgia_t *adg, i2g_t *i2, mp_t *mp, aaw_c *aawc, int curri, i2g_
          * appears, the first index registering it should be given */
         // if(1==(*adg->dg)[0].sz) // this check not nec.
         // printf("Not a duplicate, only one version of this SNP AND only one GT for it.\n"); 
-        if( (*adg->dg)[0].gt == ZZ) { // however it could be ZZ all round.
+        if( (*adg->dg)[0].gt == ZZ)
             // printf("\t\t\tAll TRs missing/ambiguous. Reject all.\n");
-            // printf("\t\t\tSet to %s for this sample\n", gtna[(*adg->dg)[0].gt]);
-            // (*mid->gt)[curri] = (*adg->dg)[0].gt; // no need, it's the default value
-            // printf("\t\t\tSet dupset_%i (rep by globmapidx %u) to %s for this sample\n", curri, (*mid->i)[curri], (*mid->gt)[curri]);
-            printf("\t\t\tSet dupset_%i (rep by globmapidx %u) to %s for this sample\n", curri, (*mid->i)[curri], gtna[(*mid->gt)[curri]]);
-        } else {
+            printf("\t\t\tSet to %s for this sample\n", gtna[(*adg->dg)[0].gt]);
+        else {
             sidx = (*(*adg->dg)[0].js)[0]; /* the first TR of these will do (they're all the same GT) */
             // printf("\t\t\tWill want to set idx %u to %s from following: ", sidx, gtna[(*adg->dg)[0].gt]); 
-            (*mid->gt)[curri] = (*adg->dg)[0].gt;
-            // printf("\t\t\tSet to %s for dupmid %u for this sample\n", gtna[(*adg->dg)[0].gt], (*mid->i)[curri]);
-            printf("\t\t\tSet dupset_%i (rep by globmapidx %u) to %s for this sample\n", curri, (*mid->i)[curri], gtna[(*mid->gt)[curri]]);
+            printf("\t\t\tSet to %s for this sample\n", gtna[(*adg->dg)[0].gt]);
+            for(i=0;i<(*adg->dg)[0].sz;++i) 
+                printf("%u ", (*(*adg->dg)[0].js)[i]);
+            printf("\n"); 
             append_i2(i2, sidx); // the first index.
         }
-        return; //get out early
+        return;
     }
 
+    // get the maximum represented GT
+    int zzi=-1;
     for(i=0;i<adg->sz;++i) {
         // ignore but record the idz of the ZZ GT if it exists.
         if( (*adg->dg)[i].gt == ZZ) {
+            zzi=i;
             continue;
         }
         if(mxsz < (*adg->dg)[i].sz)
             mxsz = (*adg->dg)[i].sz; 
     }
-    printf("max for this is %i\n", mxsz);
+
     for(i=0;i<adg->sz;++i)
-        if( (mxsz == (*adg->dg)[i].sz) && ( (*adg->dg)[i].gt != ZZ) ) {
+        if( (mxsz == (*adg->dg)[i].sz) & ( (*adg->dg)[i].gt != ZZ) ) {
             ocmx++;
             // we're only seeing if there is more than one max GT, but as we're here we'll also 
             // record it so it's ready when there's only 1 with max.
@@ -685,22 +672,19 @@ void proc_adgia3(adgia_t *adg, i2g_t *i2, mp_t *mp, aaw_c *aawc, int curri, i2g_
 
     if(ocmx!=1) {
         // printf("\t\t\tInconclusive TRs: all following must be set to missing (A1=0, A2=0): ");
-        // printf("\t\t\tSet to %s for this sample\n", "ZZ");
-        printf("\t\t\tSet dupset_%i (rep by globmapidx %u) to %s for this sample\n", curri, (*mid->i)[curri], gtna[(*mid->gt)[curri]]);
-        // for(i=0;i<adg->sz;++i) 
-        //     for(j=0;j<(*adg->dg)[i].sz;++j) 
-        //         printf("%u ", (*(*adg->dg)[i].js)[j]);
-        // printf("\n"); 
+        printf("\t\t\tSet to %s for this sample\n", "ZZ");
+        for(i=0;i<adg->sz;++i) 
+            for(j=0;j<(*adg->dg)[i].sz;++j) 
+                printf("%u ", (*(*adg->dg)[i].js)[j]);
+        printf("\n"); 
     // and no appending to i2 is done.
     } else {
         // printf("\t\t\tMajority rules: set idx %u to %s from following: ", sidx, gtna[rgt]);
-        // printf("\t\t\tSet to %s for this sample\n", gtna[rgt]);
-        // for(i=0;i<adg->sz;++i) 
-        //     for(j=0;j<(*adg->dg)[i].sz;++j) 
-        //         printf("%u ", (*(*adg->dg)[i].js)[j]);
-        // printf("\n");
-        (*mid->gt)[curri] = rgt;
-        printf("\t\t\tSet dupset_%i (rep by globmapidx %u) to %s for this sample\n", curri, (*mid->i)[curri], gtna[(*mid->gt)[curri]]);
+        printf("\t\t\tSet to %s for this sample\n", gtna[rgt]);
+        for(i=0;i<adg->sz;++i) 
+            for(j=0;j<(*adg->dg)[i].sz;++j) 
+                printf("%u ", (*(*adg->dg)[i].js)[j]);
+        printf("\n");
         append_i2(i2, sidx); // the first index.
         // printf("SNP Idx %i with GT %s is the winning Tech Rep for this SNP.\n", sidx, gtna[uwgt]);
     }
@@ -708,12 +692,13 @@ void proc_adgia3(adgia_t *adg, i2g_t *i2, mp_t *mp, aaw_c *aawc, int curri, i2g_
     return;
 }
 
-void dupstats3(aaw_c *aawc, mp_t *mp, adia_t *ad, i2g_t2 *mid) // grab the best TRs
+void dupstats3(aaw_c *aawc, mp_t *mp, adia_t *ad, i2g_t *mid) // grab the best TRs
 {
     char a1, a2;
     int j, jj, k;
     unsigned tu;
     size_t i;
+    // gt_t *gta=NULL;
 
     int numsamps =0; // because numl is not always numsamps due to # comment lines.
     adgia_t *adg =NULL;
@@ -742,60 +727,13 @@ void dupstats3(aaw_c *aawc, mp_t *mp, adia_t *ad, i2g_t2 *mid) // grab the best 
             norm_adgia(adg);
             prt_adgia(adg);
             // proc_adgia(adg, i2);
-            proc_adgia3(adg, i2, mp, aawc, i, mid);
+            proc_adgia3(adg, i2, mp, aawc, i);
             free_adgia(adg);
         }
         norm_i2(i2);
         prt_i2(i2);
         free_i2(i2);
     }
-    return;
-}
-
-void dupstats4(aaw_c *aawc, mp_t *mp, adia_t *ad, i2g_t2 *mid, int *retnumsamps) // grab the best TRs
-{
-    char a1, a2;
-    int j, jj, k;
-    unsigned tu;
-    size_t i;
-    // gt_t *gta=NULL;
-
-    int numsamps = *retnumsamps; // because numl is not always numsamps due to # comment lines.
-    adgia_t *adg =NULL;
-    i2g_t *i2=NULL;
-    for(i=0;i<aawc->numl;++i) {
-        if(aawc->aaw[i]->aw[0]->w[0] == '#')
-            continue;
-        i2=crea_i2();
-        printf("TR Sets for sample: %s\n", aawc->aaw[i]->aw[1]->w); // sample name
-        for(j=0;j<ad->sz;++j) { // for each dup category, group better said.
-            tu = (*(*ad->d)[j].is)[0]; // temp variable to make reading easier.
-            jj=tu*2+6;
-            // gta=malloc((*ad->d)[j].sz*sizeof(gt_t));
-            adg=crea_adgia();
-            for(k=0;k<(*ad->d)[j].sz;++k) {
-                tu = (*(*ad->d)[j].is)[k]; // temp variable to make reading easier.
-                jj=tu*2+6; // typical conversion of map to ped indices
-                a1 = aawc->aaw[i]->aw[jj]->w[0];
-                a2 = aawc->aaw[i]->aw[jj+1]->w[0];
-                // you need to get the "tu" in here it's the global coordinate of the TRSNP.
-                loc_catg(adg, k, tu, from2l(a1,a2));
-                // gta[k]=from2l(a1, a2);
-            }
-            norm_adgia(adg);
-            prt_adgia(adg);
-            // proc_adgia(adg, i2);
-            printf("\tTR#%i (master index %u):\n", j, (*mid->i)[j]);
-            proc_adgia3(adg, i2, mp, aawc, j, mid);
-            free_adgia(adg);
-            cleangt_i22(mid);
-            numsamps++;
-        }
-        norm_i2(i2);
-        prt_i2(i2);
-        free_i2(i2);
-    }
-    *retnumsamps=numsamps;
     return;
 }
 
@@ -1123,16 +1061,16 @@ mp_t *processinpf(char *fname, int *m, int *n)
                 bufword = realloc(bufword, couc*sizeof(char)); /* normalize */
                 /* for the struct, we want to know if it's the first word in a line, like so: */
                 if(couw==oldcouw) {
-                    strncpy(mp[wa->numl].cnu, bufword, 3);
+                    mp[wa->numl].cnu=(char)atoi(bufword);
                 } else if((couw - oldcouw) ==2) {
-                    mp[wa->numl].cmo=atoi(bufword);
+                    mp[wa->numl].cmo=atof(bufword);
                 } else if((couw - oldcouw) ==3) {
                     mp[wa->numl].pos=atol(bufword);
                     // we're ready to fill in nn: C%02i_P%09i
                     mp[wa->numl].nn=calloc(16, sizeof(char));
                     mp[wa->numl].gd=0; // default genuine dup category is 0, which means no dup.
                     mp[wa->numl].gdn=0; // default genuine dup category is 0, which means no dup.
-                    sprintf(mp[wa->numl].nn, "C%s_P%09li", mp[wa->numl].cnu, mp[wa->numl].pos);
+                    sprintf(mp[wa->numl].nn, "C%02i_P%09li", (int)mp[wa->numl].cnu, mp[wa->numl].pos);
                 } else if((couw - oldcouw) ==1) {
                     mp[wa->numl].n=malloc(couc*sizeof(char));
                     mp[wa->numl].nsz=couc;
@@ -1265,73 +1203,7 @@ aaw_c *processinpf2(char *fname)
     return aawc;
 }
 
-aaw_c *processinpf3(FILE *fp, int *lastchar)
-{
-    int i;
-    size_t couc /*count chars per line */, couw=0 /* count words */;
-    int c, oldc='\0';
-    boole inword=0;
-    unsigned lbuf=LBUF /* buffer for number of lines */, cbuf=CBUF /* char buffer for size of w_c's: reused for every word */;
-    aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
-
-    for(;;) {
-        c=fgetc(fp);
-        *lastchar=c;
-        if(c==EOF)
-            goto uit;
-        if( (c== '\n') | (c == ' ') | (c == '\t') ) {
-            if( inword==1) { /* cue word-ending procedure */
-                aawc->aaw[aawc->numl]->aw[couw]->w[couc++]='\0';
-                aawc->aaw[aawc->numl]->aw[couw]->lp1=couc;
-                SETCPTYPE(oldc, aawc->aaw[aawc->numl]->aw[couw]->t);
-                norm_wc(aawc->aaw[aawc->numl]->aw+couw);
-                couw++; /* verified: this has to be here */
-            }
-            if(c=='\n') { /* cue line-ending procedure */
-                if(aawc->numl ==lbuf-1) {
-                    lbuf += LBUF;
-                    aawc->aaw=realloc(aawc->aaw, lbuf*sizeof(aw_c*));
-                    for(i=lbuf-LBUF; i<lbuf; ++i)
-                        aawc->aaw[i]=crea_awc(WABUF);
-                }
-                aawc->aaw[aawc->numl]->al=couw;
-                norm_awc(aawc->aaw+aawc->numl);
-                aawc->numl++;
-                couw=0;
-                *lastchar=c;
-                goto uit;
-            }
-            inword=0;
-        } else if(inword==0) { /* a normal character opens word */
-            if(couw ==aawc->aaw[aawc->numl]->ab-1) /* new word opening */
-                reall_awc(aawc->aaw+aawc->numl, WABUF);
-            couc=0;
-            cbuf=CBUF;
-            aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-            GETLCTYPE(c, aawc->aaw[aawc->numl]->aw[couw]->t); /* MACRO: the firt character gives a clue */
-            inword=1;
-        } else if(inword) { /* simply store */
-            if(couc == cbuf-1)
-                reall_wc(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
-            aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-            /* if word is a candidate for a NUM or PNI (i.e. via its first character), make sure it continues to obey rules: a MACRO */
-            IWMODTYPEIF(c, aawc->aaw[aawc->numl]->aw[couw]->t);
-        }
-        oldc=c;
-    } /* end of big for statement */
-
-uit:
-
-    /* normalization stage */
-    for(i=aawc->numl; i<lbuf; ++i) {
-        free_awc(aawc->aaw+i);
-    }
-    aawc->aaw=realloc(aawc->aaw, aawc->numl*sizeof(aw_c*));
-
-    return aawc;
-}
-
-void prt_mp(mp_t *mp, int m, int n)
+void prt(mp_t *mp, int m, int n)
 {
     int i, j;
     printf("var mp type mp_t is %i rows by %i columns and is as follows:\n", m, n); 
@@ -1342,61 +1214,10 @@ void prt_mp(mp_t *mp, int m, int n)
             else if (j==3)
                 printf("%li\n", mp[i].pos);
             else if (j==0)
-                printf("%s\t", mp[i].cnu);
+                printf("%i\t", (char)mp[i].cnu);
             else if (j==2)
-                printf("%i ", mp[i].cmo);
+                printf("%2.1f ", mp[i].cmo);
         }
-    }
-    return;
-}
-
-void prt_map(mp_t *mp, int m, char *fname)
-{
-    int i;
-    char *ofn=newna(fname);
-    FILE *of=fopen(ofn, "w");
-    for(i=0;i<m;++i) {
-        if(mp[i].gd == 1)
-            continue;
-        fprintf(of, "%s\t%s\t%i\t%li\n", mp[i].cnu, mp[i].n, mp[i].cmo, mp[i].pos);
-    }
-    fclose(of);
-    return;
-}
-
-void prt_partped(mp_t *mp, int m, int n, i2g_t2 *mid, aaw_c *aawc, FILE *of)
-{
-    int i, k=0, ii;
-    for(i=0;i<6;++i) 
-        fprintf(of, "%s\t", aawc->aaw[0]->aw[i]->w);
-
-    int ml1=m-1; // m less one
-    for(i=0;i<ml1;++i) {
-        if(mp[i].gd == 1) {
-            continue;
-        } else if (mp[i].gd == 2) {
-            fprintf(of, "%c\t", gtna[(*mid->gt)[k]][0]);
-            fprintf(of, "%c\t", gtna[(*mid->gt)[k]][1]);
-            k++;
-        } else {
-            ii=i*2+6;
-            fprintf(of, "%c\t", aawc->aaw[0]->aw[ii]->w[0]);
-            fprintf(of, "%c\t", aawc->aaw[0]->aw[ii+1]->w[0]);
-        }
-    }
-    // final genotype
-    if(mp[ml1].gd == 1) {
-        fseek(of, -1, SEEK_CUR);
-        // fprintf(of, "\n"); 
-        fputc('\n', of);
-    } else if (mp[ml1].gd == 2) {
-        fprintf(of, "%c\t", gtna[(*mid->gt)[k]][0]);
-        fprintf(of, "%c\n", gtna[(*mid->gt)[k]][1]);
-        k++;
-    } else {
-        ii=ml1*2+6;
-        fprintf(of, "%c\t", aawc->aaw[0]->aw[ii]->w[0]);
-        fprintf(of, "%c\n", aawc->aaw[0]->aw[ii+1]->w[0]);
     }
     return;
 }
@@ -1428,7 +1249,12 @@ int main(int argc, char *argv[])
 
     int i, m, n;
     mp_t *mp=processinpf(argv[1], &m, &n);
-    aaw_c *aawc=NULL; // like pedsta, to avoid the huge ped files, we're going to go line by line.
+    aaw_c *aawc=processinpf2(argv[2]);
+
+    if(n != MNCOLS) {
+        printf("Error: Mandatory uniform number of columns for plink map files is %i\n", MNCOLS); 
+        goto abo;
+    }
 
     // hash it all
     unsigned htsz=2*m/3;
@@ -1443,38 +1269,26 @@ int main(int argc, char *argv[])
 
     i2g_t2 *mid=crea_i22(); // master index of dupsets
     snod **mph = tochainharr2(mp, m, htsz, ad, mid);
-    norm_i22(mid);
+    norm_i2(mid);
 
     norm_adia(ad);
-    // prt_adia(ad);
-    FILE *fp=fopen(argv[2], "r"); // OK, now handle
-    int lastchar=9;
-    int numsamps=0;
-    char *ofn=newna(argv[2]);
-    FILE *of=fopen(ofn, "w");
-    for(;;) {
-        aawc=processinpf3(fp, &lastchar);
-        if(lastchar==EOF) {
-            free_aawc(&aawc);
-            break;
-        }
-        dupstats4(aawc, mp, ad, mid, &numsamps);
-        prt_partped(mp, m, n, mid, aawc, of);
-        free_aawc(&aawc);
-    }
-    fclose(fp);
-    fclose(of);
+#ifdef DBG
+    prt_adia(ad);
+#else
+    dupstats3(aawc, mp, ad, mid);
+    //    prt_adia2(ad, mp);
+#endif
 
     free_adia(ad);
     free_i22(mid);
     freechainharr(mph, htsz);
 
-    prt_map(mp, m, argv[1]);
+abo: 
+    free_aawc(&aawc);
     for(i=0;i<m;++i) {
         free(mp[i].n);
         free(mp[i].nn);
     }
     free(mp);
-    free(ofn);
     return 0;
 }

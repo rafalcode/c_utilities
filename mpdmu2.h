@@ -103,8 +103,9 @@ typedef struct /* mp_t, map type, one line in the map file */
 	char *n;
 	char *nn; /* numbered name CXX_XXXXX, etc. will alway sbe 16 chars in length */
 	size_t nsz; /* size of the name r ID field */
-    char cnu; // first column the chromosome number.
-    float cmo; // the centimorgans
+    char cnu[3]; // first column the chromosome number. 1-32 and Y
+    // float cmo; // the centimorgans, it truly should be float, but opt for int
+    int cmo; // the centimorgans, it truly should be float, but opt for int
 	long pos; /* just the one number */
     boole gd;
     int gdn;
