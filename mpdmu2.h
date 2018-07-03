@@ -59,15 +59,11 @@ typedef enum /* gt_t, genotype type */
 
 char gtna[17][3]={"AA", "CC", "GG", "TT", "AC", "AG", "AT", "CA", "CG", "CT", "GA", "GC", "GT", "TA", "TC", "TG", "00"};
 
-typedef struct /* i2g_t */
-{
-    unsigned **i, sz, bf;
-} i2g_t; /* map indices to go/ filter out */
-
 typedef struct /* i2g_t2 */
 {
     unsigned **i, sz, bf;
     gt_t **gt; // dynamic .. per sample
+    int **dpcou; // a count of the dups for this loc ... necessarily starts as 2.
 } i2g_t2; /* map indices to with gts */
 
 typedef struct /* dgia_t */
