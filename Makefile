@@ -1,11 +1,11 @@
 CC=gcc
 # CFLAGS=-O3
 CFLAGS=-g -Wall
-DBGCFLAGS=-g -Wall
+DBGCFLAGS=-g -Wall -DDBG
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
 
 LIBS=-lgsl -lgslcblas -lm
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4 pedsta mpdmu2 mpdmu2_d
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -128,6 +128,10 @@ mapedstats: mapedstats.c
 	${CC} ${CFLAGS} -o $@ $^
 mapedstats_d: mapedstats.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
+# I had started on mapedstats.c but it turned out only to do ped
+# and also to be entirely unscalable, basically reading everything into a pointer-heavy data structure.
+pedsta: pedsta.c
+	${CC} ${CFLAGS} -o $@ $^
 
 # from genread
 mprd: mprd.c
@@ -151,6 +155,10 @@ mprd3_d: mprd3.c
 mpdmu: mpdmu.c
 	${CC} ${CFLAGS} -o $@ $^
 mpdmu_d: mpdmu.c
+	${CC} ${DBGCFLAGS} -o $@ $^
+mpdmu2: mpdmu2.c
+	${CC} ${CFLAGS} -o $@ $^
+mpdmu2_d: mpdmu2.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
 # for duplicate coutning unit test
