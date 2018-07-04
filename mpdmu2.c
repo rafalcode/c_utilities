@@ -138,14 +138,27 @@ void norm_i22(i2g_t2 *i22)
 
 void prt_i22(i2g_t2 *i22) // try not to use this before ->gt's have been set.
 {
+    // this version is when you are inside a sample, for which the gt setting is unique
     int i;
-    for(i=0;i<i22->sz;i++)
+    for(i=0;i<i22->sz;i++) {
         printf("%u:%s:%i ", (*i22->i)[i], gtna[(*i22->gt)[i]], (*i22->dpcou)[i]);
-    printf("\n");
+        printf("\n");
+    }
     return;
 }
 
-void cleangt_i22(i2g_t2 *i22) // try not to use this before ->gt's have been set.
+void prt2_i22(i2g_t2 *i22, mp_t *mp) // try not to use this before ->gt's have been set.
+{
+    // this version is for when you wan tthe global details
+    int i;
+    printf("Printing of Technical replicates:\nGLBALSNPIdx\tSNPName\tPositionStrg\tNumDups\n\n"); 
+    for(i=0;i<i22->sz;i++) {
+        printf("%u\t%s\t%s\t%i\n", (*i22->i)[i], mp[(*i22->i)[i]].n, mp[(*i22->i)[i]].nn, (*i22->dpcou)[i]);
+    }
+    return;
+}
+
+void cleangt_i22(i2g_t2 *i22) // each time we start a new sample, we need to clean just the gt part: i and dpcou are global
 {
     int i;
     for(i=0;i<i22->sz;i++)
@@ -790,7 +803,7 @@ snod **tochainharr2(mp_t *mp, int m, unsigned tsz, adia_t *ad, i2g_t2 *mid)
                     mp[i].gd = 1;
                     mp[i].gdn = tsnod2->mp->gdn;
                     tsnod2->mp->gd++; // this will give number of reps
-                    // (*mid->dpcou)[tsnod2->mp->gdn-2]++; // causes probs.
+                    (*mid->dpcou)[tsnod2->mp->gdn-2]++; // causes probs.
                     loc_cat(ad, i, mp[i].gdn);
                 }
             }
@@ -1168,7 +1181,7 @@ int main(int argc, char *argv[])
     i2g_t2 *mid=crea_i22(); // master index of dupsets
     snod **mph = tochainharr2(mp, m, htsz, ad, mid);
     norm_i22(mid);
-    prtchaharr(mph, htsz);
+    // prtchaharr(mph, htsz);
 
     norm_adia(ad);
     // prt_adia(ad);
@@ -1189,6 +1202,8 @@ int main(int argc, char *argv[])
     }
     fclose(fp);
     fclose(of);
+
+    prt2_i22(mid, mp);
 
     free_adia(ad);
     free_i22(mid);
