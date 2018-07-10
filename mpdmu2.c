@@ -4,10 +4,13 @@ int catchopts(optstruct *opstru, int oargc, char **oargv)
 {
     int c;
     opterr = 0;
-    while ((c = getopt (oargc, oargv, "t")) != -1)
+    while ((c = getopt (oargc, oargv, "te")) != -1)
         switch (c) {
             case 't': // want output as tped and tfam
                 opstru->tflag = 1;
+                break;
+            case 'e': // want output as tped and tfam
+                opstru->eflag = 1;
                 break;
             default:
                 abort();
@@ -154,6 +157,73 @@ void prt2_i22(i2g_t2 *i22, mp_t *mp) // try not to use this before ->gt's have b
     printf("Printing of Technical replicates:\nGLBALSNPIdx\tSNPName\tPositionStrg\tNumDups\n\n"); 
     for(i=0;i<i22->sz;i++) {
         printf("%u\t%s\t%s\t%i\n", (*i22->i)[i], mp[(*i22->i)[i]].n, mp[(*i22->i)[i]].nn, (*i22->dpcou)[i]);
+    }
+    return;
+}
+
+void prt3_i22(i2g_t2 *i22, mp_t *mp, adia_t *ad) // try not to use this before ->gt's have been set.
+{
+    // this version is for when you wan tthe global details
+    int i, j;
+    unsigned tu;
+    printf("Printing of Technical replicates:\n");
+    // printf("GLBALSNPIdx\tSNPName\tPositionStrg\tNumDups\n\n"); 
+    printf("DuplicateSet\tNumDuplicates\tChromosome\tPosition");
+    printf("\tRetainedGlbSNPIdx\tRetainedSNPName\tResolEvent\tListDupIdx\tListDupNames\n");
+#ifdef DBG
+    printf("ad sz %i mid sz %i\n", ad->sz, i22->sz);
+    // these are two are same size, but are they also in sync? They should be.
+#endif
+    for(j=0;j<ad->sz;++j) {
+        printf("%i\t%i\t%s\t%li", (*ad->d)[j].lidx, (*i22->dpcou)[j], mp[(*i22->i)[j]].cnu, mp[(*i22->i)[j]].pos);
+        // printf("\t%u\t%s\t%s\t", (*i22->i)[j], mp[(*i22->i)[j]].n, devna[deva[j]]);
+        printf("\t%u\t%s\t", (*i22->i)[j], mp[(*i22->i)[j]].n);
+        for(i=0;i<(*ad->d)[j].sz;++i) {
+            tu = (*(*ad->d)[j].is)[i]; // temp variable to make reading easier.
+            printf("%li ", mp[tu].pos);
+        }
+        printf("\t"); 
+        for(i=0;i<(*ad->d)[j].sz;++i) {
+            tu = (*(*ad->d)[j].is)[i]; // temp variable to make reading easier.
+            printf("%s ", mp[tu].n);
+        }
+        printf("\n"); 
+    }
+    return;
+}
+
+void prt4_i22(i2g_t2 *i22, mp_t *mp, adia_t *ad) // like prt3_i22, but with CN_PN string also just for comfort-of-mind sake.
+{
+    // this version is for when you wan tthe global details
+    int i, j;
+    unsigned tu;
+    printf("Printing of Technical replicates:\n");
+    // printf("GLBALSNPIdx\tSNPName\tPositionStrg\tNumDups\n\n"); 
+    printf("DuplicateSet\tNumDuplicates\tChromosome\tPosition");
+    printf("\tRetainedGlbSNPIdx\tRetainedSNPName\tResolEvent\tListDupIdx\tListDupNames\n");
+#ifdef DBG
+    printf("ad sz %i mid sz %i\n", ad->sz, i22->sz);
+    // these are two are same size, but are they also in sync? They should be.
+#endif
+    for(j=0;j<ad->sz;++j) {
+        printf("%i\t%i\t%s\t%li", (*ad->d)[j].lidx, (*i22->dpcou)[j], mp[(*i22->i)[j]].cnu, mp[(*i22->i)[j]].pos);
+        // printf("\t%u\t%s\t%s\t", (*i22->i)[j], mp[(*i22->i)[j]].n, devna[deva[j]]);
+        printf("\t%u\t%s\t", (*i22->i)[j], mp[(*i22->i)[j]].n);
+        for(i=0;i<(*ad->d)[j].sz;++i) {
+            tu = (*(*ad->d)[j].is)[i]; // temp variable to make reading easier.
+            printf("%li ", mp[tu].pos);
+        }
+        printf("\t"); 
+        for(i=0;i<(*ad->d)[j].sz;++i) {
+            tu = (*(*ad->d)[j].is)[i]; // temp variable to make reading easier.
+            printf("%s ", mp[tu].n);
+        }
+        printf("\t"); 
+        for(i=0;i<(*ad->d)[j].sz;++i) {
+            tu = (*(*ad->d)[j].is)[i]; // temp variable to make reading easier.
+            printf("%s ", mp[tu].nn);
+        }
+        printf("\n"); 
     }
     return;
 }
@@ -485,7 +555,7 @@ void prt_adgia(adgia_t *adg)
     return;
 }
 
-void proc_adgia3(adgia_t *adg, mp_t *mp, aaw_c *aawc, int curri, i2g_t2 *mid)
+void proc_adgia3(adgia_t *adg, mp_t *mp, aaw_c *aawc, int curri, i2g_t2 *mid, int *deva, int nsidx)
 {
     /* an advanced proc adgia ... for dupstats3
      * NB mid is passed through with master indices but no gt's for them */
@@ -499,12 +569,14 @@ void proc_adgia3(adgia_t *adg, mp_t *mp, aaw_c *aawc, int curri, i2g_t2 *mid)
 #ifdef DBG2
             printf("\t\t\tSet dupset_%i (rep by globmapidx %u) to %s for this sample\n", curri, (*mid->i)[curri], gtna[(*mid->gt)[curri]]);
 #endif
+            deva[nsidx*NDEV+OGTA00]++;
         } else {
-            (*mid->gt)[curri] = (*adg->dg)[0].gt;
 #ifdef DBG2
             printf("\t\t\tSet dupset_%i (rep by globmapidx %u) to %s for this sample\n", curri, (*mid->i)[curri], gtna[(*mid->gt)[curri]]);
 #endif
+            deva[nsidx*NDEV+CFTS00]++;
         }
+        (*mid->gt)[curri] = (*adg->dg)[0].gt; // even when 00, we want this in here
         return; //get out early
     }
 
@@ -551,15 +623,13 @@ void proc_adgia3(adgia_t *adg, mp_t *mp, aaw_c *aawc, int curri, i2g_t2 *mid)
     return;
 }
 
-void dupstats4(aaw_c *aawc, mp_t *mp, adia_t *ad, i2g_t2 *mid, int *retnumsamps) // grab the best TRs
+void dupstats4(aaw_c *aawc, mp_t *mp, adia_t *ad, i2g_t2 *mid, int *deva, int numsamps)
 {
     char a1, a2;
     int j, jj, k;
     unsigned tu;
     size_t i;
-    // gt_t *gta=NULL;
 
-    int numsamps = *retnumsamps; // because numl is not always numsamps due to # comment lines.
     adgia_t *adg =NULL;
     for(i=0;i<aawc->numl;++i) {
         if(aawc->aaw[i]->aw[0]->w[0] == '#')
@@ -584,13 +654,11 @@ void dupstats4(aaw_c *aawc, mp_t *mp, adia_t *ad, i2g_t2 *mid, int *retnumsamps)
             prt_adgia(adg);
             printf("\tTR#%i (master index %u):\n", j, (*mid->i)[j]);
 #endif
-            proc_adgia3(adg, mp, aawc, j, mid);
+            proc_adgia3(adg, mp, aawc, j, mid, deva, numsamps);
             free_adgia(adg);
             cleangt_i22(mid);
-            numsamps++;
         }
     }
-    *retnumsamps=numsamps;
     return;
 }
 
@@ -619,7 +687,6 @@ void prt_adia(adia_t *ad)
             printf("%u ", (*(*ad->d)[i].is)[j]);
         printf("\n"); 
     }
-    printf("\n"); 
     return;
 }
 
@@ -632,11 +699,10 @@ void prt_adia2(adia_t *ad, mp_t *mp) // m not actually required.
         printf("Dupset %i: ", (*ad->d)[i].lidx);
         for(j=0;j<(*ad->d)[i].sz;++j) {
             tu = (*(*ad->d)[i].is)[j]; // temp variable to make reading easier.
-            printf("%s/Idx=%u ", mp[tu].nn, tu);
+            printf("%s/%s/Idx=%u ", mp[tu].n, mp[tu].nn, tu);
         }
         printf("\n"); 
     }
-    printf("\n"); 
     return;
 }
 
@@ -1138,6 +1204,19 @@ void prt_partped(mp_t *mp, int m, int n, i2g_t2 *mid, aaw_c *aawc, FILE *of)
     return;
 }
 
+void prt_trrese(int *deva, int numsamps) // print tech rep resol events
+{
+    int i, j;
+    for(i=0;i<NDEV;++i) 
+        printf((i==NDEV-1)?"#%s\n":"#%s\t", devna[i]);
+    for(i=0;i<numsamps;++i)
+        for(j=0;j<NDEV;++j) 
+            printf((j==NDEV-1)?"%7i\n":"%7i\t", deva[i*NDEV+j]);
+    return;
+}
+
+
+
 void prtusage(void)
 {
     printf("Usage notice. Pls supply at least 2 arguments: 1) Name of plink map file 2) Name of plink ped file.\n");
@@ -1154,14 +1233,11 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     optstruct opstru={0};
+
     int argignore=2; //
     int oargc=argc-argignore;
     char **oargv=argv+argignore;
     catchopts(&opstru, oargc, oargv);
-    if(opstru.tflag)
-        printf("tflag was called\n"); 
-    else
-        printf("No tflag called\n"); 
 
     int i, m, n;
     mp_t *mp=processinpf(argv[1], &m, &n);
@@ -1185,26 +1261,38 @@ int main(int argc, char *argv[])
 
     norm_adia(ad);
     // prt_adia(ad);
+    //// got wrong end of stick with this guy
+    /// dv_t *deva=calloc(NDEV, sizeof(dv_t)); // type of event in duplicate resolution, for all samples (not split per sample).
+    int numsamps=0;
+    int dvbuf= GBUF*NDEV;
+    int *deva=calloc(dvbuf, sizeof(int)); // type of event in duplicate resolution, for all samples (not split per sample).
     FILE *fp=fopen(argv[2], "r"); // OK, now handle
     int lastchar=9;
-    int numsamps=0;
     char *ofn=newna(argv[2]);
     FILE *of=fopen(ofn, "w");
-    for(;;) {
+    for(;;) { // for each sample
         aawc=processinpf3(fp, &lastchar);
         if(lastchar==EOF) {
             free_aawc(&aawc);
             break;
         }
-        dupstats4(aawc, mp, ad, mid, &numsamps);
+        dupstats4(aawc, mp, ad, mid, deva, numsamps);
         prt_partped(mp, m, n, mid, aawc, of);
         free_aawc(&aawc);
+        numsamps++;
+        CONDREALLOC(numsamps*NDEV, dvbuf, GBUF*NDEV, deva, int);
     }
     fclose(fp);
     fclose(of);
+    deva=realloc(deva, numsamps*NDEV*sizeof(int));
 
-    prt2_i22(mid, mp);
+    if(opstru.tflag)
+        prt4_i22(mid, mp, ad);
 
+    if(opstru.eflag)
+        prt_trrese(deva, numsamps);
+
+    // prt_adia3(ad, mp, mid);
     free_adia(ad);
     free_i22(mid);
     freechainharr(mph, htsz);
@@ -1215,6 +1303,7 @@ int main(int argc, char *argv[])
         free(mp[i].nn);
     }
     free(mp);
+    free(deva);
     free(ofn);
     return 0;
 }
