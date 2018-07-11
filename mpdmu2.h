@@ -24,7 +24,7 @@
 #define MNCOLS 4 // mandatory number of columns
 
 
-#define NDEV 5 // number of duplicate resolution event types
+#define NDEV 7 // number of duplicate resolution event types
 #define CONDREALLOC(x, b, c, a, t); \
     if((x)>=((b)-1)) { \
         (b) += (c); \
@@ -35,8 +35,11 @@
 typedef unsigned char boole;
 typedef struct  /* optstruct, a struct for the options */
 {
+    int pflag; // output as ped and map, aftetr having resolved resolution events
     int tflag; // if you want the tech rep list printed out
     int eflag; // if you want to see the techrep resolution categories
+    int fflag; // summary of Tech Rep resolutions
+    int cflag; // TRDupsets with CN_PN strngs for comfort
 } optstruct;
 
 typedef enum /* gt_t, genotype type */
@@ -66,12 +69,14 @@ typedef enum /* dv_t, dupevent type */
 {
     NNNNNN, /* no event, initial value */
     OGTA00, /* 1 GT for all dups, and it's a 00 */
-    CFTS00, /* conflict of GTs so 00 */
+    OGTN00, /* TR are all same GT (not 00) */
+    MGTNWI, /* many GTs not 00 but no winners */
+    MGTNWZ, /* many GTs but no winners though there was a 00 among them */
     VGTB1W, /* valid GT competition but 1 winner */
     ZGTB1W /* ZZ GT incompetition but 1 winner */
 } dv_t;
 
-char devna[NDEV][7]={"NNNNNN", "OGTA00", "CFTS00", "VGTB1W", "ZGTB1W"};
+char devna[NDEV][7]={"NNNNNN", "OGTA00", "OGTN00", "MGTNWI", "MGTNWZ", "VGTB1W", "ZGTB1W"};
 
 typedef struct /* i2g_t2 */
 {

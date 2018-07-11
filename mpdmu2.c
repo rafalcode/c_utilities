@@ -4,13 +4,22 @@ int catchopts(optstruct *opstru, int oargc, char **oargv)
 {
     int c;
     opterr = 0;
-    while ((c = getopt (oargc, oargv, "te")) != -1)
+    while ((c = getopt (oargc, oargv, "ptefc")) != -1)
         switch (c) {
+            case 'p': // want output as ped and map
+                opstru->pflag = 1;
+                break;
             case 't': // want output as tped and tfam
                 opstru->tflag = 1;
                 break;
-            case 'e': // want output as tped and tfam
+            case 'e': // print per-sample Tech Rep resolutions events
                 opstru->eflag = 1;
+                break;
+            case 'f': // print per-sample Tech Rep resolutions events
+                opstru->fflag = 1;
+                break;
+            case 'c': // "comfort" flag ... similar to -t, but want to see CN_PN's strings, "just to make sure"
+                opstru->cflag = 1;
                 break;
             default:
                 abort();
@@ -562,32 +571,33 @@ void proc_adgia3(adgia_t *adg, mp_t *mp, aaw_c *aawc, int curri, i2g_t2 *mid, in
     int i;
     int mxsz=0;
     int ocmx=0;
+    boole zzpresent=0; // this dupsetg included a 00 call.
     gt_t rgt; // the GT to represent.
 
     if(1==adg->sz) { // the case where the techrep only has one GT variant
         if( (*adg->dg)[0].gt == ZZ) { // however, it could be ZZ all round.
-#ifdef DBG2
-            printf("\t\t\tSet dupset_%i (rep by globmapidx %u) to %s for this sample\n", curri, (*mid->i)[curri], gtna[(*mid->gt)[curri]]);
-#endif
             deva[nsidx*NDEV+OGTA00]++;
         } else {
-#ifdef DBG2
-            printf("\t\t\tSet dupset_%i (rep by globmapidx %u) to %s for this sample\n", curri, (*mid->i)[curri], gtna[(*mid->gt)[curri]]);
-#endif
-            deva[nsidx*NDEV+CFTS00]++;
+            deva[nsidx*NDEV+OGTN00]++;
         }
-        (*mid->gt)[curri] = (*adg->dg)[0].gt; // even when 00, we want this in here
+        (*mid->gt)[curri] = (*adg->dg)[0].gt; // outside of if()? even when 00, we want this in here
+#ifdef DBG2
+            printf("\t\t\tSet dupset_%i (rep by globmapidx %u) to %s for this sample, all TRs give 1GT\n", curri, (*mid->i)[curri], gtna[(*mid->gt)[curri]]);
+#endif
         return; //get out early
     }
 
+    // preprocess
     for(i=0;i<adg->sz;++i) {
         // ignore but record the idz of the ZZ GT if it exists.
         if( (*adg->dg)[i].gt == ZZ) {
+            zzpresent=1;
             continue;
         }
         if(mxsz < (*adg->dg)[i].sz)
             mxsz = (*adg->dg)[i].sz; 
     }
+    // now we have the max appearing GT (excepting 00 of course) we don't know how often max occurs though.
     for(i=0;i<adg->sz;++i)
         if( (mxsz == (*adg->dg)[i].sz) && ( (*adg->dg)[i].gt != ZZ) ) {
             ocmx++;
@@ -602,6 +612,12 @@ void proc_adgia3(adgia_t *adg, mp_t *mp, aaw_c *aawc, int curri, i2g_t2 *mid, in
 #ifdef DBG2
         printf("\t\t\tSet dupset_%i (rep by globmapidx %u) to %s for this sample\n", curri, (*mid->i)[curri], gtna[(*mid->gt)[curri]]);
 #endif
+        if(zzpresent)
+            deva[nsidx*NDEV+MGTNWZ]++; // no winnners though there was also a 00 call.
+        else 
+            deva[nsidx*NDEV+MGTNWI]++; // no winnners, i.e. >1 different GTs came out on top
+        /* NOTE: no need to set to 00, because that is already the default */
+
         // for(i=0;i<adg->sz;++i) 
         //     for(j=0;j<(*adg->dg)[i].sz;++j) 
         //         printf("%u ", (*(*adg->dg)[i].js)[j]);
@@ -619,6 +635,10 @@ void proc_adgia3(adgia_t *adg, mp_t *mp, aaw_c *aawc, int curri, i2g_t2 *mid, in
         printf("\t\t\tSet dupset_%i (rep by globmapidx %u) to %s for this sample\n", curri, (*mid->i)[curri], gtna[(*mid->gt)[curri]]);
 #endif
         // printf("SNP Idx %i with GT %s is the winning Tech Rep for this SNP.\n", sidx, gtna[uwgt]);
+        if(zzpresent)
+            deva[nsidx*NDEV+ZGTB1W]++; // ZZ appeared but a valid GT won
+        else 
+            deva[nsidx*NDEV+VGTB1W]++; // no winnners though there was also a 00 call.
     }
     return;
 }
@@ -1207,15 +1227,41 @@ void prt_partped(mp_t *mp, int m, int n, i2g_t2 *mid, aaw_c *aawc, FILE *of)
 void prt_trrese(int *deva, int numsamps) // print tech rep resol events
 {
     int i, j;
+
     for(i=0;i<NDEV;++i) 
         printf((i==NDEV-1)?"#%s\n":"#%s\t", devna[i]);
     for(i=0;i<numsamps;++i)
-        for(j=0;j<NDEV;++j) 
-            printf((j==NDEV-1)?"%7i\n":"%7i\t", deva[i*NDEV+j]);
+        for(j=0;j<NDEV;++j)
+            printf((j==NDEV-1)?"%6i \n":"%6i \t", deva[i*NDEV+j]);
+
+    printf("Legend:\n------\nNNNNNN, no TR event; OGTA00, one GT variant all 00;\n");
+    printf("OGTN00, one GT but no 00; MGTNWI: conflicting GTs (no 00 nor winning GT, so 00)\n");
+    printf("MGTNWZ: conflicting GTs, among which 00, no winner, so 00)\n");
+    printf("VGTB1W, valid GTs but 1 winner; ZGTB1W, a valid GT winner, albeit 00 was among the TRs\n");
+
     return;
 }
 
+void prt_trrese2(int *deva, int numsamps) // print tech rep resol events
+{
+    int i, j;
+    int smry[NDEV]={0};
 
+    for(i=0;i<numsamps;++i)
+        for(j=0;j<NDEV;++j)
+            smry[j] += deva[i*NDEV+j];
+
+    printf("Summary of Tech Rep Resolutions:\n------------------\n");
+    printf("Undetermined(NNNNNN): %i\n", smry[0]);
+    printf("All same value of 00(OGTAZZ): %i\n", smry[1]);
+    printf("All same value, though not 00 (OGTN00): %i\n", smry[2]);
+    printf("Many GTs, but no winner (alternates equal rep)(MGTNWI): %i\n", smry[3]);
+    printf("Many GTs, among which 00, no winner (MGTNWZ): %i\n", smry[4]);
+    printf("Valid GTs but 1 winner (VGTB1W): %i\n", smry[5]);
+    printf("Valid GTs (one of which 00) and 1 winner (ZGTB1W): %i\n", smry[6]);
+
+    return;
+}
 
 void prtusage(void)
 {
@@ -1291,6 +1337,9 @@ int main(int argc, char *argv[])
 
     if(opstru.eflag)
         prt_trrese(deva, numsamps);
+
+    if(opstru.fflag)
+        prt_trrese2(deva, numsamps);
 
     // prt_adia3(ad, mp, mid);
     free_adia(ad);
