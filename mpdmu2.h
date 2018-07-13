@@ -125,6 +125,9 @@ typedef struct /* mp_t, map type, one line in the map file */
 	long pos; /* just the one number */
     boole gd;
     int gdn;
+    boole ngd; // new versionsof the above for the hash on SNP names
+    int ngdn;
+    boole keep; // new versionsof the above for the hash on SNP names
 } mp_t; /* map type */
 
 typedef struct /* wff_t, word from file type */

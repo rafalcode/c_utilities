@@ -912,6 +912,99 @@ snod **tochainharr2(mp_t *mp, int m, unsigned tsz, adia_t *ad, i2g_t2 *mid)
     return stab;
 }
 
+snod **tochainharr3(mp_t *mp, int m, unsigned tsz)
+{
+    unsigned i;
+    int gdk=1;
+
+    snod **stab=malloc(tsz*sizeof(snod *));
+    for(i=0;i<tsz;++i) 
+        stab[i]=NULL; /* _is_ a valid ptr, but it's unallocated. Initialization is possible though. */
+    snod *tsnod0, *tsnod2;
+
+    unsigned tint;
+
+    for(i=0; i< m; ++i) {
+        // ensure the following:
+        mp[i].ngd=0;
+        mp[i].ngdn=0;
+        mp[i].keep=0;
+
+        tint=hashit(mp[i].n, tsz); 
+        if( (stab[tint] == NULL) ) {
+            stab[tint]=malloc(sizeof(snod));
+            stab[tint]->mp=mp+i;
+            stab[tint]->idx=i;
+            stab[tint]->n=NULL;
+            continue;
+        }
+        tsnod2=stab[tint];
+        while( (tsnod2 != NULL) ) {
+            if(!strcmp(tsnod2->mp->n, mp[i].n)) {
+                if(!tsnod2->mp->ngd) { // new duplicate type therefore new category
+                    tsnod2->mp->ngd++; // will be the master index for this dupset
+                    tsnod2->mp->ngdn = gdk;
+                    mp[i].ngd++;
+                    mp[i].ngdn = gdk;
+                    gdk++;
+                } else {
+                    mp[i].ngd++;
+                    mp[i].ngdn = tsnod2->mp->gdn;
+                }
+                goto nxt;
+            }
+            tsnod0=tsnod2;
+            tsnod2=tsnod2->n;
+        }
+        tsnod0->n=malloc(sizeof(snod));
+        tsnod0->n->mp=mp+i;
+        tsnod0->n->idx=i;
+        tsnod0->n->n=NULL;
+nxt:
+        continue;
+    }
+    return stab;
+}
+
+void filtchainharr3(snod **stab, unsigned tsz, wff_t *wff, int m)
+{
+    unsigned i;
+    boole inmap;
+
+    snod *tsnod2;
+
+    unsigned tint;
+
+    for(i=0; i< m; ++i) {
+        inmap=0;
+
+        tint=hashit(wff[i].w, tsz); 
+        if( (stab[tint] == NULL) ) {
+            printf("No corresponding mp_t for %s (Msg 1).\n", wff[i].w); 
+            continue;
+        }
+
+        tsnod2=stab[tint];
+        while( (tsnod2 != NULL) ) {
+            if(!strcmp(tsnod2->mp->n, wff[i].w)) {
+                if(!tsnod2->mp->keep) { // new duplicate type therefore new category
+                    tsnod2->mp->keep=1;
+                    inmap=1;
+                } else {
+                    printf("This seems to be a repeat SNP Name to filter: please check file specified in -n option.\n");
+                }
+                goto nxt;
+            }
+            tsnod2=tsnod2->n;
+        }
+        if(!inmap)
+            printf("No corresponding mp_t for %s (Msg 2).\n", wff[i].w); 
+nxt:
+        continue;
+    }
+    return;
+}
+
 void prtchaharr(snod **stab, unsigned tsz)
 {
     unsigned i;
@@ -938,6 +1031,24 @@ void prtchaharr2(snod **stab, unsigned tsz)
         tsnod2=stab[i];
         while(tsnod2) {
             printf("%s(I:%i,C:%i) ", tsnod2->mp->nn, tsnod2->idx, (int)tsnod2->mp->gdn);
+            tsnod2=tsnod2->n;
+        }
+        printf("\n"); 
+    }
+    printf("\n"); 
+    return;
+}
+
+void prtchaharr3(snod **stab, unsigned tsz) // print out mp_t on baiss of second (SNP name) hashing
+{
+    unsigned i;
+    snod *tsnod2;
+    printf("Printing out SNP name hash together with index in original mp_t and dupcount and ts dup category (0 for nondup):\n\n");
+    for(i=0;i<tsz;++i) {
+        printf("Tablepos %i: ", i); 
+        tsnod2=stab[i];
+        while(tsnod2) {
+            printf("%s(I:%i,DN:%i,DC:%i) ", tsnod2->mp->n, tsnod2->idx, (int)tsnod2->mp->ngd, (int)tsnod2->mp->ngdn);
             tsnod2=tsnod2->n;
         }
         printf("\n"); 
@@ -1272,6 +1383,28 @@ void prt_mp(mp_t *mp, int m, int n)
     return;
 }
 
+void prt_mp2(mp_t *mp, int m, int n)
+{
+    int i, j;
+    printf("var mp type mp_t is %i rows by %i columns and is as follows:\n", m, n); 
+    printf("Only kept records are printed in this function.\n");
+    for(i=0;i<m;++i) {
+        if(!mp[i].keep)
+            continue;
+        for(j=0;j<n;++j) {
+            if(j==1)
+                printf("%s\t", mp[i].n);
+            else if (j==3)
+                printf("%li\n", mp[i].pos);
+            else if (j==0)
+                printf("%s\t", mp[i].cnu);
+            else if (j==2)
+                printf("%i ", mp[i].cmo);
+        }
+    }
+    return;
+}
+
 void prt_wff(wff_t *wff, int m, int n)
 {
     int i, j;
@@ -1412,8 +1545,10 @@ int main(int argc, char *argv[])
 
     i2g_t2 *mid=crea_i22(); // master index of dupsets
     snod **mph = tochainharr2(mp, m, htsz, ad, mid);
+    snod **mph2=NULL; //for later
     norm_i22(mid);
     // prtchaharr(mph, htsz);
+    freechainharr(mph, htsz);
 
     norm_adia(ad);
     // prt_adia(ad);
@@ -1463,14 +1598,18 @@ int main(int argc, char *argv[])
     wff_t *wff=NULL;
     int mnf=0, nnf=0;
     if(opstru.nf) {
+        mph2 = tochainharr3(mp, m, htsz);
         wff=process1c(opstru.nf, &mnf, &nnf);
-        prt_wff(wff, mnf, nnf);
+        // prt_wff(wff, mnf, nnf);
+        prtchaharr3(mph2, htsz);
+        filtchainharr3(mph2, htsz, wff, mnf);
+        freechainharr(mph2, htsz);
+        prt_mp2(mp, m, n);
     }
 
     // prt_adia3(ad, mp, mid);
     free_adia(ad);
     free_i22(mid);
-    freechainharr(mph, htsz);
 
     if(opstru.pflag)
         prt_map(mp, m, argv[1]);
