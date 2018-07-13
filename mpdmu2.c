@@ -4,7 +4,7 @@ int catchopts(optstruct *opstru, int oargc, char **oargv)
 {
     int c;
     opterr = 0;
-    while ((c = getopt (oargc, oargv, "ptefc")) != -1)
+    while ((c = getopt (oargc, oargv, "ptefcn:")) != -1)
         switch (c) {
             case 'p': // want output as ped and map
                 opstru->pflag = 1;
@@ -21,6 +21,14 @@ int catchopts(optstruct *opstru, int oargc, char **oargv)
             case 'c': // "comfort" flag ... similar to -t, but want to see CN_PN's strings, "just to make sure"
                 opstru->cflag = 1;
                 break;
+            case 'n': // n for name file flag .. a filename with SNP names
+                opstru->nf=optarg;
+                break;
+			case '?':
+				if (optopt == 'n') {
+					fprintf (stderr, "Option -%c requires an file with SNP names argument.\n", optopt);
+                    exit(EXIT_FAILURE);
+                }
             default:
                 abort();
         }
@@ -980,6 +988,98 @@ void free_wseq(wseq_t *wa)
     free(wa);
 }
 
+wff_t *process1c(char *fname, int *m, int *n)
+{
+    /* just the one wor per line ... into a string */
+    FILE *fp=fopen(fname,"r");
+    int i;
+    size_t couc /*count chars per line */, couw=0 /* count words */, oldcouw = 0;
+    int c;
+    boole inword=0;
+    wseq_t *wa=create_wseq_t(GBUF);
+    size_t bwbuf=WBUF;
+    char *bufword=calloc(bwbuf, sizeof(char)); /* this is the string we'll keep overwriting. */
+
+    wff_t *wff=malloc(GBUF*sizeof(wff_t));
+
+    while( (c=fgetc(fp)) != EOF) { /* grab a char */
+        if( (c== '\n') | (c == ' ') | (c == '\t')) { /* word closing events */
+            if( inword==1) { /* first word closing event */
+                wa->wln[couw]=couc;
+                bufword[couc++]='\0';
+                bufword = realloc(bufword, couc*sizeof(char)); /* normalize */
+                /* for the struct, we want to know if it's the first word in a line, like so: */
+                if(couw==oldcouw) {
+                    wff[wa->numl].w=malloc(couc*sizeof(char));
+                    wff[wa->numl].wsz=couc; // yes will be one bigger
+                    strcpy(wff[wa->numl].w, bufword);
+                }
+                couc=0;
+                couw++;
+            }
+            if(c=='#') { /* comment case */
+                while( (c=fgetc(fp)) != '\n') ;
+                continue;
+            } else if(c=='\n') { /* end of a line */
+                if(wa->numl == wa->lbuf-1) { /* enought space in our current array? */
+                    wa->lbuf += WBUF;
+                    wa->wpla=realloc(wa->wpla, wa->lbuf*sizeof(size_t));
+                    wff=realloc(wff, wa->lbuf*sizeof(wff_t));
+                    memset(wa->wpla+(wa->lbuf-WBUF), 0, WBUF*sizeof(size_t));
+                }
+                wa->wpla[wa->numl] = couw-oldcouw; /* number of words in current line */
+                if(couw-oldcouw >1) {
+                    printf("Error, each row cannot exceed 1 words: revise your input file\n"); 
+                    /* need to release all memory too */
+                    free_wseq(wa);
+                    exit(EXIT_FAILURE);
+                }
+                oldcouw=couw; /* restart words per line count */
+                wa->numl++; /* brand new line coming up */
+            }
+            inword=0;
+        } else if(inword==0) { /* deal with first character of new word, + and - also allowed */
+            if(couw == wa->wsbuf-1) {
+                wa->wsbuf += GBUF;
+                wa->wln=realloc(wa->wln, wa->wsbuf*sizeof(size_t));
+                wff=realloc(wff, wa->wsbuf*sizeof(wff_t));
+                for(i=wa->wsbuf-GBUF;i<wa->wsbuf;++i)
+                    wa->wln[i]=0;
+            }
+            couc=0;
+            bwbuf=WBUF;
+            bufword=realloc(bufword, bwbuf*sizeof(char)); /* don't bother with memset, it's not necessary */
+            bufword[couc++]=c; /* no need to check here, it's the first character */
+            inword=1;
+        } else {
+            if(couc == bwbuf-1) { /* the -1 so that we can always add and extra (say 0) when we want */
+                bwbuf += WBUF;
+                bufword = realloc(bufword, bwbuf*sizeof(char));
+            }
+            bufword[couc++]=c;
+        }
+
+    } /* end of big for statement */
+    fclose(fp);
+    free(bufword);
+
+    /* normalization stage */
+    wa->quan=couw;
+    wa->wln = realloc(wa->wln, wa->quan*sizeof(size_t)); /* normalize */
+    wff = realloc(wff, wa->quan*sizeof(wff_t)); /* normalize */
+    wa->wpla= realloc(wa->wpla, wa->numl*sizeof(size_t));
+
+    *m= wa->numl;
+    int k=wa->wpla[0];
+    for(i=1;i<wa->numl;++i)
+        if(k != wa->wpla[i])
+            printf("Warning: Numcols is not uniform at %i words per line on all lines. This file has one with %zu.\n", k, wa->wpla[i]); 
+    *n= k; 
+    free_wseq(wa);
+
+    return wff;
+}
+
 mp_t *processinpf(char *fname, int *m, int *n)
 {
     /* In order to make no assumptions, the file is treated as lines containing the same amount of words each,
@@ -1172,6 +1272,16 @@ void prt_mp(mp_t *mp, int m, int n)
     return;
 }
 
+void prt_wff(wff_t *wff, int m, int n)
+{
+    int i, j;
+    printf("var wff type wff_t is %i rows by %i columns and is as follows:\n", m, n); 
+    for(i=0;i<m;++i)
+        for(j=0;j<n;++j)
+                printf("%s\n", wff[i].w);
+    return;
+}
+
 void prt_map(mp_t *mp, int m, char *fname)
 {
     int i;
@@ -1266,10 +1376,10 @@ void prt_trrese2(int *deva, int numsamps) // print tech rep resol events
 void prtusage(void)
 {
     printf("Usage notice. Pls supply at least 2 arguments: 1) Name of plink map file 2) Name of plink ped file.\n");
+    printf("Take good note: map file first, ped file second ... no option required.\n");
     printf("For output as a .tped and .tfam pair, add the \"-t\" option as (NB!) 3rd argument.\n"); 
     return;
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -1312,10 +1422,14 @@ int main(int argc, char *argv[])
     int numsamps=0;
     int dvbuf= GBUF*NDEV;
     int *deva=calloc(dvbuf, sizeof(int)); // type of event in duplicate resolution, for all samples (not split per sample).
-    FILE *fp=fopen(argv[2], "r"); // OK, now handle
+    FILE *of=NULL, *fp=fopen(argv[2], "r"); // OK, now handle
     int lastchar=9;
-    char *ofn=newna(argv[2]);
-    FILE *of=fopen(ofn, "w");
+    char *ofn=NULL;
+
+    if(opstru.pflag) {
+        ofn=newna(argv[2]);
+        of=fopen(ofn, "w");
+    }
     for(;;) { // for each sample
         aawc=processinpf3(fp, &lastchar);
         if(lastchar==EOF) {
@@ -1323,13 +1437,17 @@ int main(int argc, char *argv[])
             break;
         }
         dupstats4(aawc, mp, ad, mid, deva, numsamps);
-        prt_partped(mp, m, n, mid, aawc, of);
+        if(opstru.pflag)
+            prt_partped(mp, m, n, mid, aawc, of);
         free_aawc(&aawc);
         numsamps++;
         CONDREALLOC(numsamps*NDEV, dvbuf, GBUF*NDEV, deva, int);
     }
     fclose(fp);
-    fclose(of);
+    if(opstru.pflag) {
+        free(ofn);
+        fclose(of);
+    }
     deva=realloc(deva, numsamps*NDEV*sizeof(int));
 
     if(opstru.tflag)
@@ -1341,18 +1459,33 @@ int main(int argc, char *argv[])
     if(opstru.fflag)
         prt_trrese2(deva, numsamps);
 
+    // OK get a list of SNP names
+    wff_t *wff=NULL;
+    int mnf=0, nnf=0;
+    if(opstru.nf) {
+        wff=process1c(opstru.nf, &mnf, &nnf);
+        prt_wff(wff, mnf, nnf);
+    }
+
     // prt_adia3(ad, mp, mid);
     free_adia(ad);
     free_i22(mid);
     freechainharr(mph, htsz);
 
-    prt_map(mp, m, argv[1]);
+    if(opstru.pflag)
+        prt_map(mp, m, argv[1]);
+
     for(i=0;i<m;++i) {
         free(mp[i].n);
         free(mp[i].nn);
     }
     free(mp);
     free(deva);
-    free(ofn);
+    if(opstru.nf) {
+        for(i=0;i<mnf;++i)
+            free(wff[i].w);
+        free(wff);
+    }
+
     return 0;
 }

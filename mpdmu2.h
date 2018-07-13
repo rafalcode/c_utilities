@@ -40,6 +40,7 @@ typedef struct  /* optstruct, a struct for the options */
     int eflag; // if you want to see the techrep resolution categories
     int fflag; // summary of Tech Rep resolutions
     int cflag; // TRDupsets with CN_PN strngs for comfort
+    char *nf; // a file with SNP names
 } optstruct;
 
 typedef enum /* gt_t, genotype type */
@@ -125,6 +126,12 @@ typedef struct /* mp_t, map type, one line in the map file */
     boole gd;
     int gdn;
 } mp_t; /* map type */
+
+typedef struct /* wff_t, word from file type */
+{
+	char *w;
+	size_t wsz; /* size of the name r ID field */
+} wff_t;
 
 typedef struct /* wseq_t */
 {
