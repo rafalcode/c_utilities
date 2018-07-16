@@ -33,6 +33,7 @@
     }
 
 typedef unsigned char boole;
+typedef boole bool3; // not necessary, but makes t celar there's 3 values 0, 1, 2 for notseen, seen once, seen >1
 typedef struct  /* optstruct, a struct for the options */
 {
     int pflag; // output as ped and map, aftetr having resolved resolution events
@@ -84,7 +85,7 @@ typedef struct /* i2g_t2 */
     unsigned **i, sz, bf;
     gt_t **gt; // dynamic .. per sample
     int **dpcou; // a count of the dups for this loc ... necessarily starts as 2.
-    boole **mif; // after filtering: already mentioned in filter?
+    bool3 **mif; // after filtering: already mentioned in filter?
 } i2g_t2; /* map indices to with gts */
 
 typedef struct /* dgia_t */
@@ -124,7 +125,7 @@ typedef struct /* mp_t, map type, one line in the map file */
     // float cmo; // the centimorgans, it truly should be float, but opt for int
     int cmo; // the centimorgans, it truly should be float, but opt for int
 	long pos; /* just the one number */
-    boole gd;
+    bool3 gd;
     int gdn;
     boole ngd; // new versionsof the above for the hash on SNP names
     int ngdn;
@@ -139,6 +140,7 @@ typedef struct /* wff_t, word from file type */
     boole nomatch;
     boole hitmdup; // hit master dup
     boole hitddup; // hit discarded dup
+    boole ddupwom; // a discarded whose master dup was not called.
 } wff_t;
 
 typedef struct /* wseq_t */

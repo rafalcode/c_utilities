@@ -1460,14 +1460,66 @@ void prt_wff0(wff_t *wff, int m)
 void filtprocmid(wff_t *wff, int m, i2g_t2 *mid, mp_t *mp)
 {
     int i;
+    int coumhits=0 /* number of snpnames that coincided with a master dup */, couddwoms=0 /* Number of the snpnames whose master dup was not called */, couddwmas=0 /* dups with master dups mentioned already */;
     printf("Investigating snp name that are duplicates but not master ones.\n");
     for(i=0;i<m;++i) {
+        wff[i].ddupwom=0;
+        if(wff[i].hitmdup) {
+            (*mid->mif)[wff[i].gdn-1] =1; // OK, this dupset is mentioned directly.
+            coumhits++;
+        }
+    }
+
+    // OK, we'r interested in snpnames which were discard dups, but whose master dup was NOT called.
+    for(i=0;i<m;++i)
+        if(wff[i].hitddup) {
+            if( (*mid->mif)[wff[i].gdn-1] == 0 ) {
+                wff[i].ddupwom =1;
+                couddwoms++;
+                mp[(*mid->mif)[wff[i].gdn-1]].keep=1; // OK, this dupset is mentioned directly.
+            } else if( (*mid->mif)[wff[i].gdn-1] == 1 )
+                couddwmas++;
+                // note: not necessary to set the corresponding mp to keep here, already done.
+        }
+    int snpdups= coumhits +couddwmas + couddwoms; 
+
+    printf("Snpnames that were dups ... total %i; hit designated master dups %i, hit ddups already mdups %i, hit ddups not set as master: %i\n", snpdups, coumhits, couddwmas, couddwoms);
+
+    /* So, we must ste the ddups without a master dup to include the corresponding master dup */
+
+    return;
+}
+
+void filtprocmid_d(wff_t *wff, int m, i2g_t2 *mid, mp_t *mp)
+{
+    /* the debug version */
+    int i;
+    int coumhits=0 /* number of snpnames that coincided with a master dup */, couddwoms=0 /* Number of the snpnames whose master dup was not called */, couddwmas=0 /* dups with master dups mentioned already */;
+    printf("Investigating snp name that are duplicates but not master ones.\n");
+    for(i=0;i<m;++i) {
+        wff[i].ddupwom=0;
         if(wff[i].hitmdup) {
             printf("%s already master dup \"%s\" with global idx %u\n", wff[i].w, mp[(*mid->i)[wff[i].gdn-1]].n, (*mid->i)[wff[i].gdn-1]);
+            (*mid->mif)[wff[i].gdn-1] =1;
+            coumhits++;
         } else if(wff[i].hitddup) {
             printf("%s a discarded dup, repr by a master dup \"%s\" with global idx %u\n", wff[i].w, mp[(*mid->i)[wff[i].gdn-1]].n, (*mid->i)[wff[i].gdn-1]);
         }
     }
+
+    // OK, we'r interested in snpnames which were discard dups, but whose master dup was NOT called.
+    for(i=0;i<m;++i)
+        if(wff[i].hitddup) {
+            if( (*mid->mif)[wff[i].gdn-1] == 0 ) {
+                wff[i].ddupwom =1;
+                couddwoms++;
+            } else if( (*mid->mif)[wff[i].gdn-1] == 1 )
+                couddwmas++;
+        }
+    int snpdups= coumhits +couddwmas + couddwoms; 
+
+    printf("Snpnames that were dups ... total %i; hit designated master dups %i, hit ddups already mdups %i, hit ddups not set as master: %i\n", snpdups, coumhits, couddwmas, couddwoms);
+
     return;
 }
 
@@ -1510,6 +1562,20 @@ void prt_map(mp_t *mp, int m, char *fname)
         if(mp[i].gd == 1)
             continue;
         fprintf(of, "%s\t%s\t%i\t%li\n", mp[i].cnu, mp[i].n, mp[i].cmo, mp[i].pos);
+    }
+    fclose(of);
+    free(ofn);
+    return;
+}
+
+void prt_map2(mp_t *mp, int m, char *fname)
+{
+    int i;
+    char *ofn=newna(fname);
+    FILE *of=fopen(ofn, "w");
+    for(i=0;i<m;++i) {
+        if(mp[i].keep)
+            fprintf(of, "%s\t%s\t%i\t%li\n", mp[i].cnu, mp[i].n, mp[i].cmo, mp[i].pos);
     }
     fclose(of);
     free(ofn);
@@ -1659,17 +1725,13 @@ int main(int argc, char *argv[])
             break;
         }
         dupstats4(aawc, mp, ad, mid, deva, numsamps);
-        if(opstru.pflag)
+        if( (opstru.pflag) && !(opstru.nf) )
             prt_partped(mp, m, n, mid, aawc, of);
         free_aawc(&aawc);
         numsamps++;
         CONDREALLOC(numsamps*NDEV, dvbuf, GBUF*NDEV, deva, int);
     }
     fclose(fp);
-    if(opstru.pflag) {
-        free(ofn);
-        fclose(of);
-    }
     deva=realloc(deva, numsamps*NDEV*sizeof(int));
 
     if(opstru.tflag)
@@ -1685,24 +1747,48 @@ int main(int argc, char *argv[])
     wff_t *wff=NULL;
     int mnf=0, nnf=0;
     if(opstru.nf) {
-        mph2 = tochainharr3(mp, m, htsz);
-        wff=process1c(opstru.nf, &mnf, &nnf);
+        mph2 = tochainharr3(mp, m, htsz); // second hashing, based on SNP name now, not stringified C#P#
+        wff=process1c(opstru.nf, &mnf, &nnf); // pull in the list of SNPnames to be extracted (i.e. kept).
         // prt_wff(wff, mnf, nnf);
         // prtchaharr3(mph2, htsz);
         filtchainharr3(mph2, htsz, wff, mnf, &hitmdupcou, &hitddupcou);
         
         // prt_wff1(wff, mnf);
-        filtprocmid(wff, m, mid, mp);
+        filtprocmid(wff, m, mid, mp); // this takes care of snpnames which were discard as dups, gives their master dup instead.
+
+        // OK we need to print out the ped again, unfortunately, the original ped has to be re-read.
+        if(opstru.pflag) {
+            fp=fopen(argv[2], "r");
+            for(;;) { // for each sample
+                aawc=processinpf3(fp, &lastchar);
+                if(lastchar==EOF) {
+                    free_aawc(&aawc);
+                    break;
+                }
+                prt_partped(mp, m, n, mid, aawc, of);
+                free_aawc(&aawc);
+            }
+            fclose(fp);
+        }
         freechainharr(mph2, htsz);
         // prt_mp2(mp, m, n);
+    }
+
+    if(opstru.pflag) {
+        free(ofn);
+        fclose(of);
     }
 
     // prt_adia3(ad, mp, mid);
     free_adia(ad);
     free_i22(mid);
 
-    if(opstru.pflag)
-        prt_map(mp, m, argv[1]);
+    if(opstru.pflag) {
+        if(opstru.nf)
+            prt_map2(mp, m, argv[1]);
+        else
+            prt_map(mp, m, argv[1]);
+    }
 
     for(i=0;i<m;++i) {
         free(mp[i].n);
