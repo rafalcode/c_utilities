@@ -84,6 +84,7 @@ typedef struct /* i2g_t2 */
     unsigned **i, sz, bf;
     gt_t **gt; // dynamic .. per sample
     int **dpcou; // a count of the dups for this loc ... necessarily starts as 2.
+    boole **mif; // after filtering: already mentioned in filter?
 } i2g_t2; /* map indices to with gts */
 
 typedef struct /* dgia_t */
@@ -134,6 +135,10 @@ typedef struct /* wff_t, word from file type */
 {
 	char *w;
 	size_t wsz; /* size of the name r ID field */
+    int gdn; /* will be zero not a duplicate */
+    boole nomatch;
+    boole hitmdup; // hit master dup
+    boole hitddup; // hit discarded dup
 } wff_t;
 
 typedef struct /* wseq_t */

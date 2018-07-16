@@ -120,12 +120,15 @@ i2g_t2 *crea_i22(void)
     i22->i=malloc(sizeof(unsigned*));
     i22->gt=malloc(sizeof(gt_t*));
     i22->dpcou=malloc(sizeof(int*));
+    i22->mif=malloc(sizeof(boole*));
     (*i22->i)=malloc(i22->bf*sizeof(unsigned));
+    (*i22->mif)=malloc(i22->bf*sizeof(boole));
     (*i22->gt)=malloc(i22->bf*sizeof(gt_t));
     (*i22->dpcou)=malloc(i22->bf*sizeof(int));
     for(i=0;i<i22->bf;++i) {
         (*i22->gt)[i]=ZZ;
         (*i22->dpcou)[i]=2;
+        (*i22->mif)[i]=0;
     }
     return i22;
 }
@@ -136,9 +139,11 @@ void append_i22(i2g_t2 *i22, unsigned i)
     if(i22->sz == i22->bf) {
         i22->bf += GBUF;
         (*i22->i)=realloc((*i22->i), i22->bf*sizeof(unsigned));
+        (*i22->mif)=realloc((*i22->mif), i22->bf*sizeof(boole));
         (*i22->gt)=realloc((*i22->gt), i22->bf*sizeof(gt_t));
         (*i22->dpcou)=realloc((*i22->dpcou), i22->bf*sizeof(int));
         for(j=i22->bf-GBUF;j<i22->bf;++j) {
+            (*i22->mif)[j]=0;
             (*i22->gt)[j]=ZZ;
             (*i22->dpcou)[j]=2;
         }
@@ -258,7 +263,9 @@ void free_i22(i2g_t2 *i22)
     free((*i22->i));
     free((*i22->gt));
     free((*i22->dpcou));
+    free((*i22->mif));
     free(i22->i);
+    free(i22->mif);
     free(i22->dpcou);
     free(i22->gt);
     free(i22);
@@ -966,10 +973,11 @@ nxt:
     return stab;
 }
 
-void filtchainharr3(snod **stab, unsigned tsz, wff_t *wff, int m)
+void filtchainharr3(snod **stab, unsigned tsz, wff_t *wff, int m, int *hitmdupcou, int *hitddupcou)
 {
     unsigned i;
     boole inmap;
+    int hitddupcou_=0, hitmdupcou_=0;
 
     snod *tsnod2;
 
@@ -977,10 +985,15 @@ void filtchainharr3(snod **stab, unsigned tsz, wff_t *wff, int m)
 
     for(i=0; i< m; ++i) {
         inmap=0;
+        wff[i].nomatch=0;
+        wff[i].hitmdup=0;
+        wff[i].hitddup=0;
+        wff[i].gdn=0;
 
         tint=hashit(wff[i].w, tsz); 
         if( (stab[tint] == NULL) ) {
             printf("No corresponding mp_t for %s (Msg 1).\n", wff[i].w); 
+            wff[i].nomatch=1;
             continue;
         }
 
@@ -989,6 +1002,15 @@ void filtchainharr3(snod **stab, unsigned tsz, wff_t *wff, int m)
             if(!strcmp(tsnod2->mp->n, wff[i].w)) {
                 if(!tsnod2->mp->keep) { // new duplicate type therefore new category
                     tsnod2->mp->keep=1;
+                    if(tsnod2->mp->gd==2) {
+                        wff[i].gdn=tsnod2->mp->gdn;
+                        wff[i].hitmdup=1;
+                        hitmdupcou_++;
+                    } else if(tsnod2->mp->gd==1) {
+                        wff[i].hitddup=1;
+                        wff[i].gdn=tsnod2->mp->gdn;
+                        hitddupcou_++;
+                    }
                     inmap=1;
                 } else {
                     printf("This seems to be a repeat SNP Name to filter: please check file specified in -n option.\n");
@@ -997,11 +1019,16 @@ void filtchainharr3(snod **stab, unsigned tsz, wff_t *wff, int m)
             }
             tsnod2=tsnod2->n;
         }
-        if(!inmap)
+        if(!inmap) {
             printf("No corresponding mp_t for %s (Msg 2).\n", wff[i].w); 
+            wff[i].nomatch=1;
+        }
 nxt:
         continue;
     }
+
+    *hitddupcou=hitddupcou_;
+    *hitmdupcou=hitmdupcou_;
     return;
 }
 
@@ -1415,6 +1442,65 @@ void prt_wff(wff_t *wff, int m, int n)
     return;
 }
 
+void prt_wff0(wff_t *wff, int m)
+{
+    int i;
+    printf("The SNP name file had the following unfound names in the map file:\n");
+    for(i=0;i<m;++i) {
+        if(wff[i].hitmdup)
+            printf("%s(matched a master TR)\n", wff[i].w);
+        else if(wff[i].hitddup)
+            printf("%s(matched TR, but a discarded one)\n", wff[i].w);
+        else
+            printf("%s\n", wff[i].w);
+    }
+    return;
+}
+
+void filtprocmid(wff_t *wff, int m, i2g_t2 *mid, mp_t *mp)
+{
+    int i;
+    printf("Investigating snp name that are duplicates but not master ones.\n");
+    for(i=0;i<m;++i) {
+        if(wff[i].hitmdup) {
+            printf("%s already master dup \"%s\" with global idx %u\n", wff[i].w, mp[(*mid->i)[wff[i].gdn-1]].n, (*mid->i)[wff[i].gdn-1]);
+        } else if(wff[i].hitddup) {
+            printf("%s a discarded dup, repr by a master dup \"%s\" with global idx %u\n", wff[i].w, mp[(*mid->i)[wff[i].gdn-1]].n, (*mid->i)[wff[i].gdn-1]);
+        }
+    }
+    return;
+}
+
+void prt_wff1(wff_t *wff, int m) /* will only reported those SNP names (from list) that coincide with real dups (TRs) */
+{
+    int i;
+    printf("The SNP name file had the following unfound names in the map file:\n");
+    for(i=0;i<m;++i) {
+        if(wff[i].hitmdup)
+            printf("%s(matched a master TR); DC=%i\n", wff[i].w, wff[i].gdn);
+        else if(wff[i].hitddup)
+            printf("%s(matched TR, but a discarded one); DC=%i\n", wff[i].w, wff[i].gdn);
+    }
+    return;
+}
+
+void prt_wffnotfound(wff_t *wff, int m)
+{
+    int i;
+    printf("The SNP name file had the following unfound names in the map file:\n");
+    for(i=0;i<m;++i) {
+        if(!wff[i].nomatch)
+            continue;
+        if(wff[i].hitmdup)
+            printf("%s(matched a master TR)\n", wff[i].w);
+        else if(wff[i].hitddup)
+            printf("%s(matched TR, but a discarded one)\n", wff[i].w);
+        else
+            printf("%s\n", wff[i].w);
+    }
+    return;
+}
+
 void prt_map(mp_t *mp, int m, char *fname)
 {
     int i;
@@ -1529,6 +1615,7 @@ int main(int argc, char *argv[])
     catchopts(&opstru, oargc, oargv);
 
     int i, m, n;
+    int hitddupcou, hitmdupcou;
     mp_t *mp=processinpf(argv[1], &m, &n);
     aaw_c *aawc=NULL; // like pedsta, to avoid the huge ped files, we're going to go line by line.
 
@@ -1601,10 +1688,13 @@ int main(int argc, char *argv[])
         mph2 = tochainharr3(mp, m, htsz);
         wff=process1c(opstru.nf, &mnf, &nnf);
         // prt_wff(wff, mnf, nnf);
-        prtchaharr3(mph2, htsz);
-        filtchainharr3(mph2, htsz, wff, mnf);
+        // prtchaharr3(mph2, htsz);
+        filtchainharr3(mph2, htsz, wff, mnf, &hitmdupcou, &hitddupcou);
+        
+        // prt_wff1(wff, mnf);
+        filtprocmid(wff, m, mid, mp);
         freechainharr(mph2, htsz);
-        prt_mp2(mp, m, n);
+        // prt_mp2(mp, m, n);
     }
 
     // prt_adia3(ad, mp, mid);
