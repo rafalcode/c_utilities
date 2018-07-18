@@ -2,10 +2,11 @@ CC=gcc
 # CFLAGS=-O3
 CFLAGS=-g -Wall
 DBGCFLAGS=-g -Wall -DDBG
+DBG2CFLAGS=-g -Wall -DDBG2
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
 
 LIBS=-lgsl -lgslcblas -lm
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4 pedsta mpdmu2 mpdmu2_d
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4 pedsta mpdmu2 mpdmu2_d mpdmu3 mpdmu3_d
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -160,6 +161,20 @@ mpdmu2: mpdmu2.c
 	${CC} ${CFLAGS} -o $@ $^
 mpdmu2_d: mpdmu2.c
 	${CC} ${DBGCFLAGS} -o $@ $^
+mpdmu2_d2: mpdmu2.c
+	${CC} ${DBG2CFLAGS} -o $@ $^
+
+# OK ran into trouble (as sual) with what appeard to be a refinement step
+# printing out the snpname of the discarded dup, while prting the genotype of its mater dup
+# aha, not so easy.
+# best thing it to filter out the snapnames before hand.
+mpdmu3: mpdmu3.c
+	${CC} ${CFLAGS} -o $@ $^
+mpdmu3_d: mpdmu3.c
+	${CC} ${DBGCFLAGS} -o $@ $^
+mpdmu3_d2: mpdmu3.c
+	${CC} ${DBG2CFLAGS} -o $@ $^
+
 
 # for duplicate coutning unit test
 dcou: dcou.c
