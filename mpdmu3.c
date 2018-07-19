@@ -409,6 +409,7 @@ aw_c *crea_awc(unsigned initsz)
     aw_c *awc=malloc(sizeof(aw_c));
     awc->ab=initsz;
     awc->al=awc->ab;
+    awc->nn=calloc(CPSTRSZ, sizeof(char));
     awc->aw=malloc(awc->ab*sizeof(w_c*));
     for(i=0;i<awc->ab;++i) 
         awc->aw[i]=crea_wc();
@@ -448,6 +449,7 @@ void free_awc(aw_c **awc)
     for(i=0;i<tawc->al;++i) 
         free_wc(tawc->aw+i);
     free(tawc->aw); /* unbelieveable: I left this out, couldn't find where I leaking the memory! */
+    free(tawc->nn);
     free(tawc);
     return;
 }
@@ -1683,6 +1685,17 @@ void prtaawcplain(aaw_c *aawc) /* print line and word details, but not the words
     }
 }
 
+void prtmpaaw(aaw_c *mpaaw) /* print line and word details, but not the words themselves */
+{
+    int i, j;
+    for(i=0;i<mpaaw->numl;++i) {
+        // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+        for(j=0;j<mpaaw->aaw[i]->al;++j)
+            printf("%s\t", mpaaw->aaw[i]->aw[j]->w);
+        printf("%s\n", mpaaw->aaw[i]->nn);
+    }
+}
+
 void aawcaspedf(aaw_c *aawc, char *fname) /* print line and word details, but not the words themselves */
 {
     int i, j;
@@ -1844,6 +1857,9 @@ aaw_c *process_mpaaw3(char *fname, snodw **stab, unsigned htsz)
                         continue;
                     }
                 }
+                if(couw==3)
+                    sprintf(aawc->aaw[aawc->numl]->nn, "C%s_P%09li", aawc->aaw[aawc->numl]->aw[couw-3]->w, atol(aawc->aaw[aawc->numl]->aw[couw]->w));
+
                 aawc->aaw[aawc->numl]->aw[couw]->lp1=couc;
                 aawc->aaw[aawc->numl]->aw[couw]->w = realloc(aawc->aaw[aawc->numl]->aw[couw]->w, couc*sizeof(char));
                 // printf("Normalising aw corresponding to %s\n", aawc->aaw[aawc->numl]->aw[couw]->w); 
@@ -2195,7 +2211,8 @@ int main(int argc, char *argv[])
     // prtchaharr1(wha, htsz);
     // aaw_c *mpaaw=process_mpaaw(argv[1]);
     aaw_c *mpaaw=process_mpaaw3(argv[1], wha, htsz);
-    prtaawcplain(mpaaw);
+    // prtaawcplain(mpaaw);
+    prtmpaaw(mpaaw);
     printf("Your map file had %zu entries.\n", mpaaw->numl); 
     printf("Your snpname file had %i entries.\n", mnf); 
 

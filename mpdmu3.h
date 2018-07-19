@@ -23,7 +23,7 @@
 #endif
 #define MNCOLS 4 // mandatory number of columns
 
-
+#define CPSTRSZ 16
 #define NDEV 7 // number of duplicate resolution event types
 #define CONDREALLOC(x, b, c, a, t); \
     if((x)>=((b)-1)) { \
@@ -197,6 +197,7 @@ typedef struct /* aw_c: array of words container */
     w_c **aw;
     unsigned ab;
     unsigned al;
+    char *nn;
 } aw_c;
 
 typedef struct /* aaw_c: array of array of words container */
