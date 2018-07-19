@@ -159,7 +159,6 @@ struct strchainodw
     struct strchainodw *n;
     int idx; // the index corresponding to this mp element: it's the sort of thing youex
 };
-
 typedef struct strchainodw snodw;
 
 
@@ -198,6 +197,10 @@ typedef struct /* aw_c: array of words container */
     unsigned ab;
     unsigned al;
     char *nn;
+    boole gd;
+    int gdn;
+    boole ngd; // new versionsof the above for the hash on SNP names
+    int ngdn;
 } aw_c;
 
 typedef struct /* aaw_c: array of array of words container */
@@ -205,6 +208,14 @@ typedef struct /* aaw_c: array of array of words container */
     size_t numl; /* number of lines, i.e. rows */
     aw_c **aaw; /* an array of pointers to aw_c */
 } aaw_c;
+
+struct strchainodm /* m for map */
+{
+    aw_c *mpaw;
+    struct strchainodm *n;
+    int idx; // the index corresponding to this mp element: it's the sort of thing youex
+};
+typedef struct strchainodm snodm;
 
 /* checking each character can be comptiue-intensive, so I've offloaded off to MACROS */
 

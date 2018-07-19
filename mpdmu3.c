@@ -1,5 +1,18 @@
 #include "mpdmu3.h" // has the header stuff, and structs.
 
+unsigned givehtsz(unsigned mnf)
+{
+    unsigned htsz=2*mnf/3;
+    // try to grab a prime ... well just avoid 5-multiples, 3-multiples, and evens
+    if(!(htsz%5)) 
+        htsz++; // incrment by 1 if multiple of 5
+    if(!(htsz%3)) 
+        htsz++;
+    if(!(htsz%2)) 
+        htsz++;
+    return htsz;
+}
+
 char *newna(char *fname)
 {
     char *tc=strrchr(fname, '.');
@@ -410,6 +423,10 @@ aw_c *crea_awc(unsigned initsz)
     awc->ab=initsz;
     awc->al=awc->ab;
     awc->nn=calloc(CPSTRSZ, sizeof(char));
+    awc->gd=0;
+    awc->gdn=0;
+    awc->ngd=0;
+    awc->ngdn=0;
     awc->aw=malloc(awc->ab*sizeof(w_c*));
     for(i=0;i<awc->ab;++i) 
         awc->aw[i]=crea_wc();
@@ -967,6 +984,66 @@ snod **tochainharr2(mp_t *mp, int m, unsigned tsz, adia_t *ad, i2g_t2 *mid)
     return stab;
 }
 
+snodm **tochainharr4(aaw_c *mpaaw, unsigned tsz, adia_t *ad, i2g_t2 *mid)
+{
+    unsigned i;
+
+    snodm **stab=malloc(tsz*sizeof(snodm *));
+    for(i=0;i<tsz;++i) 
+        stab[i]=NULL; /* _is_ a valid ptr, but it's unallocated. Initialization is possible though. */
+    snodm *tsnod0, *tsnod2;
+    // adia_t *ad = crea_adia();
+
+    unsigned tint;
+    int gdk=1; /* the k-index for counting up the genuine duplicates, zero ignored as it means no duplicate. */
+    for(i=0; i< mpaaw->numl; ++i) {
+
+        tint=hashit(mpaaw->aaw[i]->nn, tsz); 
+        // this hash entry is new.
+        if( (stab[tint] == NULL) ) {
+            stab[tint]=malloc(sizeof(snodm));
+            stab[tint]->mpaw=mpaaw->aaw[i];
+            stab[tint]->idx=i;
+            stab[tint]->n=NULL;
+            continue;
+        }
+        tsnod2=stab[tint];
+        while( (tsnod2 != NULL) ) {
+            /// this bit is controversial, if strings are rtruly the same, leave the original in
+            // however, this time I want to include dupes so set the gd
+            if(!strcmp(tsnod2->mpaw->nn, mpaaw->aaw[i]->nn)) {
+                if(!tsnod2->mpaw->gd) { // new duplicate type therefore new category
+                    tsnod2->mpaw->gd = 2; // will be the master index for this dupset
+                    tsnod2->mpaw->gdn = gdk;
+                    loc_cat(ad, tsnod2->idx, tsnod2->mpaw->gdn);
+                    append_i22(mid, tsnod2->idx);
+                    // now take care of mp entry which exposed above as a dup
+                    mpaaw->aaw[i]->gd = 1;
+                    mpaaw->aaw[i]->gdn = gdk;
+                    loc_cat(ad, i, mpaaw->aaw[i]->gdn);
+                    gdk++;
+                } else if (!mpaaw->aaw[i]->gd) { // this snod already registered as dup
+                    // for several repeats, this could happen a few times.
+                    // originally a simple else, but duplicates then were being repeatedly inserted
+                    // checking whether gd was already set means loc_cat isn't overly called.
+                    mpaaw->aaw[i]->gd = 1;
+                    mpaaw->aaw[i]->gdn = tsnod2->mpaw->gdn;
+                    tsnod2->mpaw->gd++;
+                    (*mid->dpcou)[tsnod2->mpaw->gdn-2]++; // causes probs.
+                    loc_cat(ad, i, mpaaw->aaw[i]->gdn);
+                }
+            }
+            tsnod0=tsnod2;
+            tsnod2=tsnod2->n;
+        }
+        tsnod0->n=malloc(sizeof(snodm));
+        tsnod0->n->mpaw = mpaaw->aaw[i];
+        tsnod0->n->idx=i;
+        tsnod0->n->n=NULL;
+    }
+    return stab;
+}
+
 snod **tochainharr3(mp_t *mp, int m, unsigned tsz)
 {
     unsigned i;
@@ -1223,6 +1300,29 @@ void freechainharr1(snodw **stab, size_t tsz)
 {
     int i;
     snodw *tsnod0, *tsnod2;
+    for(i=0; i<tsz; ++i) {
+        if( (stab[i] != NULL) ) {
+            while( (stab[i]->n != NULL) ) {
+                tsnod0=stab[i];
+                tsnod2=stab[i]->n;
+                while((tsnod2->n != NULL) ){
+                    tsnod0=tsnod2;
+                    tsnod2=tsnod2->n;
+                }
+                free(tsnod0->n);
+                tsnod0->n=NULL;
+            }
+            free(stab[i]);
+        }
+    }
+    free(stab);
+    return;
+}
+
+void freechainharr4(snodm **stab, size_t tsz)
+{
+    int i;
+    snodm *tsnod0, *tsnod2;
     for(i=0; i<tsz; ++i) {
         if( (stab[i] != NULL) ) {
             while( (stab[i]->n != NULL) ) {
@@ -1706,106 +1806,7 @@ void aawcaspedf(aaw_c *aawc, char *fname) /* print line and word details, but no
     }
 }
 
-aaw_c *process_mpaaw2(char *fname, snodw **stab, unsigned htsz)
-{
-    /* unfort. started to cahneg wo new w_c which has its own buffer, but then create ver 3 of this function 
-     * so it's a bit wrecked right now */
-    FILE *fp=fopen(fname,"r");
-    int i;
-    size_t couc /*count chars per line */, couw=0 /* count words */;
-    int c;
-    boole inword=0;
-    boole found=0;
-    unsigned tint, prevsz;
-    snodw *tsnod2;
-    unsigned lbuf=LBUF /* buffer for number of lines */, cbuf=CBUF /* char buffer for size of w_c's: reused for every word */;
-    aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
-
-    while( (c=fgetc(fp)) != EOF) {
-        if( (c== '\n') | (c == ' ') | (c == '\t') ) {
-            if( inword==1) { /* cue word-ending procedure */
-                aawc->aaw[aawc->numl]->aw[couw]->w[couc++]='\0';
-                if(couw==1) {
-                    printf("couw=%zu,w=%s\n", couw, aawc->aaw[aawc->numl]->aw[couw]->w);
-                    found=0;
-                    tint=hashit(aawc->aaw[aawc->numl]->aw[couw]->w, htsz); 
-                    if( (stab[tint] == NULL) ) {
-                        while( (c=fgetc(fp)) != '\n') ;
-                        printf("no ht slot for %s chr %s\n", aawc->aaw[aawc->numl]->aw[couw]->w, aawc->aaw[aawc->numl]->aw[couw-1]->w); 
-                        couw=0;
-                        inword=0;
-                        continue;
-                    }
-                    tsnod2=stab[tint];
-                    while( (tsnod2 != NULL) ) {
-                        if(!strcmp(tsnod2->wff->w, aawc->aaw[aawc->numl]->aw[couw]->w)) {
-                            found = 1;
-                            printf("Yes, matched %s chr %s\n", aawc->aaw[aawc->numl]->aw[couw]->w, aawc->aaw[aawc->numl]->aw[couw-1]->w); 
-                            break;
-                        }
-                        tsnod2=tsnod2->n;
-                    }
-                    if(!found) {
-                        while( (c=fgetc(fp)) != '\n') ;
-                        printf("htslot yes, but nomatch for %schr %s\n", aawc->aaw[aawc->numl]->aw[couw]->w, aawc->aaw[aawc->numl]->aw[couw-1]->w); 
-                        couw=0;
-                        inword=0;
-                        continue;
-                    }
-                } else if (couw==0) {
-                    prevsz= couc;
-                }
-                aawc->aaw[aawc->numl]->aw[couw]->lp1=couc;
-                aawc->aaw[aawc->numl]->aw[couw]->w = realloc(aawc->aaw[aawc->numl]->aw[couw]->w, couc*sizeof(char));
-                // printf("Normalising aw corresponding to %s\n", aawc->aaw[aawc->numl]->aw[couw]->w); 
-                if(couw==0)
-                    norm_wc2(aawc->aaw[aawc->numl]->aw+couw, prevsz);
-                else 
-                    norm_wc(aawc->aaw[aawc->numl]->aw+couw);
-                couw++; /* verified: this has to be here */
-            }
-            if(c=='\n') { /* cue line-ending procedure */
-                if(aawc->numl ==lbuf-1) {
-                    lbuf += LBUF;
-                    aawc->aaw=realloc(aawc->aaw, lbuf*sizeof(aw_c*));
-                    for(i=lbuf-LBUF; i<lbuf; ++i)
-                        aawc->aaw[i]=crea_awc(WABUF);
-                }
-                aawc->aaw[aawc->numl]->al=couw;
-                norm_awc(aawc->aaw+aawc->numl);
-                aawc->numl++;
-                couw=0;
-            }
-            inword=0;
-        } else if(inword==0) { /* a normal character opens word */
-            if((c=='#') & (couw==0) ) { /* comment case */
-                while( (c=fgetc(fp)) != '\n') ;
-                continue;
-            }
-            if(couw ==aawc->aaw[aawc->numl]->ab-1) /* new word opening */
-                reall_awc(aawc->aaw+aawc->numl, WABUF);
-            couc=0;
-            cbuf=CBUF;
-            aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-            inword=1;
-        } else if(inword) { /* simply store */
-            if(couc >= aawc->aaw[aawc->numl]->aw[couw]->wbf-1)
-                grow_wc(aawc->aaw[aawc->numl]->aw+couw, CBUF);
-            aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-        }
-    } /* end of big for statement */
-    fclose(fp);
-
-    /* normalization stage */
-    for(i=aawc->numl; i<lbuf; ++i) {
-        free_awc(aawc->aaw+i);
-    }
-    aawc->aaw=realloc(aawc->aaw, aawc->numl*sizeof(aw_c*));
-
-    return aawc;
-}
-
-aaw_c *process_mpaaw3(char *fname, snodw **stab, unsigned htsz)
+aaw_c *process_mpaaw(char *fname, snodw **stab, unsigned htsz)
 {
     /* declarations */
     FILE *fp=fopen(fname,"r");
@@ -1814,7 +1815,7 @@ aaw_c *process_mpaaw3(char *fname, snodw **stab, unsigned htsz)
     int c;
     boole inword=0;
     boole found=0;
-    unsigned tint, prevsz;
+    unsigned tint;
     snodw *tsnod2;
     // unsigned cbuf=CBUF /* char buffer for size of w_c's: reused for every word */;
     unsigned lbuf=LBUF /* buffer for number of lines */;
@@ -2194,29 +2195,35 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    int i, m, n, mnf, nnf;
+    int i, mnf, nnf;
 
     wff_t *wff=process1c(argv[2], &mnf, &nnf);
     // hash it all
-    unsigned htsz=2*mnf/3;
-    // try to grab a prime ... well just avoid 5-multiples, 3-multiples, and evens
-    if(!(htsz%5)) 
-        htsz++; // incrment by 1 if multiple of 5
-    if(!(htsz%3)) 
-        htsz++;
-    if(!(htsz%2)) 
-        htsz++;
+    unsigned htsz=givehtsz(mnf);
 
     snodw **wha = tochainharr1(wff, mnf, htsz); // second hashing, based on SNP name now, not stringified C#P#
     // prtchaharr1(wha, htsz);
     // aaw_c *mpaaw=process_mpaaw(argv[1]);
-    aaw_c *mpaaw=process_mpaaw3(argv[1], wha, htsz);
+    aaw_c *mpaaw=process_mpaaw(argv[1], wha, htsz);
+    freechainharr1(wha, htsz);
     // prtaawcplain(mpaaw);
     prtmpaaw(mpaaw);
     printf("Your map file had %zu entries.\n", mpaaw->numl); 
     printf("Your snpname file had %i entries.\n", mnf); 
 
-    freechainharr1(wha, htsz);
+    adia_t *ad=crea_adia();
+    i2g_t2 *mid=crea_i22(); // master index of dupsets
+    htsz=givehtsz(mpaaw->numl);
+    snodm **mph = tochainharr4(mpaaw, htsz, ad, mid);
+    norm_adia(ad);
+    norm_i22(mid);
+
+
+    /* freeing stuff */
+    free_adia(ad);
+    free_i22(mid);
+    freechainharr4(mph, htsz);
+
     for(i=0;i<mnf;++i)
         free(wff[i].w);
     free(wff);
