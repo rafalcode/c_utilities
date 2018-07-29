@@ -217,7 +217,25 @@ struct strchainodm /* m for map */
 };
 typedef struct strchainodm snodm;
 
-/* checking each character can be comptiue-intensive, so I've offloaded off to MACROS */
+typedef struct /* w0_c */
+{
+    char *w;
+    t_t t; /* number or not */
+    unsigned lp1; /* length of word plus one (i.e. includes null char */
+} w0_c;
+
+typedef struct /* aw0_c: array of words container */
+{
+    w0_c **aw;
+    unsigned ab;
+    unsigned al;
+} aw0_c;
+
+typedef struct /* aaw0_c: array of array of words container */
+{
+    size_t numl; /* number of lines, i.e. rows */
+    aw0_c **aaw; /* an array of pointers to aw_c */
+} aaw0_c;
 
 /* Macro fo GET Leading Char TYPE */
 /* so, this refers to the first character: "+-.0123456789" only these are allowed. These is how we infer

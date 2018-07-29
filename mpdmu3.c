@@ -337,6 +337,183 @@ void norm_adgia(adgia_t *adg)
     return;
 }
 
+w0_c *crea_w0c(unsigned initsz)
+{
+    w0_c *wc=malloc(sizeof(w0_c));
+    wc->lp1=initsz;
+    wc->t=STRG;
+    wc->w=malloc(wc->lp1*sizeof(char));
+    return wc;
+}
+
+
+void free_w0c(w0_c **wc)
+{
+    w0_c *twc=*wc;
+    free(twc->w);
+    free(twc);
+    return;
+}
+
+void reall_w0c(w0_c **wc, unsigned *cbuf)
+{
+    w0_c *twc=*wc;
+    unsigned tcbuf=*cbuf;
+    tcbuf += CBUF;
+    twc->lp1=tcbuf;
+    twc->w=realloc(twc->w, tcbuf*sizeof(char));
+    *wc=twc; /* realloc can often change the ptr */
+    *cbuf=tcbuf;
+    return;
+}
+
+void norm_w0c(w0_c **wc)
+{
+    w0_c *twc=*wc;
+    twc->w=realloc(twc->w, twc->lp1*sizeof(char));
+    *wc=twc; /* realloc can often change the ptr */
+    return;
+}
+
+aw0_c *crea_aw0c(unsigned initsz)
+{
+    int i;
+    aw0_c *awc=malloc(sizeof(aw0_c));
+    awc->ab=initsz;
+    awc->al=awc->ab;
+    awc->aw=malloc(awc->ab*sizeof(w0_c*));
+    for(i=0;i<awc->ab;++i) 
+        awc->aw[i]=crea_w0c(CBUF);
+    return awc;
+}
+
+void reall_aw0c(aw0_c **awc, unsigned buf)
+{
+    int i;
+    aw0_c *tawc=*awc;
+    tawc->ab += buf;
+    tawc->al=tawc->ab;
+    tawc->aw=realloc(tawc->aw, tawc->ab*sizeof(aw0_c*));
+    for(i=tawc->ab-buf;i<tawc->ab;++i)
+        tawc->aw[i]=crea_w0c(CBUF);
+    *awc=tawc;
+    return;
+}
+
+void norm_aw0c(aw0_c **awc)
+{
+    int i;
+    aw0_c *tawc=*awc;
+    /* free the individual w_c's */
+    for(i=tawc->al;i<tawc->ab;++i) 
+        free_w0c(tawc->aw+i);
+    /* now release the pointers to those freed w_c's */
+    tawc->aw=realloc(tawc->aw, tawc->al*sizeof(aw0_c*));
+    *awc=tawc;
+    return;
+}
+
+void free_aw0c(aw0_c **awc)
+{
+    int i;
+    aw0_c *tawc=*awc;
+    for(i=0;i<tawc->al;++i) 
+        free_w0c(tawc->aw+i);
+    free(tawc->aw); /* unbelieveable: I left this out, couldn't find where I leaking the memory! */
+    free(tawc);
+    return;
+}
+
+aaw0_c *crea_aaw0c(unsigned initsz)
+{
+    int i;
+    unsigned lbuf=initsz;
+    aaw0_c *aawc=malloc(sizeof(aaw0_c));
+    aawc->numl=0;
+    aawc->aaw=malloc(lbuf*sizeof(aw0_c*));
+    for(i=0;i<initsz;++i) 
+        aawc->aaw[i]=crea_aw0c(WABUF);
+    return aawc;
+}
+
+void free_aaw0c(aaw0_c **aw)
+{
+    int i;
+    aaw0_c *taw=*aw;
+    for(i=0;i<taw->numl;++i) /* tried to release 1 more, no go */
+        free_aw0c(taw->aaw+i);
+    free(taw->aaw);
+    free(taw);
+}
+
+void statsaaw0c(aaw0_c *aawc) // actually printout in table fashion for all
+{
+    char a1, a2;
+    int j;
+    size_t i;
+    size_t a[12]; // counts which are "of interest"
+    size_t suma1good, suma1all, suma2good, suma2all;
+    float ra1, ra2, allra1=.0, allra2=.0;
+
+    printf("Samplename\t#A1==A\t#A1==C\t#A1==G\t#A1==T\t#A1==0\tA1==?\t #A2==A\t#A2==C\t#A2==G\t#A2==T\t#A2==0\tA2==?\tA1CR\tA2CR\n");
+    int numsamps =0; // because numl is not always numsamps due to # comment lines.
+    for(i=0;i<aawc->numl;++i) {
+        if(aawc->aaw[i]->aw[0]->w[0] == '#')
+            continue;
+        numsamps++;
+        for(j=0;j<12;++j) 
+            a[j]= 0;
+        // OK now so now we have a match on the IIDs
+        // check num genos at very least
+        printf("%s\t", aawc->aaw[i]->aw[1]->w);
+        for(j=6;j<aawc->aaw[i]->al;j+=2) {
+            a1 = aawc->aaw[i]->aw[j]->w[0];
+            a2 = aawc->aaw[i]->aw[j+1]->w[0];
+            switch(a1) {
+                case 'A':
+                    a[0]++; break;
+                case 'C':
+                    a[1]++; break;
+                case 'G':
+                    a[2]++; break;
+                case 'T':
+                    a[3]++; break;
+                case '0':
+                    a[4]++; break;
+                default:
+                    a[5]++;
+            }
+            switch(a2) {
+                case 'A':
+                    a[6]++; break;
+                case 'C':
+                    a[7]++; break;
+                case 'G':
+                    a[8]++; break;
+                case 'T':
+                    a[9]++; break;
+                case '0':
+                    a[10]++; break;
+                default:
+                    a[11]++;
+            }
+        }
+        for(j=0;j<12;++j) 
+            printf("%zu\t", a[j]);
+        suma1good=a[0]+a[1]+a[2]+a[3];
+        suma1all=suma1good+a[4]+a[5];
+        suma2good=a[6]+a[7]+a[8]+a[9];
+        suma2all=suma2good+a[10]+a[11];
+
+        ra1=(float)suma1good/suma1all;
+        ra2=(float)suma2good/suma2all;
+        allra1 += ra1;
+        allra2 += ra2;
+        printf("%4.4f\t%4.4f\n", ra1, ra2);
+    }
+    printf("Overall: AvgA1CR=%4.4f AvgA2CR=%4.4f\n", allra1/numsamps, allra2/numsamps);
+}
+
 w_c *crea_wc(void)
 {
     w_c *wc=malloc(sizeof(w_c));
@@ -605,7 +782,7 @@ void prt_adgia(adgia_t *adg)
     return;
 }
 
-void proc_adgia3(adgia_t *adg, mp_t *mp, aaw_c *aawc, int curri, i2g_t2 *mid, int *deva, int nsidx)
+void proc_adgia3(adgia_t *adg, aaw_c *mpaaw, aaw0_c *aawc, int curri, i2g_t2 *mid, int *deva, int nsidx)
 {
     /* an advanced proc adgia ... for dupstats3
      * NB mid is passed through with master indices but no gt's for them */
@@ -684,7 +861,7 @@ void proc_adgia3(adgia_t *adg, mp_t *mp, aaw_c *aawc, int curri, i2g_t2 *mid, in
     return;
 }
 
-void dupstats4(aaw_c *aawc, mp_t *mp, adia_t *ad, i2g_t2 *mid, int *deva, int numsamps)
+void dupstats4(aaw0_c *aawc, aaw_c *mpaaw, adia_t *ad, i2g_t2 *mid, int *deva, int numsamps)
 {
     char a1, a2;
     int j, jj, k;
@@ -715,7 +892,7 @@ void dupstats4(aaw_c *aawc, mp_t *mp, adia_t *ad, i2g_t2 *mid, int *deva, int nu
             prt_adgia(adg);
             printf("\tTR#%i (master index %u):\n", j, (*mid->i)[j]);
 #endif
-            proc_adgia3(adg, mp, aawc, j, mid, deva, numsamps);
+            proc_adgia3(adg, mpaaw, aawc, j, mid, deva, numsamps);
             free_adgia(adg);
             cleangt_i22(mid);
         }
@@ -1453,270 +1630,14 @@ wff_t *process1c(char *fname, int *m, int *n)
     return wff;
 }
 
-mp_t *processinpf(char *fname, int *m, int *n)
-{
-    /* In order to make no assumptions, the file is treated as lines containing the same amount of words each,
-     * except for lines starting with #, which are ignored (i.e. comments). These words are checked to make sure they contain only floating number-type
-     * characters [0123456789+-.] only, one string variable is continually written over and copied into a growing floating point array each time */
-
-    /* declarations */
-    FILE *fp=fopen(fname,"r");
-    int i;
-    size_t couc /*count chars per line */, couw=0 /* count words */, oldcouw = 0;
-    int c;
-    boole inword=0;
-    wseq_t *wa=create_wseq_t(GBUF);
-    size_t bwbuf=WBUF;
-    char *bufword=calloc(bwbuf, sizeof(char)); /* this is the string we'll keep overwriting. */
-
-    mp_t *mp=malloc(GBUF*sizeof(mp_t));
-
-    while( (c=fgetc(fp)) != EOF) { /* grab a char */
-        if( (c== '\n') | (c == ' ') | (c == '\t')) { /* word closing events */
-            if( inword==1) { /* first word closing event */
-                wa->wln[couw]=couc;
-                bufword[couc++]='\0';
-                bufword = realloc(bufword, couc*sizeof(char)); /* normalize */
-                /* for the struct, we want to know if it's the first word in a line, like so: */
-                if(couw==oldcouw) {
-                    strncpy(mp[wa->numl].cnu, bufword, 3);
-                } else if((couw - oldcouw) ==2) {
-                    mp[wa->numl].cmo=atoi(bufword);
-                } else if((couw - oldcouw) ==3) {
-                    mp[wa->numl].pos=atol(bufword);
-                    // we're ready to fill in nn: C%02i_P%09i
-                    mp[wa->numl].nn=calloc(16, sizeof(char));
-                    mp[wa->numl].gd=0; // default genuine dup category is 0, which means no dup.
-                    mp[wa->numl].gdn=0; // default genuine dup category is 0, which means no dup.
-                    sprintf(mp[wa->numl].nn, "C%s_P%09li", mp[wa->numl].cnu, mp[wa->numl].pos);
-                } else if((couw - oldcouw) ==1) {
-                    mp[wa->numl].n=malloc(couc*sizeof(char));
-                    mp[wa->numl].nsz=couc;
-                    strcpy(mp[wa->numl].n, bufword);
-                }
-                couc=0;
-                couw++;
-            }
-            if(c=='#') { /* comment case */
-                while( (c=fgetc(fp)) != '\n') ;
-                continue;
-            } else if(c=='\n') { /* end of a line */
-                if(wa->numl == wa->lbuf-1) { /* enought space in our current array? */
-                    wa->lbuf += WBUF;
-                    wa->wpla=realloc(wa->wpla, wa->lbuf*sizeof(size_t));
-                    mp=realloc(mp, wa->lbuf*sizeof(mp_t));
-                    memset(wa->wpla+(wa->lbuf-WBUF), 0, WBUF*sizeof(size_t));
-                }
-                wa->wpla[wa->numl] = couw-oldcouw; /* number of words in current line */
-                if(couw-oldcouw >4) {
-                    printf("Error, each row cannot exceed 4 words: revise your input file\n"); 
-                    /* need to release all memory too */
-                    free_wseq(wa);
-                    exit(EXIT_FAILURE);
-                }
-                oldcouw=couw; /* restart words per line count */
-                wa->numl++; /* brand new line coming up */
-            }
-            inword=0;
-        } else if(inword==0) { /* deal with first character of new word, + and - also allowed */
-            if(couw == wa->wsbuf-1) {
-                wa->wsbuf += GBUF;
-                wa->wln=realloc(wa->wln, wa->wsbuf*sizeof(size_t));
-                mp=realloc(mp, wa->wsbuf*sizeof(mp_t));
-                for(i=wa->wsbuf-GBUF;i<wa->wsbuf;++i)
-                    wa->wln[i]=0;
-            }
-            couc=0;
-            bwbuf=WBUF;
-            bufword=realloc(bufword, bwbuf*sizeof(char)); /* don't bother with memset, it's not necessary */
-            bufword[couc++]=c; /* no need to check here, it's the first character */
-            inword=1;
-        } else {
-            if(couc == bwbuf-1) { /* the -1 so that we can always add and extra (say 0) when we want */
-                bwbuf += WBUF;
-                bufword = realloc(bufword, bwbuf*sizeof(char));
-            }
-            bufword[couc++]=c;
-        }
-
-    } /* end of big for statement */
-    fclose(fp);
-    free(bufword);
-
-    /* normalization stage */
-    wa->quan=couw;
-    wa->wln = realloc(wa->wln, wa->quan*sizeof(size_t)); /* normalize */
-    mp = realloc(mp, wa->quan*sizeof(mp_t)); /* normalize */
-    wa->wpla= realloc(wa->wpla, wa->numl*sizeof(size_t));
-
-    *m= wa->numl;
-    int k=wa->wpla[0];
-    for(i=1;i<wa->numl;++i)
-        if(k != wa->wpla[i])
-            printf("Warning: Numcols is not uniform at %i words per line on all lines. This file has one with %zu.\n", k, wa->wpla[i]); 
-    *n= k; 
-    free_wseq(wa);
-
-    return mp;
-}
-
-mp_t *processinpf1(char *fname, int *m, int *n, snodw **stab, unsigned htsz)
-{
-    FILE *fp=fopen(fname,"r");
-    int i;
-    size_t couc /*count chars per line */, couw=0 /* count words */, oldcouw = 0;
-    int c;
-    boole inword=0;
-    wseq_t *wa=create_wseq_t(GBUF);
-    size_t bwbuf=WBUF;
-    char *bufword=calloc(bwbuf, sizeof(char)); /* this is the string we'll keep overwriting. */
-    snodw *tsnod2=NULL;
-    unsigned tint;
-    boole found;
-
-    mp_t *mp=malloc(GBUF*sizeof(mp_t));
-    for(i=0;i<GBUF;++i) {
-        mp[i].n=NULL;
-        mp[i].nn=NULL;
-    }
-
-    while( (c=fgetc(fp)) != EOF) { /* grab a char */
-        if( (c== '\n') | (c == ' ') | (c == '\t')) { /* word closing events */
-            if( inword==1) { /* first word closing event */
-                wa->wln[couw]=couc;
-                bufword[couc++]='\0';
-                bufword = realloc(bufword, couc*sizeof(char)); /* normalize */
-                /* for the struct, we want to know if it's the first word in a line, like so: */
-                if(couw==oldcouw) {
-                    strncpy(mp[wa->numl].cnu, bufword, 3);
-                } else if((couw - oldcouw) ==2) {
-                    mp[wa->numl].cmo=atoi(bufword);
-                } else if((couw - oldcouw) ==3) {
-                    mp[wa->numl].pos=atol(bufword);
-                    mp[wa->numl].nn=realloc(mp[wa->numl].nn, 16*sizeof(char));
-                    memset(mp[wa->numl].nn, 0, 16*sizeof(char));
-                    mp[wa->numl].gd=0; // default genuine dup category is 0, which means no dup.
-                    mp[wa->numl].gdn=0; // default genuine dup category is 0, which means no dup.
-                    sprintf(mp[wa->numl].nn, "C%s_P%09li", mp[wa->numl].cnu, mp[wa->numl].pos);
-                } else if((couw - oldcouw) ==1) {
-                    found=0;
-                    tint=hashit(bufword, htsz); 
-                    if( (stab[tint] == NULL) ) {
-                        inword=0;
-                        // couc=0;
-                        // couw=0;
-                        // oldcouw=couw;
-                        printf("no ht slot & no match for: %s\n", bufword); 
-                        while( (c=fgetc(fp)) != '\n') ;
-                        continue;
-                    }
-                    tsnod2=stab[tint];
-                    while( (tsnod2 != NULL) ) {
-                        if(!strcmp(tsnod2->wff->w, bufword)) {
-                            found = 1;
-                            mp[wa->numl].n=realloc(mp[wa->numl].n, couc*sizeof(char));
-                            memset(mp[wa->numl].n, 0, couc*sizeof(char));
-                            mp[wa->numl].nsz=couc;
-                            strcpy(mp[wa->numl].n, bufword);
-                            goto bo1;
-                        }
-                        tsnod2=tsnod2->n;
-                    }
-bo1:
-                    if(!found) {
-                        inword=0;
-                        couc=0;
-                        couw=0;
-                        oldcouw=couw;
-                        printf("htslot yes but no match for: %s\n", bufword); 
-                        while( (c=fgetc(fp)) != '\n') ;
-                        continue;
-                    }
-                }
-                couc=0;
-                couw++;
-            }
-            if(c=='\n') { /* end of a line, as well */
-                if(wa->numl >= wa->lbuf-1) { /* enought space in our current array? */
-                    wa->lbuf += WBUF;
-                    wa->wpla=realloc(wa->wpla, wa->lbuf*sizeof(size_t));
-                    mp=realloc(mp, wa->lbuf*sizeof(mp_t));
-                    // memset(wa->wpla+(wa->lbuf-WBUF), 0, WBUF*sizeof(size_t));
-                    for(i=wa->lbuf-WBUF; i< wa->lbuf; i++) {
-                        wa->wpla[i]=0;
-                        mp[i].n=NULL;
-                        mp[i].nn=NULL;
-                    }
-                }
-                wa->wpla[wa->numl] = couw-oldcouw; /* number of words in current line */
-                if(couw-oldcouw >4) {
-                    printf("Error, each row cannot exceed 4 words: revise your input file\n"); 
-                    /* need to release all memory too */
-                    free_wseq(wa);
-                    exit(EXIT_FAILURE);
-                }
-                oldcouw=couw; /* restart words per line count */
-                oldcouw=couw; /* restart words per line count */
-                wa->numl++; /* brand new line coming up */
-            }
-            inword=0;
-        } else if(inword==0) { /* deal with first character of new word, + and - also allowed */
-            if(couw == wa->wsbuf-1) {
-                wa->wsbuf += GBUF;
-                wa->wln=realloc(wa->wln, wa->wsbuf*sizeof(size_t));
-                mp=realloc(mp, wa->wsbuf*sizeof(mp_t));
-                for(i=wa->wsbuf-GBUF;i<wa->wsbuf;++i) {
-                    wa->wln[i]=0;
-                    mp[i].n=NULL;
-                    mp[i].nn=NULL;
-                }
-            }
-            couc=0;
-            bwbuf=WBUF;
-            bufword=realloc(bufword, bwbuf*sizeof(char)); /* don't bother with memset, it's not necessary */
-            bufword[couc++]=c; /* no need to check here, it's the first character */
-            inword=1;
-        } else {
-            if(couc == bwbuf-1) { /* the -1 so that we can always add and extra (say 0) when we want */
-                bwbuf += WBUF;
-                bufword = realloc(bufword, bwbuf*sizeof(char));
-            }
-            bufword[couc++]=c;
-        }
-
-    } /* end of big for statement */
-    fclose(fp);
-    free(bufword);
-
-    /* normalization stage */
-    wa->quan=couw;
-    // for(i=wa->wsbuf-wa->quan;i<wa->wsbuf;++i) {
-    //     free(mp[i].n);
-    //     free(mp[i].nn);
-    // }
-    wa->wln = realloc(wa->wln, wa->quan*sizeof(size_t)); /* normalize */
-    mp = realloc(mp, wa->quan*sizeof(mp_t)); /* normalize */
-    wa->wpla= realloc(wa->wpla, wa->numl*sizeof(size_t));
-
-    *m= wa->numl;
-    int k=wa->wpla[0];
-    for(i=1;i<wa->numl;++i)
-        if(k != wa->wpla[i])
-            printf("Warning: Numcols is not uniform at %i words per line on all lines. This file has one with %zu.\n", k, wa->wpla[i]); 
-    *n= k; 
-    free_wseq(wa);
-
-    return mp;
-}
-
-aaw_c *processinpf3(FILE *fp, int *lastchar)
+aaw0_c *processinpf3(FILE *fp, int *lastchar)
 {
     int i;
     size_t couc /*count chars per line */, couw=0 /* count words */;
     int c, oldc='\0';
     boole inword=0;
     unsigned lbuf=LBUF /* buffer for number of lines */, cbuf=CBUF /* char buffer for size of w_c's: reused for every word */;
-    aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
+    aaw0_c *aawc=crea_aaw0c(lbuf); /* array of words per line */
 
     for(;;) {
         c=fgetc(fp);
@@ -1728,18 +1649,18 @@ aaw_c *processinpf3(FILE *fp, int *lastchar)
                 aawc->aaw[aawc->numl]->aw[couw]->w[couc++]='\0';
                 aawc->aaw[aawc->numl]->aw[couw]->lp1=couc;
                 SETCPTYPE(oldc, aawc->aaw[aawc->numl]->aw[couw]->t);
-                norm_wc(aawc->aaw[aawc->numl]->aw+couw);
+                norm_w0c(aawc->aaw[aawc->numl]->aw+couw);
                 couw++; /* verified: this has to be here */
             }
             if(c=='\n') { /* cue line-ending procedure */
                 if(aawc->numl ==lbuf-1) {
                     lbuf += LBUF;
-                    aawc->aaw=realloc(aawc->aaw, lbuf*sizeof(aw_c*));
+                    aawc->aaw=realloc(aawc->aaw, lbuf*sizeof(aw0_c*));
                     for(i=lbuf-LBUF; i<lbuf; ++i)
-                        aawc->aaw[i]=crea_awc(WABUF);
+                        aawc->aaw[i]=crea_aw0c(WABUF);
                 }
                 aawc->aaw[aawc->numl]->al=couw;
-                norm_awc(aawc->aaw+aawc->numl);
+                norm_aw0c(aawc->aaw+aawc->numl);
                 aawc->numl++;
                 couw=0;
                 *lastchar=c;
@@ -1748,7 +1669,7 @@ aaw_c *processinpf3(FILE *fp, int *lastchar)
             inword=0;
         } else if(inword==0) { /* a normal character opens word */
             if(couw ==aawc->aaw[aawc->numl]->ab-1) /* new word opening */
-                reall_awc(aawc->aaw+aawc->numl, WABUF);
+                reall_aw0c(aawc->aaw+aawc->numl, WABUF);
             couc=0;
             cbuf=CBUF;
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
@@ -1756,7 +1677,7 @@ aaw_c *processinpf3(FILE *fp, int *lastchar)
             inword=1;
         } else if(inword) { /* simply store */
             if(couc == cbuf-1)
-                grow_wc(aawc->aaw[aawc->numl]->aw+couw, CBUF);
+                reall_w0c(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
             /* if word is a candidate for a NUM or PNI (i.e. via its first character), make sure it continues to obey rules: a MACRO */
             IWMODTYPEIF(c, aawc->aaw[aawc->numl]->aw[couw]->t);
@@ -1768,9 +1689,9 @@ uit:
 
     /* normalization stage */
     for(i=aawc->numl; i<lbuf; ++i) {
-        free_awc(aawc->aaw+i);
+        free_aw0c(aawc->aaw+i);
     }
-    aawc->aaw=realloc(aawc->aaw, aawc->numl*sizeof(aw_c*));
+    aawc->aaw=realloc(aawc->aaw, aawc->numl*sizeof(aw0_c*));
 
     return aawc;
 }
@@ -1912,44 +1833,16 @@ aaw_c *process_mpaaw(char *fname, snodw **stab, unsigned htsz)
     return aawc;
 }
 
-void prt_mp(mp_t *mp, int m, int n)
+void prt_mapf(aaw_c *mpaaw, char *fname)
 {
     int i, j;
-    printf("var mp type mp_t is %i rows by %i columns and is as follows:\n", m, n); 
-    for(i=0;i<m;++i) {
-        for(j=0;j<n;++j) {
-            if(j==1)
-                printf("%s\t", mp[i].n);
-            else if (j==3)
-                printf("%li\n", mp[i].pos);
-            else if (j==0)
-                printf("%s\t", mp[i].cnu);
-            else if (j==2)
-                printf("%i ", mp[i].cmo);
-        }
-    }
-    return;
-}
-
-void prt_mp2(mp_t *mp, int m, int n)
-{
-    int i, j;
-    printf("var mp type mp_t is %i rows by %i columns and is as follows:\n", m, n); 
-    printf("Only kept records are printed in this function.\n");
-    for(i=0;i<m;++i) {
-        if(!mp[i].keep)
-            continue;
-        for(j=0;j<n;++j) {
-            if(j==1)
-                printf("%s\t", mp[i].n);
-            else if (j==3)
-                printf("%li\n", mp[i].pos);
-            else if (j==0)
-                printf("%s\t", mp[i].cnu);
-            else if (j==2)
-                printf("%i ", mp[i].cmo);
-        }
-    }
+    char *ofn=newna(fname);
+    FILE *of=fopen(ofn, "w");
+    for(i=0;i<mpaaw->numl;++i)
+        for(j=0;j<mpaaw->aaw[i]->al; j++)
+            fprintf(of, (j==3)?"%s\n":"%s\t", mpaaw->aaw[i]->aw[j]->w);
+    fclose(of);
+    free(ofn);
     return;
 }
 
@@ -2074,46 +1967,16 @@ void prt_wffnotfound(wff_t *wff, int m)
     return;
 }
 
-void prt_map(mp_t *mp, int m, char *fname)
-{
-    int i;
-    char *ofn=newna(fname);
-    FILE *of=fopen(ofn, "w");
-    for(i=0;i<m;++i) {
-        if(mp[i].gd == 1)
-            continue;
-        fprintf(of, "%s\t%s\t%i\t%li\n", mp[i].cnu, mp[i].n, mp[i].cmo, mp[i].pos);
-    }
-    fclose(of);
-    free(ofn);
-    return;
-}
-
-void prt_map2(mp_t *mp, int m, char *fname)
-{
-    int i;
-    char *ofn=newna(fname);
-    FILE *of=fopen(ofn, "w");
-    for(i=0;i<m;++i) {
-        if(mp[i].keep)
-            fprintf(of, "%s\t%s\t%i\t%li\n", mp[i].cnu, mp[i].n, mp[i].cmo, mp[i].pos);
-    }
-    fclose(of);
-    free(ofn);
-    return;
-}
-
-void prt_partped(mp_t *mp, int m, int n, i2g_t2 *mid, aaw_c *aawc, FILE *of)
+void prt_partped(aaw_c *mpaaw, i2g_t2 *mid, aaw0_c *aawc, FILE *of)
 {
     int i, k=0, ii;
     for(i=0;i<6;++i) 
         fprintf(of, "%s\t", aawc->aaw[0]->aw[i]->w);
 
-    int ml1=m-1; // m less one
-    for(i=0;i<ml1;++i) {
-        if(mp[i].gd == 1) {
+    for(i=0;i<mpaaw->numl-1;++i) { // because final genotype is treated differently.
+        if(mpaaw->aaw[i]->gd == 1) {
             continue;
-        } else if (mp[i].gd == 2) {
+        } else if (mpaaw->aaw[i]->gd == 2) {
             fprintf(of, "%c\t", gtna[(*mid->gt)[k]][0]);
             fprintf(of, "%c\t", gtna[(*mid->gt)[k]][1]);
             k++;
@@ -2124,16 +1987,15 @@ void prt_partped(mp_t *mp, int m, int n, i2g_t2 *mid, aaw_c *aawc, FILE *of)
         }
     }
     // final genotype
-    if(mp[ml1].gd == 1) {
+    if(mpaaw->aaw[mpaaw->numl-1]->gd == 1) {
         fseek(of, -1, SEEK_CUR);
-        // fprintf(of, "\n"); 
         fputc('\n', of);
-    } else if (mp[ml1].gd > 1) {
+    } else if (mpaaw->aaw[mpaaw->numl-1]->gd > 1) {
         fprintf(of, "%c\t", gtna[(*mid->gt)[k]][0]);
         fprintf(of, "%c\n", gtna[(*mid->gt)[k]][1]);
         k++;
     } else {
-        ii=ml1*2+6;
+        ii=(mpaaw->numl-1)*2+6;
         fprintf(of, "%c\t", aawc->aaw[0]->aw[ii]->w[0]);
         fprintf(of, "%c\n", aawc->aaw[0]->aw[ii+1]->w[0]);
     }
@@ -2190,14 +2052,14 @@ void prtusage(void)
 int main(int argc, char *argv[])
 {
     /* argument accounting */
-    if(argc!=3) {
+    if(argc!=4) {
         prtusage();
         exit(EXIT_FAILURE);
     }
 
     int i, mnf, nnf;
 
-    wff_t *wff=process1c(argv[2], &mnf, &nnf);
+    wff_t *wff=process1c(argv[3], &mnf, &nnf);
     // hash it all
     unsigned htsz=givehtsz(mnf);
 
@@ -2218,8 +2080,38 @@ int main(int argc, char *argv[])
     norm_adia(ad);
     norm_i22(mid);
 
+    /* OK, can get on with other stuff */
+    aaw0_c *aawc=NULL; // this will be our ped file ... retain name without 0
+    int numsamps=0;
+    int dvbuf= GBUF*NDEV;
+    int *deva=calloc(dvbuf, sizeof(int)); // type of event in duplicate resolution, for all samples (not split per sample).
+
+    FILE *of=NULL, *fp=fopen(argv[2], "r"); // OK, now handle the ped which is the second argument
+    int lastchar=9;
+    char *ofn=NULL;
+    ofn=newna(argv[2]);
+    of=fopen(ofn, "w");
+    for(;;) { // for each sample
+        aawc=processinpf3(fp, &lastchar);
+        if(lastchar==EOF) {
+            free_aaw0c(&aawc);
+            break;
+        }
+        dupstats4(aawc, mpaaw, ad, mid, deva, numsamps);
+        prt_partped(mpaaw, mid, aawc, of);
+        free_aaw0c(&aawc);
+        numsamps++;
+        CONDREALLOC(numsamps*NDEV, dvbuf, GBUF*NDEV, deva, int);
+    }
+    fclose(fp);
+    fclose(of);
+    free(ofn);
+    deva=realloc(deva, numsamps*NDEV*sizeof(int));
+
+    prt_mapf(mpaaw, argv[1]); // print out "_2" map file
 
     /* freeing stuff */
+    free(deva);
     free_adia(ad);
     free_i22(mid);
     freechainharr4(mph, htsz);

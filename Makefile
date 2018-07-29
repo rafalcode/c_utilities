@@ -6,7 +6,7 @@ DBG2CFLAGS=-g -Wall -DDBG2
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
 
 LIBS=-lgsl -lgslcblas -lm
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4 pedsta mpdmu2 mpdmu2_d mpdmu3 mpdmu3_d
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4 pedsta mpdmu2 mpdmu2_d mpdmu3 mpdmu3_d mpdmu4 mpdmu4_d
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -150,6 +150,10 @@ mprd2_d: mprd2.c
 mprd3: mprd3.c
 	${CC} ${CFLAGS} -o $@ $^
 mprd3_d: mprd3.c
+	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
+mpdmu4: mpdmu4.c
+	${CC} ${CFLAGS} -o $@ $^
+mpdmu4_4: mpdmu4.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 
 # MAP-PED Matchup: print genotypes for the duplicates.
