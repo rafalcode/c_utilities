@@ -17,6 +17,7 @@ typedef unsigned char boole;
 typedef struct /* letcla_t, letters here are just names really */
 {
     char l; // a letter
+    int n;
     int c; // a category
 } letcla_t;
 
@@ -178,6 +179,11 @@ int main(int argc, char *argv[])
     printf("of %i categories. The label is just a spurious marker, while the number is the assigned category.\n\n", nc); 
     for(i=0;i<ne;++i) {
         la[i].l=(char)(65+26*((float)rand()/RAND_MAX)); // did have 65.5 here but [ kept coming up
+        la[i].n=i;
+        for(i=0;i<nc;++i) 
+
+        if(i%2)
+
         la[i].c=(int)(1+nc*((float)rand()/RAND_MAX));
         printf("(%c:%i) ", la[i].l, la[i].c); 
     }
@@ -188,29 +194,6 @@ int main(int argc, char *argv[])
     boole seencatgry;
     for(i=0;i<ne;++i) {
         loc_cat(ad, i, la[i].c);
-        // seencatgry=0;
-        // for(j=0;j<ad->sz;++j) {
-        //     if(la[i].c == (*ad->d)[j].lidx) {
-        //         if((*ad->d)[j].sz == (*ad->d)[j].bf)
-        //             reall_dia((*ad->d)+j);
-        //         (*(*ad->d)[j].is)[(*ad->d)[j].sz] = i;
-        //         (*ad->d)[j].sz++;
-        //         seencatgry=1;
-        //     }
-        //     if(seencatgry)
-        //         break;
-        // }
-        // /* have gone through all the available clusters with no luck, time to create a new one.
-        //  * Note, you still need to check for seencatgry ... 
-        //  * not immediately obvious why, given break statement */
-        // if(!seencatgry) {
-        //     if(ad->sz == ad->bf)
-        //         reall_adia(ad);
-        //     (*ad->d)[ad->sz].lidx = la[i].c;
-        //     (*(*ad->d)[ad->sz].is)[(*ad->d)[ad->sz].sz] = i;
-        //     (*ad->d)[ad->sz].sz++;
-        //     ad->sz++;
-        // }
     }
 
     norm_adia(ad);
