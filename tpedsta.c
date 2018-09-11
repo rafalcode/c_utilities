@@ -315,11 +315,25 @@ void prtaawcdata(aaw_c *aawc) /* print line and word details, but not the words 
 void prtaawcplain(aaw_c *aawc) /* print line and word details, but not the words themselves */
 {
     int i, j;
+    int ll; /* length of line */
+    boole asamell=0; /* all same line length */
     for(i=0;i<aawc->numl;++i) {
         printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+        if(!i)
+            ll = aawc->aaw[i]->al;
+        else
+            if( ll != aawc->aaw[i]->al) {
+                asamell++;
+                printf("line %i, %i words\n", i, aawc->aaw[i]->al); 
+            }
+
         for(j=0;j<aawc->aaw[i]->al;++j)
             printf((j!=aawc->aaw[i]->al-1)?"%s ":"%s\n", aawc->aaw[i]->aw[j]->w);
     }
+    if(!asamell)
+        printf("All lines had same number of words (%i).\n", ll); 
+    else
+        printf("Not all lines had same number of wordsi line 0 %i.\n", ll); 
 }
 
 aaw_c *processinpf(FILE *fp)
@@ -401,7 +415,7 @@ int main(int argc, char *argv[])
     // printf("Samplename\t#A1==ACGT\t#A2==ACTG\t#A1==0\t#A2==0\t#A1==N\tA2==N\t#A1==ID\t#A2==ID\t#A1==?\t#A2==?\tA1CR\tA2CR\n");
     // while(lastchar != EOF) {
     aawc=processinpf(fp);
-    prtaawcdbg(aawc);
+    prtaawcplain(aawc);
     // statsaawc2(aawc, &allra1, &allra2, &numsamps);
     free_aawc(&aawc);
     // printf("overall: avga1cr=%4.4f avga2cr=%4.4f\n", allra1/numsamps, allra2/numsamps);
