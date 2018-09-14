@@ -227,13 +227,13 @@ void statsaawc(aaw_c *aawc)
     printf("Overall: AvgA1CR=%4.4f AvgA2CR=%4.4f\n", allra1/numsamps, allra2/numsamps);
 }
 
-void statsaawc2(aaw_c *aawc, float *allra1, float *allra2, int *retnumsamps)
+void statsaawc2(aaw_c *aawc, float *allra1, float *allra2, size_t *sumaall, int *retnumsamps)
 {
     char a1, a2;
     int j;
     size_t i;
     size_t a[10]; // counts which are "of interest": 
-    size_t suma1all, suma2all;
+    size_t suma1all_, suma2all_;
     float ra1, ra2;
 
     int numsamps = *retnumsamps; // because numl is not always numsamps due to # comment lines.
@@ -276,16 +276,17 @@ void statsaawc2(aaw_c *aawc, float *allra1, float *allra2, int *retnumsamps)
         }
         for(j=0;j<10;++j) 
             printf("%zu\t", a[j]);
-        suma1all=a[0]+a[2]+a[4]+a[6]+a[8];
-        suma2all=a[1]+a[3]+a[5]+a[7]+a[9];
+        suma1all_=a[0]+a[2]+a[4]+a[6]+a[8];
+        suma2all_=a[1]+a[3]+a[5]+a[7]+a[9];
 
-        ra1=(float)(a[0]+a[6])/suma1all;
+        ra1=(float)(a[0]+a[6])/suma1all_;
         printf("%4.4f\t", ra1);
-        ra2=(float)(a[1]+a[7])/suma2all;
+        ra2=(float)(a[1]+a[7])/suma2all_;
         printf("%4.4f\n", ra2);
         /* now how we include IDs because hese are properly called. Often we don't used them though */
         *allra1 += ra1;
         *allra2 += ra2;
+        *sumaall=suma1all_+suma2all_;
         *retnumsamps=numsamps;
     }
 }
@@ -396,10 +397,13 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    boole numsnpsnot=0; /* somewhat of a primitive indicator, sure */
     FILE *fp=fopen(argv[1],"r");
     aaw_c *aawc=NULL;
+    int sampcou=0;
     int lastchar=9;
     float allra1=.0, allra2=.0;
+    size_t sumaall /* sum alleles all */, oldsumaall /* a way of checking that all samples have the smae number of alleles */;
     int numsamps=0;
     printf("Samplename\t#A1==ACGT\t#A2==ACTG\t#A1==0\t#A2==0\t#A1==N\tA2==N\t#A1==ID\t#A2==ID\t#A1==?\t#A2==?\tA1CR\tA2CR\n");
     // while(lastchar != EOF) {
@@ -409,11 +413,24 @@ int main(int argc, char *argv[])
             free_aawc(&aawc);
             break;
         }
-        statsaawc2(aawc, &allra1, &allra2, &numsamps);
+        statsaawc2(aawc, &allra1, &allra2, &sumaall, &numsamps);
+        if(sampcou==0)
+            oldsumaall=sumaall;
+        else if(oldsumaall != sumaall) {
+            printf("All samples should have same number of SNPs, which is %zu by way of sample#0\n", oldsumaall);
+            printf("Unfortunately, sample index %i has %zu SNPs\n", sampcou, sumaall); 
+            numsnpsnot=1;
+        }
+        sampcou++;
         free_aawc(&aawc);
     }
-    printf("Overall: AvgA1CR=%4.4f AvgA2CR=%4.4f\n", allra1/numsamps, allra2/numsamps);
     fclose(fp);
+
+    printf("Overall: AvgA1CR=%4.4f AvgA2CR=%4.4f\n", allra1/numsamps, allra2/numsamps);
+    if(numsnpsnot)
+        printf("Note that not all samples had same number of SNPs, a bad sign.\n"); 
+    else
+        printf("All %i samples had same number of SNPS (%zu, GTs: %zu), so all OK there.\n", sampcou, sumaall, sumaall/2); 
 
     return 0;
 }

@@ -1,6 +1,7 @@
 /* it's all too easy to start over-complicating this: for example quotations. Here you woul dneed to check the last 2 characters of everyword, not just the last one, i.e "stop!", that adds new layers. */
 #include<stdio.h>
 #include<stdlib.h>
+#include<unistd.h>
 #include<string.h>
 
 #ifdef DBG
@@ -12,8 +13,34 @@
 #define WABUF 20
 #define LBUF 32
 #endif
-
+#define NUMGTS 18
 typedef unsigned char boole;
+typedef enum /* gt_t, genotype type */
+{
+    AA,
+    CC,
+    GG,
+    TT,
+    AC, /* anything >= 0x100 is therefore hetzyg */
+    AG,
+    AT,
+    CA,
+    CG,
+    CT,
+    GA,
+    GC,
+    GT,
+    TA,
+    TC,
+    TG,
+    Z1, /* one SNP uncalled or unrecognised */
+    ZZ /* both uncalled, unrecognised, the obligatory catch-all so to speak */
+} gt_t;
+/* GT Name arrays based on above, "gtna" sets 00 as the unknown 17th GT, while gtna2 sets it to NN */
+char gtna0[NUMGTS][3]={"AA", "CC", "GG", "TT", "AC", "AG", "AT", "CA", "CG", "CT", "GA", "GC", "GT", "TA", "TC", "TG", "Z1", "ZZ"};
+char gtna2[NUMGTS][3]={"AA", "CC", "GG", "TT", "AC", "AG", "AT", "CA", "CG", "CT", "GA", "GC", "GT", "TA", "TC", "TG", "NN", "NN"};
+char gtna[NUMGTS][3]={"AA", "CC", "GG", "TT", "AC", "AG", "AT", "CA", "CG", "CT", "GA", "GC", "GT", "TA", "TC", "TG", "00", "00"};
+
 typedef enum
 {
     STRG, /* unknown type, so default to string */
@@ -24,6 +51,12 @@ typedef enum
     SCCP, /* string with starting capital AND closing punctuation */
     ALLC /* string with all caps */
 } t_t;
+
+typedef struct  /* optstruct, a struct for the options */
+{
+    int cflag; // convert, print out output as ped and map, aftetr having resolved resolution events
+    char *iname;
+} optstruct;
 
 typedef struct /* word type */
 {

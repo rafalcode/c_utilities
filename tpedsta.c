@@ -1,8 +1,28 @@
 /* some statistics from a ped file ... specificaly fro Illumina BeadArray chip target */
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
 #include "tpedsta.h"
+
+int catchopts(optstruct *opstru, int oargc, char **oargv)
+{
+    int c;
+    opterr = 0;
+    while ((c = getopt (oargc, oargv, "ci:")) != -1)
+        switch (c) {
+            case 'c': // want to see the genotypes of these SNPs
+                opstru->cflag = 1;
+                break;
+            case 'i': // input file 
+                opstru->iname = optarg;
+                break;
+			case '?':
+				if (optopt == 'i') {
+					fprintf (stderr, "Option -%c requires an input tped name.\n", optopt);
+                    exit(EXIT_FAILURE);
+                }
+            default:
+                abort();
+        }
+    return 0;
+}
 
 w_c *crea_wc(unsigned initsz)
 {
@@ -110,6 +130,89 @@ void free_aawc(aaw_c **aw)
         free_awc(taw->aaw+i);
     free(taw->aaw);
     free(taw);
+}
+
+gt_t from2l(char A1, char A2)
+{
+    /* return a gt type for two letters */
+    gt_t tgt; // The temporary GT
+    switch(A1) {
+        case 'A':
+            switch(A2){
+                case 'A':
+                    tgt=AA; break;
+                case 'C':
+                    tgt=AC; break;
+                case 'G':
+                    tgt=AG; break;
+                case 'T':
+                    tgt=AT; break;
+                case 'N': case '0':
+                    tgt=Z1; break;
+                default:
+                    tgt=ZZ;
+            }
+            break;
+        case 'C':
+            switch(A2){
+                case 'A':
+                    tgt=CA; break;
+                case 'C':
+                    tgt=CC; break;
+                case 'G':
+                    tgt=CG; break;
+                case 'T':
+                    tgt=CT; break;
+                case 'N': case '0':
+                    tgt=Z1; break;
+                default:
+                    tgt=ZZ;
+            }
+            break;
+        case 'G':
+            switch(A2){
+                case 'A':
+                    tgt=GA; break;
+                case 'C':
+                    tgt=GC; break;
+                case 'G':
+                    tgt=GG; break;
+                case 'T':
+                    tgt=GT; break;
+                case 'N': case '0':
+                    tgt=Z1; break;
+                default:
+                    tgt=ZZ;
+            }
+            break;
+        case 'T':
+            switch(A2){
+                case 'A':
+                    tgt=TA; break;
+                case 'C':
+                    tgt=TC; break;
+                case 'G':
+                    tgt=TG; break;
+                case 'T':
+                    tgt=TT; break;
+                case 'N': case '0': case 'D': case 'I':
+                    tgt=Z1; break;
+                default:
+                    tgt=ZZ;
+            }
+            break;
+        case 'N': case '0': case 'D': case 'I':
+            switch(A2){
+                case 'A': case 'C': case 'G': case 'T':
+                    tgt=Z1; break;
+                default:
+                    tgt=ZZ;
+            }
+            break;
+        default:
+            tgt=ZZ;
+    }
+    return tgt;
 }
 
 void prtaawcdbg(aaw_c *aawc)
@@ -336,6 +439,132 @@ void prtaawcplain(aaw_c *aawc) /* print line and word details, but not the words
         printf("Not all lines had same number of wordsi line 0 %i.\n", ll); 
 }
 
+void prt_tpedaawc0f(aaw_c *aawc) /* print GT friendly ... not a valid tped, just convenient for reading */
+{
+    /* Note: IDN0's printed as they are */
+    int i, j;
+    for(i=0;i<aawc->numl;++i) {
+        /* first four are the non GT fields */
+        // printf("%s\t", aawc->aaw[i]->aw[0]->w);
+        printf("%s ", aawc->aaw[i]->aw[1]->w);
+        // printf("%s\t", aawc->aaw[i]->aw[2]->w);
+        // printf("%s\t", aawc->aaw[i]->aw[3]->w);
+        for(j=4;j<aawc->aaw[i]->al;j+=2) {
+            printf("%c", aawc->aaw[i]->aw[j]->w[0]);
+            printf(((j+1)!=aawc->aaw[i]->al-1)?"%c ":"%c\n", aawc->aaw[i]->aw[j+1]->w[0]);
+        }
+    }
+    return;
+}
+
+void prt_tpedaawc1f(aaw_c *aawc) /* print GT friendly ... not a valid tped, just convenient for reading */
+{
+    /* Note: IDN0's converted to 0's */
+    int i, j;
+    char a1, a2;
+    for(i=0;i<aawc->numl;++i) {
+        /* first four are the non GT fields */
+        // printf("%s\t", aawc->aaw[i]->aw[0]->w);
+        printf("%s ", aawc->aaw[i]->aw[1]->w);
+        // printf("%s\t", aawc->aaw[i]->aw[2]->w);
+        // printf("%s\t", aawc->aaw[i]->aw[3]->w);
+        for(j=4;j<aawc->aaw[i]->al;j+=2) {
+            a1=aawc->aaw[i]->aw[j]->w[0];
+            a2=aawc->aaw[i]->aw[j+1]->w[0];
+            switch (a1) {
+                case 'N': case '0': case 'D': case 'I':
+                    a1='0'; break;
+                default:
+                    break;
+            }
+            switch (a2) {
+                case 'N': case '0': case 'D': case 'I':
+                    a2='0'; break;
+                default:
+                    break;
+            }
+            printf("%c", a1);
+            printf(((j+1)!=aawc->aaw[i]->al-1)?"%c ":"%c\n", a2);
+        }
+    }
+    return;
+}
+
+void prt_tpedaawc1p(aaw_c *aawc) /* print proper tped */
+{
+    /* Note: IDN0's converted to 0's */
+    int i, j;
+    char a1, a2;
+    for(i=0;i<aawc->numl;++i) {
+        /* first four are the non GT fields */
+        printf("%s ", aawc->aaw[i]->aw[0]->w);
+        printf("%s ", aawc->aaw[i]->aw[1]->w);
+        printf("%s ", aawc->aaw[i]->aw[2]->w);
+        printf("%s ", aawc->aaw[i]->aw[3]->w);
+        for(j=4;j<aawc->aaw[i]->al;j+=2) {
+            a1=aawc->aaw[i]->aw[j]->w[0];
+            a2=aawc->aaw[i]->aw[j+1]->w[0];
+            switch (a1) {
+                case 'N': case '0': case 'D': case 'I':
+                    a1='0'; break;
+                default:
+                    break;
+            }
+            switch (a2) {
+                case 'N': case '0': case 'D': case 'I':
+                    a2='0'; break;
+                default:
+                    break;
+            }
+            printf("%c ", a1);
+            printf(((j+1)!=aawc->aaw[i]->al-1)?"%c ":"%c\n", a2);
+        }
+    }
+    return;
+}
+
+void prt_tpedaawc0(aaw_c *aawc) /* print GT friendly ... not a valid tped, just convenient for reading */
+{
+    int i, j;
+    for(i=0;i<aawc->numl;++i) {
+        /* first four are the non GT fields */
+        // printf("%s\t", aawc->aaw[i]->aw[0]->w);
+        printf("%s ", aawc->aaw[i]->aw[1]->w);
+        // printf("%s\t", aawc->aaw[i]->aw[2]->w);
+        // printf("%s\t", aawc->aaw[i]->aw[3]->w);
+        for(j=4;j<aawc->aaw[i]->al;j+=2) {
+            printf("%c", aawc->aaw[i]->aw[j]->w[0]);
+            printf(((j+1)!=aawc->aaw[i]->al-1)?"%c ":"%c\n", aawc->aaw[i]->aw[j+1]->w[0]);
+        }
+    }
+    return;
+}
+
+void cougt_tpedaawc(aaw_c *aawc, int **cougt, boole *eqngts) /* just count the gts that come out: any SNP with N or 0, means the GT is NN */
+{
+    int *cougt_=*cougt;
+    int i, j;
+    char a1, a2;
+    boole eqngts_ = 0;
+    int ingts, ngts = (aawc->aaw[0]->al-4)/2;
+    printf("First sample numgts=%i\n", ngts); 
+    for(i=0;i<aawc->numl;++i) {
+        ingts =(aawc->aaw[i]->al-4)/2;
+        if(ingts != ngts) {
+            eqngts_=1;
+            printf("Idx %i had %i GTs!\n", i, ingts); 
+        }
+        for(j=4;j<aawc->aaw[i]->al;j+=2) {
+            a1=aawc->aaw[i]->aw[j]->w[0];
+            a2=aawc->aaw[i]->aw[j+1]->w[0];
+            cougt_[from2l(a1,a2)]++;
+        }
+    }
+    // *cougt=cougt_; // not nec.
+    *eqngts = eqngts_;
+    return;
+}
+
 aaw_c *processinpf(FILE *fp)
 {
     int i;
@@ -403,23 +632,50 @@ uit:
 int main(int argc, char *argv[])
 {
     /* argument accounting */
-    if(argc!=2) {
-        printf("Error. Pls supply one pedfile as argument: stats will be generated.\n");
+    if((argc==1) | (argc>4) ){
+        printf("usage: Pls supply one tpedfile as argument with -i option.\n");
+        printf("       if you include -c flag, a converted tped (missing=0) sent to STDOUT.\n");
         exit(EXIT_FAILURE);
     }
+    int argignore=0; //
+    int oargc=argc-argignore;
+    char **oargv=argv+argignore;
+    optstruct opstru={0};
+    catchopts(&opstru, oargc, oargv);
 
-    FILE *fp=fopen(argv[1],"r");
+    int i;
+    FILE *fp=fopen(opstru.iname, "r");
     aaw_c *aawc=NULL;
-    // float allra1=.0, allra2=.0;
-    // int numsamps=0;
-    // printf("Samplename\t#A1==ACGT\t#A2==ACTG\t#A1==0\t#A2==0\t#A1==N\tA2==N\t#A1==ID\t#A2==ID\t#A1==?\t#A2==?\tA1CR\tA2CR\n");
-    // while(lastchar != EOF) {
     aawc=processinpf(fp);
-    prtaawcplain(aawc);
+
+    /* Now this is a bare line-word type struct, which could conceivably be converted into a more tped-friendly structure
+     * but, as usual, this woul require copying and holding two tped's in memory, so why bother? Let's just be careful and keep
+     * the particularities of the tped structure in mind: */
+    // prt_tpedaawc1f(aawc); /* friendly not proper tped print: CHRIST I had kep this in */
+    /* First, let's start with counting the 18 categorized genotypes. */
+    int *cougt=calloc(NUMGTS, sizeof(int));
+    boole eqngts = 0; /* equal number of GTs in our tped file? */
+
+    /* OK, we're sticking in some options */
+    if(!opstru.cflag) {
+        cougt_tpedaawc(aawc, &cougt, &eqngts);
+        printf("Different GT counts: (Z1: just one uncalled allele, ZZ: both alleles uncalled.\n"); 
+        for(i=0;i<NUMGTS;++i) 
+            printf((i==NUMGTS-1)?"%6s\n":"%6s ", gtna0[i]);
+        for(i=0;i<NUMGTS;++i) 
+            printf((i==NUMGTS-1)?"%6i\n":"%6i ", cougt[i]);
+        printf((eqngts)?"Problem: unequal number of GTs across samples.\n":"Checked: yes, an equal num of GTs for all samples.\n");
+    } else if(opstru.cflag) {
+        /* printing out converted tped: 0NID's all set to 00 */
+        prt_tpedaawc1p(aawc);
+    }
+
+    // prtaawcplain(aawc);
     // statsaawc2(aawc, &allra1, &allra2, &numsamps);
     free_aawc(&aawc);
     // printf("overall: avga1cr=%4.4f avga2cr=%4.4f\n", allra1/numsamps, allra2/numsamps);
     fclose(fp);
+    free(cougt);
 
     return 0;
 }
