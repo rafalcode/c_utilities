@@ -5,13 +5,16 @@ int catchopts(optstruct *opstru, int oargc, char **oargv)
 {
     int c;
     opterr = 0;
-    while ((c = getopt (oargc, oargv, "ci:")) != -1)
+    while ((c = getopt (oargc, oargv, "ci:f:")) != -1)
         switch (c) {
             case 'c': // want to see the genotypes of these SNPs
                 opstru->cflag = 1;
                 break;
             case 'i': // input file 
                 opstru->iname = optarg;
+                break;
+            case 'f': // input file 
+                opstru->fname = optarg; /* the tfam of fam file */
                 break;
 			case '?':
 				if (optopt == 'i') {
@@ -439,6 +442,30 @@ void prtaawcplain(aaw_c *aawc) /* print line and word details, but not the words
         printf("Not all lines had same number of wordsi line 0 %i.\n", ll); 
 }
 
+void prt_tfc(aaw_c *tfc) /* print line and word details, but not the words themselves */
+{
+    int i, j;
+    int ll; /* length of line */
+    boole asamell=0; /* all same line length */
+    for(i=0;i<tfc->numl;++i) {
+        printf("L%u(%uw):", i, tfc->aaw[i]->al); 
+        if(!i)
+            ll = tfc->aaw[i]->al;
+        else
+            if( ll != tfc->aaw[i]->al) {
+                asamell++;
+                printf("line %i, %i words\n", i, tfc->aaw[i]->al); 
+            }
+
+        for(j=0;j<tfc->aaw[i]->al;++j)
+            printf((j!=tfc->aaw[i]->al-1)?"%s ":"%s\n", tfc->aaw[i]->aw[j]->w);
+    }
+    if(!asamell)
+        printf("All lines had same number of words (%i).\n", ll); 
+    else
+        printf("Not all lines had same number of words as line 0 %i.\n", ll); 
+}
+
 void prt_tpedaawc0f(aaw_c *aawc) /* print GT friendly ... not a valid tped, just convenient for reading */
 {
     /* Note: IDN0's printed as they are */
@@ -644,9 +671,14 @@ int main(int argc, char *argv[])
     catchopts(&opstru, oargc, oargv);
 
     int i;
-    FILE *fp=fopen(opstru.iname, "r");
-    aaw_c *aawc=NULL;
+    FILE *fp=NULL, *ff=NULL;
+    fp=fopen(opstru.iname, "r");
+    aaw_c *aawc=NULL, *tfc=NULL;
     aawc=processinpf(fp);
+    if(opstru.fname) {
+        ff=fopen(opstru.fname, "r");
+        tfc=processinpf(ff);
+    }
 
     /* Now this is a bare line-word type struct, which could conceivably be converted into a more tped-friendly structure
      * but, as usual, this woul require copying and holding two tped's in memory, so why bother? Let's just be careful and keep
@@ -657,14 +689,16 @@ int main(int argc, char *argv[])
     boole eqngts = 0; /* equal number of GTs in our tped file? */
 
     /* OK, we're sticking in some options */
-    if(!opstru.cflag) {
+    if( opstru.iname & !(opstru.cflag) & !(opstru.fname)) {
         cougt_tpedaawc(aawc, &cougt, &eqngts);
         printf("Different GT counts: (Z1: just one uncalled allele, ZZ: both alleles uncalled.\n"); 
         for(i=0;i<NUMGTS;++i) 
-            printf((i==NUMGTS-1)?"%6s\n":"%6s ", gtna0[i]);
+            printf((i==NUMGTS-1)?"%4s  \n":"%4s   ", gtna0[i]);
         for(i=0;i<NUMGTS;++i) 
             printf((i==NUMGTS-1)?"%6i\n":"%6i ", cougt[i]);
         printf((eqngts)?"Problem: unequal number of GTs across samples.\n":"Checked: yes, an equal num of GTs for all samples.\n");
+    } else if( !(opstru.cflag) & opstru.fname) {
+        prt_tfc(tfc);
     } else if(opstru.cflag) {
         /* printing out converted tped: 0NID's all set to 00 */
         prt_tpedaawc1p(aawc);
@@ -676,6 +710,10 @@ int main(int argc, char *argv[])
     // printf("overall: avga1cr=%4.4f avga2cr=%4.4f\n", allra1/numsamps, allra2/numsamps);
     fclose(fp);
     free(cougt);
+    if(opstru->fname) {
+        fclose(ff);
+        free_aawc(&tfc);
+    }
 
     return 0;
 }

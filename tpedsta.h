@@ -54,8 +54,9 @@ typedef enum
 
 typedef struct  /* optstruct, a struct for the options */
 {
-    int cflag; // convert, print out output as ped and map, aftetr having resolved resolution events
-    char *iname;
+    int cflag; /* convert, print out output as ped and map, aftetr having resolved resolution events */
+    char *iname; /* input file name which should be a tped file of course */
+    char *fname; /* optional input tfam file for sanity checking of the tped/tfam pairing */
 } optstruct;
 
 typedef struct /* word type */
