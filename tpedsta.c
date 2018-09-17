@@ -442,28 +442,107 @@ void prtaawcplain(aaw_c *aawc) /* print line and word details, but not the words
         printf("Not all lines had same number of wordsi line 0 %i.\n", ll); 
 }
 
-void prt_tfc(aaw_c *tfc) /* print line and word details, but not the words themselves */
+void prt_tfc(aaw_c *tfc)
 {
     int i, j;
-    int ll; /* length of line */
-    boole asamell=0; /* all same line length */
+    int ll0=0; /* length of line */
+    boole asamell0=0; /* all same line length? */
     for(i=0;i<tfc->numl;++i) {
+#ifdef DBG
         printf("L%u(%uw):", i, tfc->aaw[i]->al); 
+#endif
         if(!i)
-            ll = tfc->aaw[i]->al;
+            ll0 = tfc->aaw[i]->al;
         else
-            if( ll != tfc->aaw[i]->al) {
-                asamell++;
-                printf("line %i, %i words\n", i, tfc->aaw[i]->al); 
+            if( ll0 != tfc->aaw[i]->al) {
+                asamell0++;
+#ifdef DBG
+                printf("exception - line %i, %i words\n", i, tfc->aaw[i]->al); 
+#endif
             }
 
+#ifdef DBG
         for(j=0;j<tfc->aaw[i]->al;++j)
             printf((j!=tfc->aaw[i]->al-1)?"%s ":"%s\n", tfc->aaw[i]->aw[j]->w);
+#endif
+    }
+    if(!asamell0)
+        printf("All lines in .tfam had same number of words (%i).\n", ll0); 
+    else
+        printf("Not all lines in .tfam had same number of words as line 0 %i.\n", ll0); 
+
+    return;
+}
+
+void vertptf(aaw_c *tfc, aaw_c *aawc) /* verify the tped and tfam file pair */
+{
+    int i, j;
+    int ll0; /* length of line */
+    boole asamell0=0; /* all same line length? */
+    for(i=0;i<tfc->numl;++i) {
+#ifdef DBG
+        printf("L%u(%uw):", i, tfc->aaw[i]->al); 
+#endif
+        if(!i)
+            ll0 = tfc->aaw[i]->al;
+        else
+            if( ll0 != tfc->aaw[i]->al) {
+                asamell0++;
+#ifdef DBG
+                printf("exception - line %i, %i words\n", i, tfc->aaw[i]->al); 
+#endif
+            }
+
+#ifdef DBG
+        for(j=0;j<tfc->aaw[i]->al;++j)
+            printf((j!=tfc->aaw[i]->al-1)?"%s ":"%s\n", tfc->aaw[i]->aw[j]->w);
+#endif
+    }
+    if(!asamell0)
+        printf("All lines in .tfam had same number of words (%i).\n", ll0); 
+    else
+        printf("Not all lines in .tfam had same number of words as line 0 %i.\n", ll0); 
+
+
+    /* OK. now the .tped's turn */
+    boole asamell=0;
+    int ll=0;
+    for(i=0;i<aawc->numl;++i) {
+#ifdef DBG
+        printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+#endif
+        if(!i)
+            ll = aawc->aaw[i]->al;
+        else
+            if( ll != aawc->aaw[i]->al) {
+                asamell++;
+#ifdef DBG
+                printf("line %i, %i words\n", i, aawc->aaw[i]->al); 
+#endif
+            }
+
+#ifdef DBG
+        for(j=0;j<aawc->aaw[i]->al;++j)
+            printf((j!=aawc->aaw[i]->al-1)?"%s ":"%s\n", aawc->aaw[i]->aw[j]->w);
+#endif
     }
     if(!asamell)
-        printf("All lines had same number of words (%i).\n", ll); 
+        printf("All lines in .tped had same number of words (%i).\n", ll); 
     else
-        printf("Not all lines had same number of words as line 0 %i.\n", ll); 
+        printf("Not all lines .tped had same number of words as line 0 (%i).\n", ll); 
+
+    /* Finally check that .tped has same number of genotypes as lines in .tfam
+     * Note this is hardly a great check, just because the numbers coincide doesn't mean
+     * a whole lot, but it's just a sanity check. */
+    int ngts=(ll-4)/2;
+    if(!asamell & !asamell0) {
+        if(ngts != tfc->numl)
+            printf("Number of lines in .tfam does not match number of GTs in .tped.\n"); 
+        else
+            printf("All clear: .tped GT quantity and number of lines in .tfam coincide.\n");
+    } else
+        printf("Either .tped of .tfam do not have a consistently equal number of words per line.\n"); 
+    return;
 }
 
 void prt_tpedaawc0f(aaw_c *aawc) /* print GT friendly ... not a valid tped, just convenient for reading */
@@ -659,8 +738,9 @@ uit:
 int main(int argc, char *argv[])
 {
     /* argument accounting */
-    if((argc==1) | (argc>4) ){
+    if((argc==1) | (argc>5) ){
         printf("usage: Pls supply one tpedfile as argument with -i option.\n");
+        printf("       A .tfam file can be included with the -f option.\n");
         printf("       if you include -c flag, a converted tped (missing=0) sent to STDOUT.\n");
         exit(EXIT_FAILURE);
     }
@@ -689,7 +769,7 @@ int main(int argc, char *argv[])
     boole eqngts = 0; /* equal number of GTs in our tped file? */
 
     /* OK, we're sticking in some options */
-    if( opstru.iname & !(opstru.cflag) & !(opstru.fname)) {
+    if( (opstru.iname != NULL) & !(opstru.cflag) & !(opstru.fname)) {
         cougt_tpedaawc(aawc, &cougt, &eqngts);
         printf("Different GT counts: (Z1: just one uncalled allele, ZZ: both alleles uncalled.\n"); 
         for(i=0;i<NUMGTS;++i) 
@@ -697,8 +777,10 @@ int main(int argc, char *argv[])
         for(i=0;i<NUMGTS;++i) 
             printf((i==NUMGTS-1)?"%6i\n":"%6i ", cougt[i]);
         printf((eqngts)?"Problem: unequal number of GTs across samples.\n":"Checked: yes, an equal num of GTs for all samples.\n");
-    } else if( !(opstru.cflag) & opstru.fname) {
+    } else if( !(opstru.cflag) & !(opstru.iname) & (opstru.fname != NULL) ) {
         prt_tfc(tfc);
+    } else if( !(opstru.cflag) & (opstru.iname != NULL) & (opstru.fname != NULL)) {
+        vertptf(tfc, aawc);/* verify the tped and tfam file pair */
     } else if(opstru.cflag) {
         /* printing out converted tped: 0NID's all set to 00 */
         prt_tpedaawc1p(aawc);
@@ -710,7 +792,7 @@ int main(int argc, char *argv[])
     // printf("overall: avga1cr=%4.4f avga2cr=%4.4f\n", allra1/numsamps, allra2/numsamps);
     fclose(fp);
     free(cougt);
-    if(opstru->fname) {
+    if(opstru.fname != NULL) {
         fclose(ff);
         free_aawc(&tfc);
     }

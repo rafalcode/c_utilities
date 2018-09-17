@@ -41,7 +41,7 @@ char gtna0[NUMGTS][3]={"AA", "CC", "GG", "TT", "AC", "AG", "AT", "CA", "CG", "CT
 char gtna2[NUMGTS][3]={"AA", "CC", "GG", "TT", "AC", "AG", "AT", "CA", "CG", "CT", "GA", "GC", "GT", "TA", "TC", "TG", "NN", "NN"};
 char gtna[NUMGTS][3]={"AA", "CC", "GG", "TT", "AC", "AG", "AT", "CA", "CG", "CT", "GA", "GC", "GT", "TA", "TC", "TG", "00", "00"};
 
-typedef enum
+typedef enum /* the old t_t typing of general words ... could be deleted */
 {
     STRG, /* unknown type, so default to string */
     NUMS, /* NUMberS: but does not include currency. Date, time, float or int, i.e. just a sequence of numbers with maybe some special symbils.*/
