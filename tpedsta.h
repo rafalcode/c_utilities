@@ -13,7 +13,7 @@
 #define WABUF 20
 #define LBUF 32
 #endif
-#define NUMGTS 18
+#define NUMGTS 20
 typedef unsigned char boole;
 typedef enum /* gt_t, genotype type */
 {
@@ -33,13 +33,15 @@ typedef enum /* gt_t, genotype type */
     TA,
     TC,
     TG,
+    D1, /* only one of the alleles is a I or D ( policy will be to treat as uncalled) */
+    D2, /* both alleles is a I or D ( policy will be to treat as uncalled) */
     Z1, /* one SNP uncalled or unrecognised */
     ZZ /* both uncalled, unrecognised, the obligatory catch-all so to speak */
 } gt_t;
 /* GT Name arrays based on above, "gtna" sets 00 as the unknown 17th GT, while gtna2 sets it to NN */
-char gtna0[NUMGTS][3]={"AA", "CC", "GG", "TT", "AC", "AG", "AT", "CA", "CG", "CT", "GA", "GC", "GT", "TA", "TC", "TG", "Z1", "ZZ"};
-char gtna2[NUMGTS][3]={"AA", "CC", "GG", "TT", "AC", "AG", "AT", "CA", "CG", "CT", "GA", "GC", "GT", "TA", "TC", "TG", "NN", "NN"};
-char gtna[NUMGTS][3]={"AA", "CC", "GG", "TT", "AC", "AG", "AT", "CA", "CG", "CT", "GA", "GC", "GT", "TA", "TC", "TG", "00", "00"};
+char gtna0[NUMGTS][3]={"AA", "CC", "GG", "TT", "AC", "AG", "AT", "CA", "CG", "CT", "GA", "GC", "GT", "TA", "TC", "TG", "D1", "D2", "Z1", "ZZ"};
+char gtna2[NUMGTS][3]={"AA", "CC", "GG", "TT", "AC", "AG", "AT", "CA", "CG", "CT", "GA", "GC", "GT", "TA", "TC", "TG", "NN", "NN", "NN", "NN"};
+char gtna[NUMGTS][3]={"AA", "CC", "GG", "TT", "AC", "AG", "AT", "CA", "CG", "CT", "GA", "GC", "GT", "TA", "TC", "TG", "00", "00", "00", "00"};
 
 typedef enum /* the old t_t typing of general words ... could be deleted */
 {

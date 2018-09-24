@@ -150,6 +150,8 @@ gt_t from2l(char A1, char A2)
                     tgt=AG; break;
                 case 'T':
                     tgt=AT; break;
+                case 'I': case 'D':
+                    tgt=D1; break;
                 case 'N': case '0':
                     tgt=Z1; break;
                 default:
@@ -166,6 +168,8 @@ gt_t from2l(char A1, char A2)
                     tgt=CG; break;
                 case 'T':
                     tgt=CT; break;
+                case 'I': case 'D':
+                    tgt=D1; break;
                 case 'N': case '0':
                     tgt=Z1; break;
                 default:
@@ -182,6 +186,8 @@ gt_t from2l(char A1, char A2)
                     tgt=GG; break;
                 case 'T':
                     tgt=GT; break;
+                case 'I': case 'D':
+                    tgt=D1; break;
                 case 'N': case '0':
                     tgt=Z1; break;
                 default:
@@ -198,16 +204,29 @@ gt_t from2l(char A1, char A2)
                     tgt=TG; break;
                 case 'T':
                     tgt=TT; break;
-                case 'N': case '0': case 'D': case 'I':
+                case 'I': case 'D':
+                    tgt=D1; break;
+                case 'N': case '0':
                     tgt=Z1; break;
                 default:
                     tgt=ZZ;
             }
             break;
-        case 'N': case '0': case 'D': case 'I':
+        case 'D': case 'I':
+            switch(A2){
+                case 'A': case 'C': case 'G': case 'T':
+                    tgt=D1; break;
+                default:
+                    tgt=D2;
+            }
+            break;
+        case 'N': case '0':
             switch(A2){
                 case 'A': case 'C': case 'G': case 'T':
                     tgt=Z1; break;
+                case 'I': case 'D':
+                    /* special case where NI or ND occur: an ID was involced, so to speak */
+                    tgt=D2; break;
                 default:
                     tgt=ZZ;
             }
@@ -773,7 +792,7 @@ int main(int argc, char *argv[])
         cougt_tpedaawc(aawc, &cougt, &eqngts);
         printf("Different GT counts: (Z1: just one uncalled allele, ZZ: both alleles uncalled.\n"); 
         for(i=0;i<NUMGTS;++i) 
-            printf((i==NUMGTS-1)?"%4s  \n":"%4s   ", gtna0[i]);
+            printf((i==NUMGTS-1)?"%5s \n":"%5s  ", gtna0[i]);
         for(i=0;i<NUMGTS;++i) 
             printf((i==NUMGTS-1)?"%6i\n":"%6i ", cougt[i]);
         printf((eqngts)?"Problem: unequal number of GTs across samples.\n":"Checked: yes, an equal num of GTs for all samples.\n");
