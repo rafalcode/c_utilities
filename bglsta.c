@@ -63,6 +63,7 @@ void prtchaharr(snodm **stab, unsigned tsz) // print out mp_t on baiss of second
             printf("%s\t%s\t%c\t%c\n", tsnod2->aw->aw[0]->w, tsnod2->aw->aw[1]->w, tsnod2->aw->aw[2]->w[0], tsnod2->aw->aw[3]->w[0]);
             tsnod2=tsnod2->n;
         }
+        printf("\n"); 
     }
     return;
 }
@@ -104,7 +105,7 @@ snodm **hashmrk(aaw_c *maawc, unsigned tsz)
     /* OK, we're going to loop through the map file container: i here follows the global SNP name index */
     for(i=0; i< maawc->numl; ++i) {
 
-        tint=hashit(maawc->aaw[i]->aw[1]->w, tsz); // hash the snpname
+        tint=hashit(maawc->aaw[i]->aw[0]->w, tsz); // hash the snpname
         if( (stab[tint] == NULL) ) { // nothing in that slot right now.
             stab[tint]=malloc(sizeof(snodm));
             stab[tint]->aw=maawc->aaw[i];
@@ -571,12 +572,12 @@ void prtaawctp(aaw_c *aawc, aaw_c *maawc, snodm **stab, unsigned htsz, char *tc)
                 if(!(strcmp(tsnod2->aw->aw[0]->w, aawc->aaw[i]->aw[1]->w))) {
                     seen =1;
                     pos=atoi(tsnod2->aw->aw[1]->w);
-                    // printf("%s ", tc); 
-                    // printf("%s ", aawc->aaw[i]->aw[1]->w);
-                    // printf("%c ", '0'); 
-                    // printf("%i\n", pos);
-                    // for(j=2;j<aawc->aaw[i]->al;++j)
-                    //     printf((j!=aawc->aaw[i]->al-1)?"%s ":"%s\n", aawc->aaw[i]->aw[j]->w);
+                    printf("%s ", tc); 
+                    printf("%s ", aawc->aaw[i]->aw[1]->w);
+                    printf("%c ", '0'); 
+                    printf("%i ", pos);
+                    for(j=2;j<aawc->aaw[i]->al;++j)
+                         printf((j!=aawc->aaw[i]->al-1)?"%s ":"%s\n", aawc->aaw[i]->aw[j]->w);
                     break;
                 }
                 tsnod0=tsnod2;
@@ -585,10 +586,11 @@ void prtaawctp(aaw_c *aawc, aaw_c *maawc, snodm **stab, unsigned htsz, char *tc)
         }
         if(!seen) {
             unseencou++;
-            printf("%s ", aawc->aaw[i]->aw[1]->w);
+            // printf("%s ", aawc->aaw[i]->aw[1]->w);
         }
     }
-    printf("#u2=%i unseen=%i\n", u2, unseencou); 
+    if( u2 | unseencou)
+        printf("WARNING: #u2=%i unseen=%i\n", u2, unseencou); 
     return;
 }
 
@@ -706,24 +708,6 @@ void vertptf(aaw_c *tfc, aaw_c *aawc) /* verify the tped and tfam file pair */
             printf("All clear: .tped GT quantity and number of lines in .tfam coincide.\n");
     } else
         printf("Either .tped of .tfam do not have a consistently equal number of words per line.\n"); 
-    return;
-}
-
-void prt_tpedaawc0f(aaw_c *aawc) /* print GT friendly ... not a valid tped, just convenient for reading */
-{
-    /* Note: IDN0's printed as they are */
-    int i, j;
-    for(i=0;i<aawc->numl;++i) {
-        /* first four are the non GT fields */
-        // printf("%s\t", aawc->aaw[i]->aw[0]->w);
-        printf("%s ", aawc->aaw[i]->aw[1]->w);
-        // printf("%s\t", aawc->aaw[i]->aw[2]->w);
-        // printf("%s\t", aawc->aaw[i]->aw[3]->w);
-        for(j=4;j<aawc->aaw[i]->al;j+=2) {
-            printf("%c", aawc->aaw[i]->aw[j]->w[0]);
-            printf(((j+1)!=aawc->aaw[i]->al-1)?"%c ":"%c\n", aawc->aaw[i]->aw[j+1]->w[0]);
-        }
-    }
     return;
 }
 
