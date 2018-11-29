@@ -6,7 +6,7 @@ DBG2CFLAGS=-g -Wall -DDBG2
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
 
 LIBS=-lgsl -lgslcblas -lm
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4 pedsta mpdmu2 mpdmu2_d mpdmu3 mpdmu3_d mpdmu4 mpdmu4_d tpedsta
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d ahread ahread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4 pedsta pedsta0 mpdmu2 mpdmu2_d mpdmu3 mpdmu3_d mpdmu4 mpdmu4_d tpedsta_d bglsta bglsta_d
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -133,9 +133,21 @@ mapedstats_d: mapedstats.c
 # and also to be entirely unscalable, basically reading everything into a pointer-heavy data structure.
 pedsta: pedsta.c
 	${CC} ${CFLAGS} -o $@ $^
+
+# slurp whole ped (dangerous) so that per SNP comparisons can be made.
+pedsta0: pedsta0.c
+	${CC} ${CFLAGS} -o $@ $^
+
 # how easy is it to convert the above to tped
 tpedsta: tpedsta.c
 	${CC} ${CFLAGS} -o $@ $^
+tpedsta_d: tpedsta.c
+	${CC} ${DBGCFLAGS} -o $@ $^
+# old beagle format
+bglsta: bglsta.c
+	${CC} ${CFLAGS} -o $@ $^
+bglsta_d: bglsta.c
+	${CC} ${DBGCFLAGS} -o $@ $^
 
 # from genread
 mprd: mprd.c
@@ -220,6 +232,12 @@ txtread_d: txtread.c
 # not sophis, but fast.
 txtread_t: txtread.c
 	${CC} -DTNM -o $@ $^
+# How about splitting lines on arrow heads?
+# # introducing ahread
+ahread: ahread.c
+	${CC} ${DBGCFLAGS} -o $@ $^
+ahread_d: ahread.c
+	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 
 # based on txtread.c: rough ..reads in and converts to pairwise
 # that doesn't uite mean what it says: actually matches n-1 members against n-1 members
