@@ -6,7 +6,7 @@ DBG2CFLAGS=-g -Wall -DDBG2
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
 
 LIBS=-lgsl -lgslcblas -lm
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d ahread ahread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4 pedsta pedsta0 mpdmu2 mpdmu2_d mpdmu3 mpdmu3_d mpdmu4 mpdmu4_d tpedsta_d bglsta bglsta_d
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d ahread ahread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4 pedsta pedsta0 mpdmu2 mpdmu2_d mpdmu3 mpdmu3_d mpdmu4 mpdmu4_d tpedsta_d bglsta bglsta_d bglvset
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -147,6 +147,10 @@ tpedsta_d: tpedsta.c
 bglsta: bglsta.c
 	${CC} ${CFLAGS} -o $@ $^
 bglsta_d: bglsta.c
+	${CC} ${DBGCFLAGS} -o $@ $^
+bglvset: bglvset.c
+	${CC} ${CFLAGS} -o $@ $^
+bglvset_d: bglvset.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
 # from genread
