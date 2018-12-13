@@ -4,13 +4,16 @@ int catchopts(optstruct *opstru, int oargc, char **oargv)
 {
     int c;
     opterr = 0;
-    while ((c = getopt (oargc, oargv, "ci:m:o:v:")) != -1)
+    while ((c = getopt (oargc, oargv, "pci:m:o:v:")) != -1)
         switch (c) {
             case 'c': // no printing out of files, please. I.e. _C_ancel printing to file.
                 opstru->cflag = 1;
                 break;
             case 's': // stats version, no tped is output. Principally to see how hets are called.
                 opstru->sflag = 1;
+                break;
+            case 'p': // confirm you are feeding phased GTs, this will set | instead of / in VCF.
+                opstru->pflag = 1;
                 break;
             case 'i': // input file 
                 opstru->iname = optarg;
@@ -126,6 +129,88 @@ snodm **hashmrk(aaw_c *maawc, unsigned tsz)
             tsnod0=tsnod2;
             tsnod2=tsnod2->n;
         }
+        tsnod0->n=malloc(sizeof(snodm));
+        tsnod0->n->aw = maawc->aaw[i];
+        tsnod0->n->idx=i;
+        tsnod0->n->n=NULL;
+    }
+    return stab;
+}
+
+snodm **hashmrk2(aaw_c *maawc, unsigned tsz)
+{
+    unsigned i;
+
+    snodm **stab=malloc(tsz*sizeof(snodm *));
+    for(i=0;i<tsz;++i) 
+        stab[i]=NULL;
+    snodm *tsnod0, *tsnod2;
+
+    unsigned tint;
+
+    /* OK, we're going to loop through the map file container: i here follows the global SNP name index */
+    for(i=0; i< maawc->numl; ++i) {
+        if(maawc->aaw[i]->gd == 2) // it's a dupe
+            continue;
+
+        tint=hashit(maawc->aaw[i]->aw[0]->w, tsz); // hash the snpname
+        if( (stab[tint] == NULL) ) { // nothing in that slot right now.
+            stab[tint]=malloc(sizeof(snodm));
+            stab[tint]->aw=maawc->aaw[i];
+            stab[tint]->idx=i;
+            stab[tint]->n=NULL;
+            continue;
+        }
+        tsnod2=stab[tint];
+        while( (tsnod2 != NULL) ) {
+            tsnod0=tsnod2;
+            tsnod2=tsnod2->n;
+        }
+        tsnod0->n=malloc(sizeof(snodm));
+        tsnod0->n->aw = maawc->aaw[i];
+        tsnod0->n->idx=i;
+        tsnod0->n->n=NULL;
+    }
+    return stab;
+}
+
+snodm **hashmrk_nd(aaw_c *maawc, unsigned tsz) /* throw out positional dups */
+{
+    unsigned i;
+
+    snodm **stab=malloc(tsz*sizeof(snodm *));
+    for(i=0;i<tsz;++i) 
+        stab[i]=NULL;
+    snodm *tsnod0, *tsnod2;
+    boole pos_seen; // this position already seen.
+
+    unsigned tint;
+
+    /* OK, we're going to loop through the map file container: i here follows the global SNP name index */
+    for(i=0; i< maawc->numl; ++i) {
+
+        pos_seen=0;
+        tint=hashit(maawc->aaw[i]->aw[1]->w, tsz); // hash the position
+        if( (stab[tint] == NULL) ) { // nothing in that slot right now.
+            stab[tint]=malloc(sizeof(snodm));
+            stab[tint]->aw=maawc->aaw[i];
+            stab[tint]->idx=i;
+            stab[tint]->n=NULL;
+            continue;
+        }
+        tsnod2=stab[tint];
+        while( (tsnod2 != NULL) ) {
+            if( !(strcmp(tsnod2->aw->aw[1]->w, maawc->aaw[i]->aw[1]->w))) {
+                tsnod2->aw->gd=1; // means this already hashed line was first but has a dup
+                maawc->aaw[i]->gd=2; // means this unhashed line was second (or later) to a first dup.
+                pos_seen=1;
+                break;
+            }
+            tsnod0=tsnod2;
+            tsnod2=tsnod2->n;
+        }
+        if(pos_seen)
+            continue;
         tsnod0->n=malloc(sizeof(snodm));
         tsnod0->n->aw = maawc->aaw[i];
         tsnod0->n->idx=i;
@@ -585,7 +670,7 @@ void prtaawc0(aaw_c *aawc, aaw_c *maawc, snodm **stab, unsigned htsz, char *tc)
                     printf("%c ", '0'); 
                     printf("%i ", pos);
                     for(j=2;j<aawc->aaw[i]->al;++j)
-                         printf((j!=aawc->aaw[i]->al-1)?"%s ":"%s\n", aawc->aaw[i]->aw[j]->w);
+                        printf((j!=aawc->aaw[i]->al-1)?"%s ":"%s\n", aawc->aaw[i]->aw[j]->w);
                     break;
                 }
                 tsnod2=tsnod2->n;
@@ -690,7 +775,7 @@ void prtaawctp(aaw_c *aawc, aaw_c *maawc, snodm **stab, unsigned htsz, char *tc,
                     fprintf(fo, "%c ", '0'); 
                     fprintf(fo, "%i ", pos);
                     for(j=2;j<aawc->aaw[i]->al;++j)
-                         fprintf(fo, (j!=aawc->aaw[i]->al-1)?"%s ":"%s\n", aawc->aaw[i]->aw[j]->w);
+                        fprintf(fo, (j!=aawc->aaw[i]->al-1)?"%s ":"%s\n", aawc->aaw[i]->aw[j]->w);
                     break;
                 }
                 tsnod2=tsnod2->n;
@@ -830,6 +915,79 @@ void prtvaawcvcf(aaw_c *aawc, aaw_c *maawc, snodm **stab, aaw_c *vaawc, unsigned
                                 fprintf(fvp, (j!=vaawc->aaw[i]->al-1)?"%s\t":"%s\n", "1/0");
                             else // must be homozygous or in order heterozygous
                                 fprintf(fvp, (j!=vaawc->aaw[i]->al-1)?"%s\t":"%s\n", vaawc->aaw[i]->aw[j]->w);
+                        }
+                        break;
+                    }
+                    tsnod2=tsnod2->n;
+                } // given an occupied location, go through all located SNPnames.
+            } // finished seeing if there's a hash location for marker on that SNP name
+        } // finished distinguishing between VCF comments and data
+    } // finished groing through all the lines in VCF
+    fclose(fvp);
+    return;
+}
+
+void prtvaawcvcfp(aaw_c *aawc, aaw_c *maawc, snodm **stab, aaw_c *vaawc, unsigned htsz, char *tc, char *fname)
+{
+    /* phased version */
+    int i, j;
+    int u2=0;
+    unsigned tint;
+    unsigned commlines=0; // number of comments lines
+    snodm *tsnod2;
+    int bi, bj, bj2;
+    char va1, va2; // these are a1 and a2 in the VCF file
+    char ba1, ba2; // these are a1 and a2 in the BGL file
+    char fc, sc;
+
+    FILE *fvp=fopen(fname, "w");
+    for(i=0;i<vaawc->numl;++i) {
+        fc = vaawc->aaw[i]->aw[0]->w[0];
+        sc = vaawc->aaw[i]->aw[0]->w[1];
+        if(fc == '#') { // a comment, so print VCF as is.
+            commlines++;
+            for(j=0;j<vaawc->aaw[i]->al;++j) {
+                if(sc != '#')
+                    fprintf(fvp, (j!=vaawc->aaw[i]->al-1)?"%s\t":"%s\n", vaawc->aaw[i]->aw[j]->w);
+                else
+                    fprintf(fvp, (j!=vaawc->aaw[i]->al-1)?"%s ":"%s\n", vaawc->aaw[i]->aw[j]->w);
+            }
+        } else {
+            bi=i+2-commlines;
+            // seen = 0;
+            tint=hashit(aawc->aaw[bi]->aw[1]->w, htsz); // hash the snpname in the BGL file
+            // printf("BGL hash on %s\n", aawc->aaw[bi]->aw[1]->w);
+            if(stab[tint] == NULL) {
+                u2++;
+                continue;
+            } else {
+                tsnod2=stab[tint];
+                while( (tsnod2 != NULL) ) {
+                    if(!(strcmp(tsnod2->aw->aw[0]->w, aawc->aaw[bi]->aw[1]->w))) {
+                        // seen =1;
+                        va1 = vaawc->aaw[i]->aw[3]->w[0];
+                        va2 = vaawc->aaw[i]->aw[4]->w[0];
+                        // fprintf(fvp, "VGT:%c%c ", va1, va2); 
+                        for(j=0;j<9;++j) // print straight VCF for first 9
+                            fprintf(fvp, "%s\t", vaawc->aaw[i]->aw[j]->w);
+
+                        for(j=9;j<vaawc->aaw[i]->al;++j) {
+                            bj=2*(j-8);
+                            bj2=bj+1;
+                            ba1 = aawc->aaw[bi]->aw[bj]->w[0];
+                            ba2 = aawc->aaw[bi]->aw[bj2]->w[0];
+                            // fprintf(fvp, "BGT:%c%c ", ba1, ba2); 
+                            // if((ba1 == va1) & (ba2 == va2)) // heterozygous in order of va1 and va2
+                            //     fprintf(fvp, (j!=vaawc->aaw[i]->al-1)?"%s\t":"%s\n", vaawc->aaw[i]->aw[j]->w);
+                            // else if( (ba2 == va1) & (ba1 == va2) ) // heterzygous in opposite order to va1, va2
+                            if( (ba2 == va1) & (ba1 == va2) ) // heterzygous in opposite order to va1, va2
+                                fprintf(fvp, (j!=vaawc->aaw[i]->al-1)?"%s\t":"%s\n", "1|0");
+                            else if( (ba1 == va1) & (ba2 == va1) ) // homoz on a1
+                                fprintf(fvp, (j!=vaawc->aaw[i]->al-1)?"%s\t":"%s\n", "0|0");
+                            else if( (ba1 == va2) & (ba2 == va2) ) // homoz on a1
+                                fprintf(fvp, (j!=vaawc->aaw[i]->al-1)?"%s\t":"%s\n", "1|1");
+                            else if( (ba1 == va1) & (ba2 == va2) ) // heteroz on a1
+                                fprintf(fvp, (j!=vaawc->aaw[i]->al-1)?"%s\t":"%s\n", "0|1");
                         }
                         break;
                     }
@@ -1152,9 +1310,10 @@ void prtusage()
     printf("       -i the bgl file.\n");
     printf("       -m the marker file.\n");
     printf("       -v the vcf file.\n");
+    printf("       -p set this flag if your GTs are all phased. Other wise unphased VCFs output.\n");
     printf("       -c set this flag if you don't files written out.\n");
     printf("       Example run:\n");
-    printf("       ./bglvset -i phased.chr24.plink.bgl.phased -m markers.chr24.txt -v pha_chr24.vcf\n");
+    printf("       ./bglvset -p -i phased.chr24.plink.bgl.phased -m markers.chr24.txt -v pha_chr24.vcf\n");
     return;
 }
 
@@ -1211,15 +1370,26 @@ int main(int argc, char *argv[])
     maawc=processinpf(fm);
 
     unsigned htsz=givehtsz(maawc->numl);
-    snodm **stab=hashmrk(maawc, htsz);
+
+    // we want to clear dupes, so first we has on position
+    snodm **stab=hashmrk_nd(maawc, htsz);
+    // this will set the gd's on maawc's.
+    // // but we no longer need this hash
+    freechainharr(stab, htsz);
+    // we can reuse stab
+    stab=hashmrk2(maawc, htsz); // this second version of function takes gd's into account.
     // prtchaharr(stab, htsz);
-    if((opstru.oname != NULL) & (opstru.cflag!=1)) // cflag prevtns files beig written
+    if((opstru.oname != NULL) & (opstru.cflag!=1)) { // cflag prevtns files beig written
         prtaawctp(aawc, maawc, stab, htsz, tc, tpedout);
-    else if(opstru.cflag)
+    } else if(opstru.cflag) {
         prtaawc00(aawc, maawc, stab, vaawc, htsz, tc);
-    else
+    } else {
         // prt_vcf(vaawc, vcfout);
-        prtvaawcvcf(aawc, maawc, stab, vaawc, htsz, tc, vcfout);
+        if(opstru.pflag)
+            prtvaawcvcfp(aawc, maawc, stab, vaawc, htsz, tc, vcfout);
+        else
+            prtvaawcvcf(aawc, maawc, stab, vaawc, htsz, tc, vcfout);
+    }
 
     freechainharr(stab, htsz);
     free_aawc(&vaawc);

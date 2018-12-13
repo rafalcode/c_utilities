@@ -47,6 +47,7 @@ typedef struct  /* optstruct, a struct for the options */
 {
     int cflag; /* convert, print out output as ped and map, aftetr having resolved resolution events */
     int sflag; /* pure stats ... see consistency of hets */
+    int pflag; /* for phased data */
     char *iname; /* input file name which should be a tped file of course */
     char *fname; /* optional input tfam file for sanity checking of the tped/tfam pairing */
     char *mname; /* the marker file */
