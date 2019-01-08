@@ -6,7 +6,7 @@ DBG2CFLAGS=-g -Wall -DDBG2
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
 
 LIBS=-lgsl -lgslcblas -lm
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4 pedsta mpdmu2 mpdmu2_d mpdmu3 mpdmu3_d mpdmu4 mpdmu4_d tpedsta
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d txtrd2 txtrd2_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4 pedsta mpdmu2 mpdmu2_d mpdmu3 mpdmu3_d mpdmu4 mpdmu4_d tpedsta
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -215,6 +215,11 @@ vttmrg: vttmrg.c
 txtread: txtread.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 txtread_d: txtread.c
+	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
+# 12.2018 ... restarting this, trying to improve it
+txtrd2: txtrd2.c
+	${CC} ${DBGCFLAGS} -o $@ $^
+txtrd2_d: txtrd2.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 # Jan 2017, a way of pulling out mm:ss from text, must start with an integer, include a : and not end with a : i.e. time numbers
 # not sophis, but fast.
