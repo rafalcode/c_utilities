@@ -1,14 +1,16 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include <wchar.h>
 #include "vttrd.h"
+#include <locale.h>
 
 w_c *crea_wc(unsigned initsz)
 {
     w_c *wc=malloc(sizeof(w_c));
     wc->lp1=initsz;
     wc->t=STRG;
-    wc->w=malloc(wc->lp1*sizeof(char));
+    wc->w=malloc(wc->lp1*sizeof(wchar_t));
     return wc;
 }
 
@@ -18,7 +20,7 @@ void reall_wc(w_c **wc, unsigned *cbuf)
     unsigned tcbuf=*cbuf;
     tcbuf += CBUF;
     twc->lp1=tcbuf;
-    twc->w=realloc(twc->w, tcbuf*sizeof(char));
+    twc->w=realloc(twc->w, tcbuf*sizeof(wchar_t));
     *wc=twc; /* realloc can often change the ptr */
     *cbuf=tcbuf;
     return;
@@ -27,7 +29,7 @@ void reall_wc(w_c **wc, unsigned *cbuf)
 void norm_wc(w_c **wc)
 {
     w_c *twc=*wc;
-    twc->w=realloc(twc->w, twc->lp1*sizeof(char));
+    twc->w=realloc(twc->w, twc->lp1*sizeof(wchar_t));
     *wc=twc; /* realloc can often change the ptr */
     return;
 }
@@ -135,19 +137,19 @@ void prtaawapap2(aaw_c *aawc, aaw_c *aawc2) /* print aaw As Pure As Possible */
         /* order fo tabs and space will be messed up sure, but usually it will be one or the other. */
         for(j=5;j<aawc->aaw[i]->al;++j) {
             for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
-                putchar(aawc->aaw[i]->aw[j]->w[k]);
+                putwchar(aawc->aaw[i]->aw[j]->w[k]);
             if(j==aawc->aaw[i]->al-1)
-                putchar('\n');
+                putwchar('\n');
             else
-                putchar(' ');
+                putwchar(' ');
         }
         for(j=3;j<aawc2->aaw[ii]->al;++j) {
             for(k=0;k<aawc2->aaw[ii]->aw[j]->lp1-1; k++)
-                putchar(aawc2->aaw[ii]->aw[j]->w[k]);
+                putwchar(aawc2->aaw[ii]->aw[j]->w[k]);
             if(j==aawc2->aaw[ii]->al-1)
                 printf("\n\n"); 
             else
-                putchar(' ');
+                putwchar(' ');
         }
     }
 }
@@ -234,13 +236,13 @@ aaw_c *processinpf(char *fname)
     FILE *fp=fopen(fname,"r");
     int i;
     size_t couc /*count chars per line */, couw=0 /* count words */;
-    int c, oldc='\0', ooldc='\0';
+    wint_t c, oldc='\0', ooldc='\0';
     boole inword=0;
     boole htcd=0; /* html code, usually color code */
     unsigned lbuf=LBUF /* buffer for number of lines */, cbuf=CBUF /* char buffer for size of w_c's: reused for every word */;
     aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
 
-    while( (c=fgetc(fp)) != EOF) {
+    while( (c=fgetwc(fp)) != WEOF) {
         if( (c== '\n') | (c == ' ') | (c == '\t') ) {
             if( ((c==' ') & (oldc == ' ')) | ((c=='\t') & (oldc == '\t')) | ((c=='\n') & (oldc == '\n') & (ooldc=='\n')) )
                 continue;
@@ -305,6 +307,7 @@ int main(int argc, char *argv[])
         printf("Error. Pls supply 2 arguments (name of text file).\n");
         exit(EXIT_FAILURE);
     }
+    setlocale(LC_ALL, "en_IE.UTF-8");
 #ifdef DBG2
     printf("typeszs: aaw_c: %zu aw_c: %zu w_c: %zu\n", sizeof(aaw_c), sizeof(aw_c), sizeof(w_c));
 #endif
