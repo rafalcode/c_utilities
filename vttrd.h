@@ -34,7 +34,7 @@ typedef enum /* type of word might be, it is */
 
 typedef struct /* word container */
 {
-    char *w;
+    wchar_t *w;
     t_t t; /* number or not */
     unsigned lp1; /* length of word plus one (i.e. will include null char, for good and for bad) */
 } w_c;

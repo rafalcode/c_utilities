@@ -1,16 +1,15 @@
+/* modification of matread but operating on words instead of floats */
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include <wchar.h>
-#include "vttrd.h"
-#include <locale.h>
+#include "genrd.h"
 
 w_c *crea_wc(unsigned initsz)
 {
     w_c *wc=malloc(sizeof(w_c));
     wc->lp1=initsz;
     wc->t=STRG;
-    wc->w=malloc(wc->lp1*sizeof(wchar_t));
+    wc->w=malloc(wc->lp1*sizeof(char));
     return wc;
 }
 
@@ -20,7 +19,7 @@ void reall_wc(w_c **wc, unsigned *cbuf)
     unsigned tcbuf=*cbuf;
     tcbuf += CBUF;
     twc->lp1=tcbuf;
-    twc->w=realloc(twc->w, tcbuf*sizeof(wchar_t));
+    twc->w=realloc(twc->w, tcbuf*sizeof(char));
     *wc=twc; /* realloc can often change the ptr */
     *cbuf=tcbuf;
     return;
@@ -29,7 +28,7 @@ void reall_wc(w_c **wc, unsigned *cbuf)
 void norm_wc(w_c **wc)
 {
     w_c *twc=*wc;
-    twc->w=realloc(twc->w, twc->lp1*sizeof(wchar_t));
+    twc->w=realloc(twc->w, twc->lp1*sizeof(char));
     *wc=twc; /* realloc can often change the ptr */
     return;
 }
@@ -113,63 +112,7 @@ void free_aawc(aaw_c **aw)
     free(taw);
 }
 
-void prtaawapap0(aaw_c *aawc) /* print aaw As Pure As Possible */
-{
-    int i, j, k, ppi=0;
-    for(i=0;i<aawc->numl;++i) {
-        /* order fo tabs and space will be messed up sure, but usually it will be one or the other. */
-        for(j=0;j<aawc->aaw[i]->al;++j) {
-            for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
-                putchar(aawc->aaw[i]->aw[j]->w[k]);
-            if(j==aawc->aaw[i]->al-1)
-                putchar('\n');
-            else
-                putchar(' ');
-        }
-    }
-}
-
-void prtaawapap2(aaw_c *aawc, aaw_c *aawc2) /* print aaw As Pure As Possible */
-{
-    int i, ii, j, k, ppi=0;
-    for(i=1;i<aawc->numl;++i) {
-        ii=1+i/2;
-        /* order fo tabs and space will be messed up sure, but usually it will be one or the other. */
-        for(j=5;j<aawc->aaw[i]->al;++j) {
-            for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
-                putwchar(aawc->aaw[i]->aw[j]->w[k]);
-            if(j==aawc->aaw[i]->al-1)
-                putwchar('\n');
-            else
-                putwchar(' ');
-        }
-        for(j=3;j<aawc2->aaw[ii]->al;++j) {
-            for(k=0;k<aawc2->aaw[ii]->aw[j]->lp1-1; k++)
-                putwchar(aawc2->aaw[ii]->aw[j]->w[k]);
-            if(j==aawc2->aaw[ii]->al-1)
-                printf("\n\n"); 
-            else
-                putwchar(' ');
-        }
-    }
-}
-
 void prtaawcdbg(aaw_c *aawc)
-{
-    int i, j, k;
-    for(i=0;i<aawc->numl;++i) {
-        printf("l.%u(%u): ", i, aawc->aaw[i]->al); 
-        for(j=0;j<aawc->aaw[i]->al;++j) {
-            printf("w_%u: ", j); 
-            for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
-                putchar(aawc->aaw[i]->aw[j]->w[k]);
-            printf("/%u ", aawc->aaw[i]->aw[j]->lp1-1); 
-        }
-        printf("\n"); 
-    }
-}
-
-void prtaawcdbg2(aaw_c *aawc) /* this version replaces some words with their type=symbol */
 {
     int i, j, k;
     for(i=0;i<aawc->numl;++i) {
@@ -194,20 +137,6 @@ void prtaawcdbg2(aaw_c *aawc) /* this version replaces some words with their typ
     }
 }
 
-void prt_tnum(aaw_c *aawc) /* will print matching numbers of mm:ss style */
-{
-    int i, j, k;
-    for(i=0;i<aawc->numl;++i) {
-        for(j=0;j<aawc->aaw[i]->al;++j) {
-            if(aawc->aaw[i]->aw[j]->t == TNUM) {
-                for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
-                    putchar(aawc->aaw[i]->aw[j]->w[k]);
-                printf("\n"); 
-            }
-        }
-    }
-}
-
 void prtaawcdata(aaw_c *aawc) /* print line and word details, but not the words themselves */
 {
     int i, j;
@@ -218,8 +147,7 @@ void prtaawcdata(aaw_c *aawc) /* print line and word details, but not the words 
             switch(aawc->aaw[i]->aw[j]->t) {
                 case NUMS: printf("N "); break;
                 case PNI: printf("I "); break;
-                case STRG: printf("S "); break; /* basic string */
-                case STPP: printf("P "); break; /* word is a string and ends with a period */
+                case STRG: printf("S "); break;
                 case STCP: printf("C "); break; /* closing punctuation */
                 case SCST: printf("Z "); break; /* starting capital */
                 case SCCP: printf("Y "); break; /* starting capital and closing punctuation */
@@ -228,6 +156,28 @@ void prtaawcdata(aaw_c *aawc) /* print line and word details, but not the words 
         }
     }
     printf("\n"); 
+	printf("L is a line, l is length of word, S is normal string, C closing punct, Z, starting cap, Y Starting cap and closing punct.\n"); 
+}
+
+void prtaawcplain(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i, j;
+    for(i=0;i<aawc->numl;++i) {
+        printf("L)%u(%uw):", i, aawc->aaw[i]->al); 
+        for(j=0;j<aawc->aaw[i]->al;++j)
+            printf((j!=aawc->aaw[i]->al-1)?"%s ":"%s\n", aawc->aaw[i]->aw[j]->w);
+    }
+}
+
+void prtaawcsymb(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i, j;
+    printf("# Line Numbers, word counts\n"); 
+    for(i=0;i<aawc->numl;++i) {
+        printf("L)%u/W#%u:", i, aawc->aaw[i]->al); 
+        for(j=0;j<aawc->aaw[i]->al;++j)
+            printf((j!=aawc->aaw[i]->al-1)?"%s ":"%s\n", aawc->aaw[i]->aw[j]->w);
+    }
 }
 
 aaw_c *processinpf(char *fname)
@@ -236,16 +186,13 @@ aaw_c *processinpf(char *fname)
     FILE *fp=fopen(fname,"r");
     int i;
     size_t couc /*count chars per line */, couw=0 /* count words */;
-    wint_t c, oldc='\0', ooldc='\0';
+    int c, oldc='\0';
     boole inword=0;
-    boole htcd=0; /* html code, usually color code */
     unsigned lbuf=LBUF /* buffer for number of lines */, cbuf=CBUF /* char buffer for size of w_c's: reused for every word */;
     aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
 
-    while( (c=fgetwc(fp)) != WEOF) {
+    while( (c=fgetc(fp)) != EOF) {
         if( (c== '\n') | (c == ' ') | (c == '\t') ) {
-            if( ((c==' ') & (oldc == ' ')) | ((c=='\t') & (oldc == '\t')) | ((c=='\n') & (oldc == '\n') & (ooldc=='\n')) )
-                continue;
             if( inword==1) { /* cue word-ending procedure */
                 aawc->aaw[aawc->numl]->aw[couw]->w[couc++]='\0';
                 aawc->aaw[aawc->numl]->aw[couw]->lp1=couc;
@@ -253,7 +200,7 @@ aaw_c *processinpf(char *fname)
                 norm_wc(aawc->aaw[aawc->numl]->aw+couw);
                 couw++; /* verified: this has to be here */
             }
-            if( (c=='\n') & (oldc == '\n') ) {
+            if(c=='\n') { /* cue line-ending procedure */
                 if(aawc->numl ==lbuf-1) {
                     lbuf += LBUF;
                     aawc->aaw=realloc(aawc->aaw, lbuf*sizeof(aw_c*));
@@ -266,17 +213,13 @@ aaw_c *processinpf(char *fname)
                 couw=0;
             }
             inword=0;
-        } else if(c=='<') {
-            htcd=1;
-        } else if((c=='>') & (htcd==1)) {
-            htcd=0;
-        } else if((inword==0) & (htcd != 1)) { /* a normal character opens word */
+        } else if(inword==0) { /* a normal character opens word */
             if(couw ==aawc->aaw[aawc->numl]->ab-1) /* new word opening */
                 reall_awc(aawc->aaw+aawc->numl, WABUF);
             couc=0;
             cbuf=CBUF;
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-            GETLCTYPE(c, aawc->aaw[aawc->numl]->aw[couw]->t); /* MACRO: the leading character gives a clue */
+            GETLCTYPE(c, aawc->aaw[aawc->numl]->aw[couw]->t); /* MACRO: the firt character gives a clue */
             inword=1;
         } else if(inword) { /* simply store */
             if(couc == cbuf-1)
@@ -285,7 +228,6 @@ aaw_c *processinpf(char *fname)
             /* if word is a candidate for a NUM or PNI (i.e. via its first character), make sure it continues to obey rules: a MACRO */
             IWMODTYPEIF(c, aawc->aaw[aawc->numl]->aw[couw]->t);
         }
-        ooldc=oldc;
         oldc=c;
     } /* end of big for statement */
     fclose(fp);
@@ -302,34 +244,24 @@ aaw_c *processinpf(char *fname)
 int main(int argc, char *argv[])
 {
     /* argument accounting */
-    if(argc!=3) {
-        printf("Prog to combine YTD autosubs (vtt files), arg1: ru vtt 2) en vtt\n");
-        printf("Error. Pls supply 2 arguments (name of text file).\n");
+    if(argc!=2) {
+        printf("Error. Pls supply argument (name of text file).\n");
         exit(EXIT_FAILURE);
     }
-    setlocale(LC_ALL, "en_IE.UTF-8");
 #ifdef DBG2
     printf("typeszs: aaw_c: %zu aw_c: %zu w_c: %zu\n", sizeof(aaw_c), sizeof(aw_c), sizeof(w_c));
 #endif
 
     aaw_c *aawc=processinpf(argv[1]);
-    aaw_c *aawc2=processinpf(argv[2]);
-
-#ifdef DBG2
-    prtaawcdata(aawc);
-#elif DBG
+#ifdef DBG
     prtaawcdbg(aawc);
-    printf("Numlines: %zu\n", aawc->numl); 
-#elif NUMS
-    prtnums(aawc);
-#elif TNM
-    prt_tnum(aawc);
 #else
-    prtaawapap2(aawc, aawc2);
+    prtaawcdata(aawc); // just the metadata
+    // prtaawcplain(aawc); // printout original text as well as you can.
 #endif
+    // printf("Numlines: %zu\n", aawc->numl); 
 
     free_aawc(&aawc);
-    free_aawc(&aawc2);
 
     return 0;
 }
