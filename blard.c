@@ -198,19 +198,13 @@ aaw_c *processinpblao(char *fname) /* processin input blast output (fmt code 7) 
     /* declarations */
     FILE *fp=fopen(fname,"r");
     int i;
-    size_t couc /*count chars per line */, couw=0 /* count words */;
+    size_t couc=0 /*count chars per line */, couw=0 /* count words */;
     int c, c2e, /* char to end of line*/oldc='\0';
     boole inword=0;
     unsigned lbuf=LBUF /* buffer for number of lines */, cbuf=CBUF /* char buffer for size of w_c's: reused for every word */;
     aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
 
     while( (c=fgetc(fp)) != EOF) {
-        if((couc==0) & (couw==0) & (c=='#')) {
-            do {
-                c2e=fgetc(fp);
-            } while((c2e!='\n') & (c!=EOF));
-            continue;
-        }
         if( (c== '\n') | (c == ' ') | (c == '\t') ) {
             if(oldc== ' ')
                 continue;
@@ -250,6 +244,14 @@ aaw_c *processinpblao(char *fname) /* processin input blast output (fmt code 7) 
             GETLCTYPE(c, aawc->aaw[aawc->numl]->aw[couw]->t); /* MACRO: the firt character gives a clue */
             inword=1;
         } else if(inword) { /* simply store */
+            if((couc==0) & (couw==0) & (c=='#')) {
+                printf("C#line: \n"); 
+                do {
+                    c2e=fgetc(fp);
+                    putchar(c2e);
+                } while((c2e!='\n') & (c2e!=EOF));
+                continue;
+            }
             if(couc == cbuf-1)
                 reall_wc(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
