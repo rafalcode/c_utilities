@@ -135,9 +135,9 @@ aaw_c *processinpf(char *fname)
 
     while( (c=fgetc(fp)) != EOF) {
         if((c=='\n') & !intitle)
-            goto cont;
-        else if((c=='>') & !intitle)
-            intitle=1;
+             goto cont;
+        if((c=='>') & (oldc=='\n') & !intitle)
+             intitle=1;
         if( intitle & ((c== '\n') | (c == ' ') | (c == '\t')) ) {
             if( inword==1) { /* cue word-ending procedure */
                 aawc->aaw[aawc->numl]->aw[couw]->w[couc++]='\0';
@@ -169,6 +169,8 @@ aaw_c *processinpf(char *fname)
             inword=1;
             if((oldc=='\n') & (c=='>'))
                 intitle=1;
+            if((oldc=='\n') & (c!='>'))
+                intitle=0;
         } else if(inword) { /* simply store */
             if(couc == cbuf-1)
                 reall_wc(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
