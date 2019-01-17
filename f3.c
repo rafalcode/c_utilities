@@ -134,11 +134,8 @@ aaw_c *processinpf(char *fname)
     aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
 
     while( (c=fgetc(fp)) != EOF) {
-        if((c=='\n') & !intitle)
-             goto cont;
-        if((c=='>') & (oldc=='\n') & !intitle)
-             intitle=1;
-        if( intitle & ((c== '\n') | (c == ' ') | (c == '\t')) ) {
+        printf("%c:%i:%i ", c, inword, intitle); 
+        if( ((c=='>') | (c== '\n') | (c == ' ') | (c == '\t')) ) {
             if( inword==1) { /* cue word-ending procedure */
                 aawc->aaw[aawc->numl]->aw[couw]->w[couc++]='\0';
                 aawc->aaw[aawc->numl]->aw[couw]->lp1=couc;
@@ -158,25 +155,24 @@ aaw_c *processinpf(char *fname)
                 norm_awc(aawc->aaw+aawc->numl);
                 aawc->numl++;
                 couw=0;
-            }
+            } else if(c=='>')
+                intitle=1;
             inword=0;
-        } else if(inword==0) { /* a normal character opens word */
+        } else if(intitle & (inword==0)) { /* a normal character arrives so open word */
             if(couw ==aawc->aaw[aawc->numl]->ab-1) /* new word opening */
                 reall_awc(aawc->aaw+aawc->numl, WABUF);
             couc=0;
             cbuf=CBUF;
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
             inword=1;
-            if((oldc=='\n') & (c=='>'))
-                intitle=1;
-            if((oldc=='\n') & (c!='>'))
+            if(oldc=='\n')
                 intitle=0;
         } else if(inword) { /* simply store */
             if(couc == cbuf-1)
                 reall_wc(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
         }
-        printf("%c:%i ", c, intitle); 
+        printf("%c:%i:%i ", c, inword, intitle); 
 cont:
         oldc=c;
     } /* end of big for statement */
