@@ -6,7 +6,7 @@ DBG2CFLAGS=-g -Wall -DDBG2
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
 
 LIBS=-lgsl -lgslcblas -lm
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d ahread ahread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4 pedsta pedsta0 mpdmu2 mpdmu2_d mpdmu3 mpdmu3_d mpdmu4 mpdmu4_d tpedsta_d bglsta bglsta_d bglvset vttrd genrd ssrd ssrd_d blard blard_d blard2 blard2_d rurd fard fard_d fard2 paredown f3 f4
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d ahread ahread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4 pedsta pedsta0 mpdmu2 mpdmu2_d mpdmu3 mpdmu3_d mpdmu4 mpdmu4_d tpedsta_d bglsta bglsta_d bglvset vttrd genrd ssrd ssrd_d blard blard_d blard2 blard2_d rurd fard fard_d fard2 paredown f3 f4 pare0 pare2 pare3
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -329,6 +329,14 @@ f4: f4.c
 # so I had to go back to first principles and this is the paredown reader
 # # with no complications.
 paredown: paredown.c
+	${CC} ${CFLAGS} -o $@ $^
+
+# for experimentation:
+pare0: pare0.c
+	${CC} ${CFLAGS} -o $@ $^
+pare2: pare2.c
+	${CC} ${CFLAGS} -o $@ $^
+pare3: pare3.c
 	${CC} ${CFLAGS} -o $@ $^
 
 blard2: blard2.c
