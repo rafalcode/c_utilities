@@ -212,7 +212,7 @@ aaw_c *processinpf(char *fname)
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
             inword=1;
         } else if(inword) { /* simply store */
-            if((c==' ') & !intitle & (numnl == oldnumnl))
+            if((c==' ') & !intitle)
                 continue;
             printf("%c:IW1 ", c); 
             if(couc == cbuf-1)
