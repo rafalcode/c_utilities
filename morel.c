@@ -4,16 +4,6 @@
 #include<string.h>
 #include "onel.h"
 
-// proto ahoy
-aaw_c *processinpf(char *fname);
-
-typedef enum /* b_t for debugging, for seeing the branch we're in */
-{
-    BX, /* branch X */
-    BY, /* branch X */
-    BZ /* branch X */
-} b_t;
-
 w_c *crea_wc(unsigned initsz)
 {
     w_c *wc=malloc(sizeof(w_c));
@@ -121,7 +111,34 @@ void free_aawc(aaw_c **aw)
     free(taw);
 }
 
+void prtaawcsel0(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i, j, k;
+    int p, rn;
+    for(i=0;i<aawc->numl;++i) {
+        rn=atoi(aawc->aaw[i]->aw[4]->w);
+        printf("%i\t%s\t", rn, aawc->aaw[i]->aw[16]->w);
+        p=atoi(aawc->aaw[i]->aw[6]->w);
+        for(k=p-3;k<p+3;++k)
+            putchar(aawc->aaw[i]->aw[21]->w[k]);
+        putchar('\n');
+    }
+}
+
 void prtaawcplain(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i, j, k;
+    for(i=0;i<aawc->numl;++i) {
+        for(j=0;j<aawc->aaw[i]->al;++j) {
+            for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1;++k)
+                putchar(aawc->aaw[i]->aw[j]->w[k]);
+            putchar(' ');
+        }
+        putchar('\n');
+    }
+}
+
+void prtaawcdets(aaw_c *aawc) /* print lines and word details, iand words */
 {
     int i, j, k;
     for(i=0;i<aawc->numl;++i) {
@@ -136,21 +153,6 @@ void prtaawcplain(aaw_c *aawc) /* print line and word details, but not the words
     }
 }
 
-int main(int argc, char *argv[])
-{
-    /* argument accounting */
-    if(argc!=2) {
-        printf("Error. Pls supply argument (name of text file).\n");
-        exit(EXIT_FAILURE);
-    }
-
-    aaw_c *aawc=processinpf(argv[1]);
-    prtaawcplain(aawc); // printout original text as well as you can.
-
-    free_aawc(&aawc);
-
-    return 0;
-}
 aaw_c *processinpf(char *fname)
 {
     /* declarations */
@@ -173,7 +175,6 @@ aaw_c *processinpf(char *fname)
         }
         if( intitle & ((c ==' ') | (c == '\t') | (c=='=') | (c=='|')) ) {
             if( inword==1) { /* cue word-ending procedure */
-                printf("%c:CLW ", c);  // close word
                 aawc->aaw[aawc->numl]->aw[couw]->w[couc++]='\0';
                 aawc->aaw[aawc->numl]->aw[couw]->lp1=couc;
                 norm_wc(aawc->aaw[aawc->numl]->aw+couw);
@@ -183,7 +184,6 @@ aaw_c *processinpf(char *fname)
                     intitle=0;
             }
         } else if((c=='>') & (intitle==0)) { // note this is for closing off the last line, not "starting" it
-            printf("%c:CFL ", c); // close fasta line
             if(aawc->numl >=lbuf-1) {
                 lbuf += LBUF;
                 aawc->aaw=realloc(aawc->aaw, lbuf*sizeof(aw_c*));
@@ -204,7 +204,6 @@ aaw_c *processinpf(char *fname)
             } else
                 ona1=0;
         } else if(inword==0) { /* a normal character opens word */
-            printf("%c:IW0 ", c); 
             if(couw ==aawc->aaw[aawc->numl]->ab-1) /* new word opening */
                 reall_awc(aawc->aaw+aawc->numl, WABUF);
             couc=0;
@@ -214,7 +213,6 @@ aaw_c *processinpf(char *fname)
         } else if(inword) { /* simply store */
             if((c==' ') & !intitle)
                 continue;
-            printf("%c:IW1 ", c); 
             if(couc == cbuf-1)
                 reall_wc(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
@@ -235,8 +233,6 @@ aaw_c *processinpf(char *fname)
     aawc->numl++;
 
     fclose(fp);
-    putchar('\n');
-    putchar('\n');
 
     /* normalization stage */
     for(i=aawc->numl; i<lbuf; ++i) {
@@ -245,4 +241,19 @@ aaw_c *processinpf(char *fname)
     aawc->aaw=realloc(aawc->aaw, 1+aawc->numl*sizeof(aw_c*));
 
     return aawc;
+}
+int main(int argc, char *argv[])
+{
+    /* argument accounting */
+    if(argc!=2) {
+        printf("Error. Pls supply argument (name of text file).\n");
+        exit(EXIT_FAILURE);
+    }
+
+    aaw_c *aawc=processinpf(argv[1]);
+    prtaawcsel0(aawc); // printout original text as well as you can.
+
+    free_aawc(&aawc);
+
+    return 0;
 }
