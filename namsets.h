@@ -14,6 +14,7 @@
 #endif
 
 typedef unsigned char boole;
+typedef unsigned char trival;
 typedef struct /* word type */
 {
     char *w;
@@ -25,6 +26,11 @@ typedef struct /* aw_c: array of words container */
     w_c **aw;
     unsigned ab;
     unsigned al;
+    // only one of the following will be used each time, I just didn't wnat to reset.
+    boole ma1; // a match with the first name file?
+    boole ma2; // a match with the second name file?
+    trival dup;
+    unsigned dgrp;
 } aw_c;
 
 typedef struct /* aaw_c: array of array of words container */
@@ -32,3 +38,12 @@ typedef struct /* aaw_c: array of array of words container */
     long long numl; /* number of lines, i.e. rows */
     aw_c **aaw; /* an array of pointers to aw_c */
 } aaw_c;
+
+struct strchainodm /* m for map */
+{
+    aw_c *aw;
+    struct strchainodm *n;
+    int idx; // the index corresponding to this mp element: it's the sort of thing youex
+};
+typedef struct strchainodm snodm;
+

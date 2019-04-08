@@ -4,6 +4,169 @@
 #include<string.h>
 #include "namsets.h"
 
+unsigned givehtsz(unsigned mnf)
+{
+    unsigned htsz=2*mnf/3;
+    // try to grab a prime ... well just avoid 5-multiples, 3-multiples, and evens
+    if(!(htsz%5)) 
+        htsz++; // incrment by 1 if multiple of 5
+    if(!(htsz%3)) 
+        htsz++;
+    if(!(htsz%2)) 
+        htsz++;
+    return htsz;
+}
+
+unsigned hashit(char *str, unsigned tsz) /* Dan Bernstein's one */
+{
+    unsigned long hash = 5381;
+    int c;
+
+    char *tstr=str;
+    while ((c = *tstr++))
+        hash = ((hash << 5) + hash) + c; /*  hash * 33 + c */
+
+    return hash % tsz;
+}
+
+snodm **hashnam(aaw_c *aawc, unsigned tsz, unsigned *dgcou, trival tf /* target file is first=1 or second=2 */)
+{
+    unsigned i;
+
+    snodm **stab=malloc(tsz*sizeof(snodm *));
+    for(i=0;i<tsz;++i) 
+        stab[i]=NULL;
+    snodm *tsnod0, *tsnod2;
+
+    unsigned tint;
+    unsigned dpgrps=0;
+    unsigned dupslo=0; // dups less original, I.e. one will be retained.
+
+    /* OK, we're going to loop through the map file container: i here follows the global SNP name index */
+    for(i=0; i< aawc->numl; ++i) {
+
+        tint=hashit(aawc->aaw[i]->aw[0]->w, tsz); // hash the snpname
+        if( (stab[tint] == NULL) ) { // nothing in that slot right now.
+            stab[tint]=malloc(sizeof(snodm));
+            stab[tint]->aw=aawc->aaw[i];
+            stab[tint]->idx=i;
+            stab[tint]->n=NULL;
+            continue;
+        }
+        tsnod2=stab[tint];
+        while( (tsnod2 != NULL) ) {
+            if(!strcmp(tsnod2->aw->aw[0]->w, aawc->aaw[i]->aw[0]->w)) {
+                if(!tsnod2->aw->dup) {
+                    dpgrps++;
+                    tsnod2->aw->dup=1;
+                    tsnod2->aw->dgrp = dpgrps;
+                }
+                aawc->aaw[i]->dup=2;
+                dupslo++;
+                aawc->aaw[i]->dgrp=tsnod2->aw->dgrp;
+                break;
+            }
+            tsnod0=tsnod2;
+            tsnod2=tsnod2->n;
+        }
+        if(aawc->aaw[i]->dup)
+            continue;
+        tsnod0->n=malloc(sizeof(snodm));
+        tsnod0->n->aw = aawc->aaw[i];
+        tsnod0->n->idx=i;
+        tsnod0->n->n=NULL;
+    }
+    *dgcou = dpgrps;
+    return stab;
+}
+
+void mu_nam(aaw_c *aawc, snodm **stam, unsigned tsz, trival sf /* subject file, either 1 or 2 */)
+{
+    unsigned i;
+    snodm *tsnod0, *tsnod2;
+    unsigned tint;
+
+    for(i=0; i< aawc->numl; ++i) {
+
+        tint=hashit(aawc->aaw[i]->aw[0]->w, tsz); // hash the snpname
+        if( (stam[tint] == NULL) )
+            continue; // ma2 stays at zero ... there is no match for this
+
+        tsnod2=stam[tint];
+        while( (tsnod2 != NULL) ) {
+            if(!strcmp(tsnod2->aw->aw[0]->w, aawc->aaw[i]->aw[0]->w)) {
+                if(sf==1)
+                    aawc->aaw[i]->ma2=1;
+                else if(sf==2)
+                    aawc->aaw[i]->ma1=1;
+                break;
+            }
+            tsnod0=tsnod2;
+            tsnod2=tsnod2->n;
+        }
+    }
+    return;
+}
+
+void rep_mu(aaw_c *aawc, aaw_c *aawc2)
+{
+    unsigned i;
+    unsigned resarray[3] = {0};
+
+    for(i=0; i< aawc->numl; ++i) {
+        if(aawc->aaw[i]->ma2)
+            resarray[1]++;
+        else
+            resarray[0]++;
+    }
+
+    for(i=0; i< aawc2->numl; ++i)
+        if(aawc2->aaw[i]->ma1)
+            resarray[2]++;
+
+    printf("TOTF1=%lli; #F1\\F2=%u; #F1nF2=%u; #F2\\F1=%u TOTF2=%lli\n", aawc->numl, resarray[0], resarray[1], resarray[2], aawc2->numl);
+    return;
+}
+
+void freechainharr(snodm **stam, size_t tsz)
+{
+    int i;
+    snodm *tsnod0, *tsnod2;
+    for(i=0; i<tsz; ++i) {
+        if( (stam[i] != NULL) ) {
+            while( (stam[i]->n != NULL) ) {
+                tsnod0=stam[i];
+                tsnod2=stam[i]->n;
+                while((tsnod2->n != NULL) ){
+                    tsnod0=tsnod2;
+                    tsnod2=tsnod2->n;
+                }
+                free(tsnod0->n);
+                tsnod0->n=NULL;
+            }
+            free(stam[i]);
+        }
+    }
+    free(stam);
+    return;
+}
+
+void prtchaharr(snodm **stam, unsigned tsz)
+{
+    unsigned i;
+    snodm *tsnod2;
+    for(i=0;i<tsz;++i) {
+        printf("Tablepos %i: ", i); 
+        tsnod2=stam[i];
+        while(tsnod2) {
+            printf("%s ", tsnod2->aw->aw[0]->w);
+            tsnod2=tsnod2->n;
+        }
+        putchar('\n');
+    }
+    return;
+}
+
 w_c *crea_wc(unsigned initsz)
 {
     w_c *wc=malloc(sizeof(w_c));
@@ -45,6 +208,10 @@ aw_c *crea_awc(unsigned initsz)
     int i;
     aw_c *awc=malloc(sizeof(aw_c));
     awc->ab=initsz;
+    awc->dup=0;
+    awc->dgrp=0;
+    awc->ma2=0;
+    awc->ma1=0;
     awc->al=awc->ab;
     awc->aw=malloc(awc->ab*sizeof(w_c*));
     for(i=0;i<awc->ab;++i) 
@@ -247,9 +414,31 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    unsigned dgf1, dgf2; // dup groups in file 1, in file 2
+    aaw_c *aawc2=processinpf1l(argv[2]); // yes second argument is first to process because it's the target.
+    unsigned htsz=givehtsz(aawc2->numl);
+    snodm **stam = hashnam(aawc2, htsz, &dgf2, 2);
+    if(dgf2)
+        fprintf(stderr, "File_%i duplicates groups= %u\n", 2, dgf2);
+    else
+        fprintf(stderr, "File_%i fine, no duplicates\n", 2);
+
+    // prtchaharr(stam, htsz);
     aaw_c *aawc=processinpf1l(argv[1]);
-    aaw_c *aawc2=processinpf1l(argv[2]);
-    prtaawcplain(aawc); // printout original text as well as you can.
+    mu_nam(aawc, stam, htsz, 1);
+    freechainharr(stam, htsz);
+
+    // OK, second run
+    htsz=givehtsz(aawc->numl);
+    stam = hashnam(aawc, htsz, &dgf1, 1);
+    if(dgf1)
+        fprintf(stderr, "File_%i duplicates groups= %u\n", 1, dgf1);
+    else
+        fprintf(stderr, "File_%i fine, no duplicates\n", 1);
+    mu_nam(aawc2, stam, htsz, 2);
+    freechainharr(stam, htsz);
+
+    rep_mu(aawc, aawc2);
 
     free_aawc(&aawc);
     free_aawc(&aawc2);
