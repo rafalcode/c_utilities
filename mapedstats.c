@@ -227,6 +227,69 @@ void statsaawc(aaw_c *aawc)
     printf("Overall: AvgA1CR=%4.4f AvgA2CR=%4.4f\n", allra1/numsamps, allra2/numsamps);
 }
 
+void statsaawc2(aaw_c *aawc)
+{
+    char a1, a2;
+    int j;
+    size_t i;
+    size_t a[10]; // counts which are "of interest": 
+    size_t suma1all, suma2all;
+    float ra1, ra2, allra1=.0, allra2=.0;
+
+    printf("Samplename\t#A1==ACGT\t#A2==ACTG\t#A1==0\t#A2==0\t#A1==N\tA2==N\t#A1==ID\t#A2==ID\t#A1==?\t#A2==?\tA1CR\tA2CR\n");
+    int numsamps =0; // because numl is not always numsamps due to # comment lines.
+    for(i=0;i<aawc->numl;++i) {
+        if(aawc->aaw[i]->aw[0]->w[0] == '#')
+            continue;
+        numsamps++;
+        for(j=0;j<10;++j) 
+            a[j]= 0;
+        // OK now so now we have a match on the IIDs
+        // check num genos at very least
+        printf("%s\t", aawc->aaw[i]->aw[1]->w);
+        for(j=6;j<aawc->aaw[i]->al;j+=2) {
+            a1 = aawc->aaw[i]->aw[j]->w[0];
+            a2 = aawc->aaw[i]->aw[j+1]->w[0];
+            switch(a1) {
+                case 'A': case 'C': case 'G': case 'T': case 'a': case 'c': case 'g': case 't':
+                    a[0]++; break;
+                case '0':
+                    a[2]++; break;
+                case 'N': case 'n':
+                    a[4]++; break;
+                case 'I': case 'D': case 'i': case 'd':
+                    a[6]++; break;
+                default:
+                    a[8]++;
+            }
+            switch(a2) {
+                case 'A': case 'C': case 'G': case 'T': case 'a': case 'c': case 'g': case 't':
+                    a[1]++; break;
+                case '0':
+                    a[3]++; break;
+                case 'N': case 'n':
+                    a[5]++; break;
+                case 'I': case 'D': case 'i': case 'd':
+                    a[7]++; break;
+                default:
+                    a[9]++;
+            }
+        }
+        for(j=0;j<10;++j) 
+            printf("%zu\t", a[j]);
+        suma1all=a[0]+a[2]+a[4]+a[6]+a[8];
+        suma2all=a[1]+a[3]+a[5]+a[7]+a[9];
+
+        ra1=(float)(a[0]+a[6])/suma1all;
+        ra2=(float)(a[1]+a[7])/suma2all;
+        /* now how we include IDs because hese are properly called. Often we don't used them though */
+        allra1 += ra1;
+        allra2 += ra2;
+        printf("%4.4f\t%4.4f\n", ra1, ra2);
+    }
+    printf("Overall: AvgA1CR=%4.4f AvgA2CR=%4.4f\n", allra1/numsamps, allra2/numsamps);
+}
+
 void prtaawcdata(aaw_c *aawc) /* print line and word details, but not the words themselves */
 {
     int i, j;
@@ -333,7 +396,7 @@ int main(int argc, char *argv[])
     prtaawcdata(aawc); // just the metadata
     // prtaawcplain(aawc); // printout original text as well as you can.
 #else
-    statsaawc(aawc);
+    statsaawc2(aawc);
     // prtaawcdbg2(aawc);
 #endif
     // printf("Numlines: %zu\n", aawc->numl); 

@@ -15,16 +15,16 @@
 
 typedef unsigned char boole;
 
-typedef struct /* dia_t */
+typedef struct /* dia_t: a container for a group of elements that are dupes in some way */
 {
     unsigned **is /* indices */, bf, sz;
-} dia_t; /* dupe index array */
+} dia_t; /* dupe index array type */
 
-typedef struct /* adia_t */
+typedef struct /* adia_t, a container for several duplicate groups */
 {
     dia_t **d;
     unsigned bf, sz;
-} adia_t; /* dupe index array */
+} adia_t; /* an array of dupe index arrays */
 
 dia_t *crea_dia(void)
 {
@@ -98,5 +98,4 @@ int main(int argc, char *argv[])
     free_adia(&ad);
 
     return 0;
-
 }

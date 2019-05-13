@@ -14,6 +14,7 @@
 #define LBUF 32
 #endif
 #define NUMGTS 20
+#define CPSTRSZ 16 // Chrom-pos size stringified size
 typedef unsigned char boole;
 typedef enum /* gt_t, genotype type */
 {
@@ -73,6 +74,8 @@ typedef struct /* aw_c: array of words container */
     w_c **aw;
     unsigned ab;
     unsigned al;
+    char *nn; /* this is the name name ... actually the CromPos string */
+    int gd /* whether it's a chrompos or nay */, gdn /* the dupgroup */;
 } aw_c;
 
 typedef struct /* aaw_c: array of array of words container */

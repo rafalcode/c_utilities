@@ -126,7 +126,7 @@ aaw_c *processinpf(char *fname)
     /* declarations */
     FILE *fp=fopen(fname,"r");
     int i;
-    size_t couc /*count chars per line */, couw=0 /* count words */;
+    size_t couc=0 /*count chars per line */, couw=0 /* count words */;
     int c, oldc='\n';
     boole inword=0;
     boole intitle=0;
@@ -134,29 +134,33 @@ aaw_c *processinpf(char *fname)
     aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
 
     while( (c=fgetc(fp)) != EOF) {
-        printf("%c:%i:%i ", c, inword, intitle); 
-        if( ((c=='>') | (c== '\n') | (c == ' ') | (c == '\t')) ) {
+        printf("%c:%i:%i|", (c=='\n')?'X':(c==' ')?'Z':c, inword, intitle); 
+        if( !intitle & (c=='>') & (oldc== '\n')) {
             if( inword==1) { /* cue word-ending procedure */
                 aawc->aaw[aawc->numl]->aw[couw]->w[couc++]='\0';
                 aawc->aaw[aawc->numl]->aw[couw]->lp1=couc;
                 norm_wc(aawc->aaw[aawc->numl]->aw+couw);
                 couw++; /* verified: this has to be here */
             }
-            if(c=='\n') { /* cue line-ending procedure */
-                if(intitle)
-                    intitle=0;
-                if(aawc->numl ==lbuf-1) {
-                    lbuf += LBUF;
-                    aawc->aaw=realloc(aawc->aaw, lbuf*sizeof(aw_c*));
-                    for(i=lbuf-LBUF; i<lbuf; ++i)
-                        aawc->aaw[i]=crea_awc(WABUF);
-                }
-                aawc->aaw[aawc->numl]->al=couw;
-                norm_awc(aawc->aaw+aawc->numl);
-                aawc->numl++;
-                couw=0;
-            } else if(c=='>')
-                intitle=1;
+            if(aawc->numl ==lbuf-1) {
+                lbuf += LBUF;
+                aawc->aaw=realloc(aawc->aaw, lbuf*sizeof(aw_c*));
+                for(i=lbuf-LBUF; i<lbuf; ++i)
+                    aawc->aaw[i]=crea_awc(WABUF);
+            }
+            aawc->aaw[aawc->numl]->al=couw;
+            norm_awc(aawc->aaw+aawc->numl);
+            aawc->numl++;
+            inword=1;
+            intitle=1;
+        }
+        if( intitle & ((c == ' ') | (c == '\t'))) {
+            if( inword==1) { /* cue word-ending procedure */
+                aawc->aaw[aawc->numl]->aw[couw]->w[couc++]='\0';
+                aawc->aaw[aawc->numl]->aw[couw]->lp1=couc;
+                norm_wc(aawc->aaw[aawc->numl]->aw+couw);
+                couw++; /* verified: this has to be here */
+            }
             inword=0;
         } else if(intitle & (inword==0)) { /* a normal character arrives so open word */
             if(couw ==aawc->aaw[aawc->numl]->ab-1) /* new word opening */
@@ -165,15 +169,12 @@ aaw_c *processinpf(char *fname)
             cbuf=CBUF;
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
             inword=1;
-            if(oldc=='\n')
-                intitle=0;
         } else if(inword) { /* simply store */
             if(couc == cbuf-1)
                 reall_wc(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
         }
-        printf("%c:%i:%i ", c, inword, intitle); 
-cont:
+        printf("%c:%i:%i ", (c=='\n')?'X':(c==' ')?'Z':c, inword, intitle); 
         oldc=c;
     } /* end of big for statement */
     putchar('\n');

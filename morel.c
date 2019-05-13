@@ -2,7 +2,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include "onel.h"
+#include "morel.h"
 
 w_c *crea_wc(unsigned initsz)
 {

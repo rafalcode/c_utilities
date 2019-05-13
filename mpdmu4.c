@@ -381,12 +381,24 @@ void free_wc(w_c **wc)
     return;
 }
 
+aw_c *crea_awc(unsigned initsz)
+{
+    int i;
+    aw_c *awc=malloc(sizeof(aw_c));
+    awc->ab=initsz;
+    awc->al=awc->ab;
+    awc->aw=malloc(awc->ab*sizeof(w_c*));
+    for(i=0;i<awc->ab;++i) 
+        awc->aw[i]=crea_wc();
+    return awc;
+}
+
 aw2_c *crea_aw2c(unsigned initsz)
 {
     int i;
     aw2_c *aw2c=malloc(sizeof(aw2_c));
     aw2c->ab=initsz;
-    aw2c->nn=calloc(ab=initsz;
+    aw2c->nn=calloc(CPSTRSZ, sizeof(char));
     awc->al=awc->ab;
     awc->aw=malloc(awc->ab*sizeof(w_c*));
     for(i=0;i<awc->ab;++i) 
@@ -407,6 +419,19 @@ void reall_awc(aw_c **awc, unsigned buf)
     return;
 }
 
+void reall_aw2c(aw2_c **aw2c, unsigned buf)
+{
+    int i;
+    aw_c *taw2c=*aw2c;
+    taw2c->ab += buf;
+    taw2c->al=tawc->ab;
+    taw2c->aw=realloc(tawc->aw, tawc->ab*sizeof(aw_c*));
+    for(i=taw2c->ab-buf;i<taw2c->ab;++i)
+        taw2c->aw[i]=crea_wc();
+    *aw2c=taw2c;
+    return;
+}
+
 void norm_awc(aw_c **awc)
 {
     int i;
@@ -420,6 +445,19 @@ void norm_awc(aw_c **awc)
     return;
 }
 
+void norm_aw2c(aw2_c **aw2c)
+{
+    int i;
+    aw2_c *taw2c=*aw2c;
+    /* free the individual w_c's */
+    for(i=taw2c->al;i<taw2c->ab;++i) 
+        free_wc(taw2c->aw+i);
+    /* now release the pointers to those freed w_c's */
+    taw2c->aw=realloc(taw2c->aw, taw2c->al*sizeof(aw_c*));
+    *aw2c=taw2c;
+    return;
+}
+
 void free_awc(aw_c **awc)
 {
     int i;
@@ -428,6 +466,18 @@ void free_awc(aw_c **awc)
         free_wc(tawc->aw+i);
     free(tawc->aw); /* unbelieveable: I left this out, couldn't find where I leaking the memory! */
     free(tawc);
+    return;
+}
+
+void free_aw2c(aw2_c **aw2c)
+{
+    int i;
+    aw2_c *taw2c=*aw2c;
+    for(i=0;i<taw2c->al;++i) 
+        free_wc(taw2c->aw+i);
+    free(taw2c->aw); /* unbelieveable: I left this out, couldn't find where I leaking the memory! */
+    free(taw2c->nn); /* unbelieveable: I left this out, couldn't find where I leaking the memory! */
+    free(taw2c);
     return;
 }
 

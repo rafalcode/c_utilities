@@ -70,6 +70,9 @@ aw_c *crea_awc(unsigned initsz)
     aw_c *awc=malloc(sizeof(aw_c));
     awc->ab=initsz;
     awc->al=awc->ab;
+    awc->nn=calloc(CPSTRSZ, sizeof(char));
+    awc->gd=0;
+    awc->gdn=0;
     awc->aw=malloc(awc->ab*sizeof(w_c*));
     for(i=0;i<awc->ab;++i) 
         awc->aw[i]=crea_wc(CBUF);
@@ -109,6 +112,7 @@ void free_awc(aw_c **awc)
     for(i=0;i<tawc->al;++i) 
         free_wc(tawc->aw+i);
     free(tawc->aw); /* unbelieveable: I left this out, couldn't find where I leaking the memory! */
+    free(tawc->nn);
     free(tawc);
     return;
 }

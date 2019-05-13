@@ -23,7 +23,7 @@
 #endif
 #define MNCOLS 4 // mandatory number of columns
 
-
+#define CPSTRSZ 16 Chrom-pos size stringified size
 #define NDEV 7 // number of duplicate resolution event types
 #define CONDREALLOC(x, b, c, a, t); \
     if((x)>=((b)-1)) { \

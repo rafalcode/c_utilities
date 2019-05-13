@@ -1,32 +1,6 @@
 /* some statistics from a ped file ... specificaly fro Illumina BeadArray chip target */
 #include "bglsta.h"
 
-int catchopts(optstruct *opstru, int oargc, char **oargv)
-{
-    int c;
-    opterr = 0;
-    while ((c = getopt (oargc, oargv, "ci:m:")) != -1)
-        switch (c) {
-            case 'c': // want to see the genotypes of these SNPs
-                opstru->cflag = 1;
-                break;
-            case 'i': // input file 
-                opstru->iname = optarg;
-                break;
-            case 'm': // input file 
-                opstru->mname = optarg; /* the tfam of fam file */
-                break;
-			case '?':
-				if (optopt == 'i') {
-					fprintf (stderr, "Option -%c requires an input tped name.\n", optopt);
-                    exit(EXIT_FAILURE);
-                }
-            default:
-                abort();
-        }
-    return 0;
-}
-
 unsigned givehtsz(unsigned mnf)
 {
     unsigned htsz=2*mnf/3;
@@ -243,7 +217,7 @@ gt_t from2l(char A1, char A2)
         case 'A':
             switch(A2){
                 case 'A':
-                    tgt=AA; break;
+                    tgt=HH; break;
                 case 'C':
                     tgt=AC; break;
                 case 'G':
@@ -263,7 +237,7 @@ gt_t from2l(char A1, char A2)
                 case 'A':
                     tgt=CA; break;
                 case 'C':
-                    tgt=CC; break;
+                    tgt=HH; break;
                 case 'G':
                     tgt=CG; break;
                 case 'T':
@@ -283,7 +257,7 @@ gt_t from2l(char A1, char A2)
                 case 'C':
                     tgt=GC; break;
                 case 'G':
-                    tgt=GG; break;
+                    tgt=HH; break;
                 case 'T':
                     tgt=GT; break;
                 case 'I': case 'D':
@@ -303,7 +277,7 @@ gt_t from2l(char A1, char A2)
                 case 'G':
                     tgt=TG; break;
                 case 'T':
-                    tgt=TT; break;
+                    tgt=HH; break;
                 case 'I': case 'D':
                     tgt=D1; break;
                 case 'N': case '0':
@@ -551,12 +525,12 @@ void prtaawcplain(aaw_c *aawc) /* print line and word details, but not the words
         printf("Not all lines had same number of wordsi line 0 %i.\n", ll); 
 }
 
-void prtaawctp(aaw_c *aawc, aaw_c *maawc, snodm **stab, unsigned htsz, char *tc)
+void prtaawc0(aaw_c *aawc, aaw_c *maawc, snodm **stab, unsigned htsz, char *tc)
 {
     int i, j, pos, unseencou=0;
     int u2=0;
     unsigned tint;
-    snodm *tsnod0, *tsnod2;
+    snodm *tsnod2;
     boole seen;
 
     for(i=2;i<aawc->numl;++i) {
@@ -580,7 +554,6 @@ void prtaawctp(aaw_c *aawc, aaw_c *maawc, snodm **stab, unsigned htsz, char *tc)
                          printf((j!=aawc->aaw[i]->al-1)?"%s ":"%s\n", aawc->aaw[i]->aw[j]->w);
                     break;
                 }
-                tsnod0=tsnod2;
                 tsnod2=tsnod2->n;
             }
         }
@@ -594,23 +567,53 @@ void prtaawctp(aaw_c *aawc, aaw_c *maawc, snodm **stab, unsigned htsz, char *tc)
     return;
 }
 
-void prtaawc_asfam(aaw_c *aawc) /* print line and word details, but not the words themselves */
+void prtaawctp(aaw_c *aawc, aaw_c *maawc, snodm **stab, unsigned htsz, char *tc, char *fn)
 {
-    /* print the second line of the bgl file (a list of the samples)
-     * as one of "our" tfam files */
-    int j, i=1;
-    for(j=2;j<aawc->aaw[i]->al;++j) {
-        printf("%s\t", aawc->aaw[i]->aw[j]->w);
-        printf("%s\t", aawc->aaw[i]->aw[j]->w);
-        printf("%c\t", '0');
-        printf("%c\t", '0');
-        printf("%c%c\n", '-', '9');
+    int i, j, pos, unseencou=0;
+    int u2=0;
+    unsigned tint;
+    snodm *tsnod2;
+    boole seen;
+    FILE *fo=fopen(fn, "w");
+
+    for(i=2;i<aawc->numl;++i) {
+        seen = 0;
+
+        tint=hashit(aawc->aaw[i]->aw[1]->w, htsz); // hash the snpname
+        if(stab[tint] == NULL) {
+            u2++;
+            continue;
+        } else {
+            tsnod2=stab[tint];
+            while( (tsnod2 != NULL) ) {
+                if(!(strcmp(tsnod2->aw->aw[0]->w, aawc->aaw[i]->aw[1]->w))) {
+                    seen =1;
+                    pos=atoi(tsnod2->aw->aw[1]->w);
+                    fprintf(fo, "%s ", tc); 
+                    fprintf(fo, "%s ", aawc->aaw[i]->aw[1]->w);
+                    fprintf(fo, "%c ", '0'); 
+                    fprintf(fo, "%i ", pos);
+                    for(j=2;j<aawc->aaw[i]->al;++j)
+                         fprintf(fo, (j!=aawc->aaw[i]->al-1)?"%s ":"%s\n", aawc->aaw[i]->aw[j]->w);
+                    break;
+                }
+                tsnod2=tsnod2->n;
+            }
+        }
+        if(!seen) {
+            unseencou++;
+            // printf("%s ", aawc->aaw[i]->aw[1]->w);
+        }
     }
+    if( u2 | unseencou)
+        fprintf(stderr, "WARNING: #u2=%i unseen=%i\n", u2, unseencou); 
+    fclose(fo);
+    return;
 }
 
 void prt_tfc(aaw_c *tfc)
 {
-    int i, j;
+    int i;
     int ll0=0; /* length of line */
     boole asamell0=0; /* all same line length? */
     for(i=0;i<tfc->numl;++i) {
@@ -642,7 +645,7 @@ void prt_tfc(aaw_c *tfc)
 
 void vertptf(aaw_c *tfc, aaw_c *aawc) /* verify the tped and tfam file pair */
 {
-    int i, j;
+    int i;
     int ll0; /* length of line */
     boole asamell0=0; /* all same line length? */
     for(i=0;i<tfc->numl;++i) {
@@ -823,7 +826,7 @@ aaw_c *processinpf(FILE *fp)
 {
     int i;
     size_t couc /*count chars per line */, couw=0 /* count words */;
-    int c, oldc='\0';
+    int c;
     boole inword=0;
     unsigned lbuf=LBUF /* buffer for number of lines */, cbuf=CBUF /* char buffer for size of w_c's: reused for every word */;
     aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
@@ -865,7 +868,6 @@ aaw_c *processinpf(FILE *fp)
                 reall_wc(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
         }
-        oldc=c;
     } /* end of big for statement */
 
 uit:
@@ -883,14 +885,52 @@ void prtusage()
 {
     printf("Usage: Insufficent arguments given.\n");
     printf("       Use options -i and -m to to give filenames of the old beagle format\n");
-    printf("       and the markers (principally for the positions).\n");
+    printf("       and the markers (for the positions).\n");
+    printf("       To output a tped, include a prefix string to -o option.\n");
+    printf("       Note tfam's are not handled, due to sex desig being required.\n");
+    printf("       -s will not output a tped, but only stats.\n");
     return;
+}
+
+int catchopts(optstruct *opstru, int oargc, char **oargv)
+{
+    int c;
+    opterr = 0;
+    while ((c = getopt (oargc, oargv, "sci:m:o:")) != -1)
+        switch (c) {
+            case 'c': // want to see the genotypes of these SNPs
+                opstru->cflag = 1;
+                break;
+            case 's': // stats version, no tped is output. Principally to see how hets are called.
+                opstru->sflag = 1;
+                break;
+            case 'i': // input file 
+                opstru->iname = optarg;
+                break;
+            case 'm': // input file 
+                opstru->mname = optarg; /* the tfam of fam file */
+                break;
+            case 'o': // input file 
+                opstru->oname = optarg; /* the tfam of fam file */
+                break;
+			case '?':
+				if ((optopt == 'i') | (optopt =='m') | (optopt == 'o') ) {
+					fprintf (stderr, "Option -%c requires a string.\n", optopt);
+                    exit(EXIT_FAILURE);
+                }
+                break;
+            default:
+                printf("Sorry those options are incompatible.\n"); 
+                prtusage();
+                exit(EXIT_FAILURE);
+        }
+    return 0;
 }
 
 int main(int argc, char *argv[])
 {
     /* argument accounting */
-    if(argc!=5) {
+    if((argc<5) | (argc>7)) {
         prtusage();
         exit(EXIT_FAILURE);
     }
@@ -909,6 +949,10 @@ int main(int argc, char *argv[])
     char *tmp2=strrchr(opstru.mname, 'r');
     char tc[3]={0};
     sprintf(tc, "%.*s", (int)(tmp-tmp2-1), tmp2+1);
+    char tpedout[64]={0};
+    if(opstru.oname != NULL)
+        sprintf(tpedout, "%s_chr%s.tped", opstru.oname, tc);
+
 
     int i;
     FILE *fp=NULL, *fm=NULL;
@@ -917,13 +961,14 @@ int main(int argc, char *argv[])
     aaw_c *aawc=NULL, *maawc=NULL;
     aawc=processinpf(fp);
     maawc=processinpf(fm);
-    //     prtaawcplain(aawc);
-    //    prtaawc_asfam(aawc);
+
     unsigned htsz=givehtsz(maawc->numl);
     snodm **stab=hashmrk(maawc, htsz);
     // prtchaharr(stab, htsz);
-    prtaawctp(aawc, maawc, stab, htsz, tc);
-    goto gone;
+    if((opstru.oname != NULL) & (!opstru.sflag) ) {
+        prtaawctp(aawc, maawc, stab, htsz, tc, tpedout);
+        goto gone;
+    }
 
     /* Now this is a bare line-word type struct, which could conceivably be converted into a more tped-friendly structure
      * but, as usual, this woul require copying and holding two tped's in memory, so why bother? Let's just be careful and keep
@@ -934,16 +979,17 @@ int main(int argc, char *argv[])
     boole eqngts = 0; /* equal number of GTs in our tped file? */
 
     /* OK, we're sticking in some options */
-    if( (opstru.iname != NULL) & !(opstru.cflag) & !(opstru.fname)) {
+    // if( (opstru.iname != NULL) & !(opstru.cflag) & (opstru.fname==NULL) & (opstru.sflag)) {
+    if( opstru.sflag) {
+        printf("OK in here\n"); 
         cougt_tpedaawc(aawc, &cougt, &eqngts);
         printf("Different GT counts: (Z1: just one uncalled allele, ZZ: both alleles uncalled.\n"); 
         for(i=0;i<NUMGTS;++i) 
-            printf((i==NUMGTS-1)?"%5s \n":"%5s  ", gtna0[i]);
+            printf((i==NUMGTS-1)?"%4s \n":"%4s  ", gtna0[i]);
         for(i=0;i<NUMGTS;++i) 
-            printf((i==NUMGTS-1)?"%6i\n":"%6i ", cougt[i]);
+            printf((i==NUMGTS-1)?"%5i\n":"%5i ", cougt[i]);
         printf((eqngts)?"Problem: unequal number of GTs across samples.\n":"Checked: yes, an equal num of GTs for all samples.\n");
     } else if(opstru.cflag) {
-        /* printing out converted tped: 0NID's all set to 00 */
         prt_tpedaawc1p(aawc);
     }
 

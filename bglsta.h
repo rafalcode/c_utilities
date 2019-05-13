@@ -13,14 +13,11 @@
 #define WABUF 20
 #define LBUF 32
 #endif
-#define NUMGTS 20
+#define NUMGTS 17
 typedef unsigned char boole;
 typedef enum /* gt_t, genotype type */
 {
-    AA,
-    CC,
-    GG,
-    TT,
+    HH,
     AC, /* anything >= 0x100 is therefore hetzyg */
     AG,
     AT,
@@ -39,16 +36,18 @@ typedef enum /* gt_t, genotype type */
     ZZ /* both uncalled, unrecognised, the obligatory catch-all so to speak */
 } gt_t;
 /* GT Name arrays based on above, "gtna" sets 00 as the unknown 17th GT, while gtna2 sets it to NN */
-char gtna0[NUMGTS][3]={"AA", "CC", "GG", "TT", "AC", "AG", "AT", "CA", "CG", "CT", "GA", "GC", "GT", "TA", "TC", "TG", "D1", "D2", "Z1", "ZZ"};
-char gtna2[NUMGTS][3]={"AA", "CC", "GG", "TT", "AC", "AG", "AT", "CA", "CG", "CT", "GA", "GC", "GT", "TA", "TC", "TG", "NN", "NN", "NN", "NN"};
-char gtna[NUMGTS][3]={"AA", "CC", "GG", "TT", "AC", "AG", "AT", "CA", "CG", "CT", "GA", "GC", "GT", "TA", "TC", "TG", "00", "00", "00", "00"};
+char gtna0[NUMGTS][3]={"HH", "AC", "AG", "AT", "CA", "CG", "CT", "GA", "GC", "GT", "TA", "TC", "TG", "D1", "D2", "Z1", "ZZ"};
+char gtna2[NUMGTS][3]={"HH", "AC", "AG", "AT", "CA", "CG", "CT", "GA", "GC", "GT", "TA", "TC", "TG", "NN", "NN", "NN", "NN"};
+char gtna[NUMGTS][3]={"HH", "AC", "AG", "AT", "CA", "CG", "CT", "GA", "GC", "GT", "TA", "TC", "TG", "00", "00", "00", "00"};
 
 typedef struct  /* optstruct, a struct for the options */
 {
     int cflag; /* convert, print out output as ped and map, aftetr having resolved resolution events */
+    int sflag; /* pure stats ... see consistency of hets */
     char *iname; /* input file name which should be a tped file of course */
     char *fname; /* optional input tfam file for sanity checking of the tped/tfam pairing */
     char *mname; /* the marker file */
+    char *oname; /* the marker file */
 } optstruct;
 
 typedef struct /* word type */

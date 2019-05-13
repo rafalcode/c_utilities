@@ -4,6 +4,20 @@
 #include<string.h>
 #include "namsets.h"
 
+int catchopts(optstruct *opstru, int oargc, char **oargv)
+{
+    int c;
+    opterr = 0;
+    while ((c = getopt (oargc, oargv, "d")) != -1)
+        switch (c) {
+            case 'd': // want to see the genotypes of these SNPs
+                opstru->dflag = 1; break;
+            default:
+                abort();
+        }
+    return 0;
+}
+
 unsigned givehtsz(unsigned mnf)
 {
     unsigned htsz=2*mnf/3;
@@ -56,6 +70,7 @@ snodm **hashnam(aaw_c *aawc, unsigned tsz, unsigned *dgcou, trival tf /* target 
         tsnod2=stab[tint];
         while( (tsnod2 != NULL) ) {
             if(!strcmp(tsnod2->aw->aw[0]->w, aawc->aaw[i]->aw[0]->w)) {
+                // printf("Duppair: %s vs %s\n", tsnod2->aw->aw[0]->w, aawc->aaw[i]->aw[0]->w);
                 if(!tsnod2->aw->dup) {
                     dpgrps++;
                     tsnod2->aw->dup=1;
@@ -163,6 +178,32 @@ void prtchaharr(snodm **stam, unsigned tsz)
             tsnod2=tsnod2->n;
         }
         putchar('\n');
+    }
+    return;
+}
+
+void rep_dups(snodm **stam, unsigned tsz)
+{
+    unsigned i;
+    snodm *tsnod2;
+    boole dupseen;
+
+    for(i=0;i<tsz;++i) {
+        dupseen=0;
+        tsnod2=stam[i];
+        while(tsnod2) {
+            if(tsnod2->aw->dup == 1) {
+                printf("%s (Headgrp %u) ", tsnod2->aw->aw[0]->w, tsnod2->aw->dgrp);
+                dupseen=1;
+            } else if(tsnod2->aw->dup == 2) {
+                printf("%s (Membgrp %u)", tsnod2->aw->aw[0]->w, tsnod2->aw->dgrp);
+                dupseen=1;
+            }
+
+            tsnod2=tsnod2->n;
+        }
+        if(dupseen)
+            putchar('\n');
     }
     return;
 }
@@ -406,21 +447,38 @@ aaw_c *processinpf1l(char *fname)
     return aawc;
 }
 
+void prtusage()
+{
+    printf("Program \"namsets\" takes two name files (one name per line)\n"); 
+    printf("And compares them giving short report\n"); 
+    printf("Arg1 is file 1, arg2 is file2.\n"); 
+    printf("> If any of these files contain duplicates the comparison is not really \"fair\"\n");
+    printf("  To see the duplicates include option \"-d\" after file1 and file2 args.\n"); 
+    exit(EXIT_FAILURE);
+}
+
 int main(int argc, char *argv[])
 {
     /* argument accounting */
-    if(argc!=3) {
-        printf("Error. Pls supply 2 arguments (names of 2 text file).\n");
-        exit(EXIT_FAILURE);
-    }
+    if(argc<3)
+        prtusage();
+
+    int argignore=2; 
+    int oargc=argc-argignore;
+    char **oargv=argv+argignore;
+    optstruct opstru={0};
+    catchopts(&opstru, oargc, oargv);
 
     unsigned dgf1, dgf2; // dup groups in file 1, in file 2
     aaw_c *aawc2=processinpf1l(argv[2]); // yes second argument is first to process because it's the target.
     unsigned htsz=givehtsz(aawc2->numl);
     snodm **stam = hashnam(aawc2, htsz, &dgf2, 2);
-    if(dgf2)
+    prtchaharr(stam, htsz);
+    if(dgf2) {
         fprintf(stderr, "File_%i duplicates groups= %u\n", 2, dgf2);
-    else
+        if(opstru.dflag)
+            rep_dups(stam, htsz);
+    } else
         fprintf(stderr, "File_%i fine, no duplicates\n", 2);
 
     // prtchaharr(stam, htsz);
@@ -431,12 +489,15 @@ int main(int argc, char *argv[])
     // OK, second run
     htsz=givehtsz(aawc->numl);
     stam = hashnam(aawc, htsz, &dgf1, 1);
-    if(dgf1)
+    if(dgf1) {
         fprintf(stderr, "File_%i duplicates groups= %u\n", 1, dgf1);
-    else
-        fprintf(stderr, "File_%i fine, no duplicates\n", 1);
+        if(opstru.dflag)
+            rep_dups(stam, htsz);
+    } else
+        fprintf(stderr, "File_%i fine, no duplicates\n", 2);
+
     mu_nam(aawc2, stam, htsz, 2);
-    freechainharr(stam, htsz);
+    freechainharr(stam, htsz); // yep I can do this now.
 
     rep_mu(aawc, aawc2);
 

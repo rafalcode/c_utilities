@@ -64,6 +64,12 @@ typedef struct /* i2g_t */
     unsigned **i, sz, bf;
 } i2g_t; /* map indices to go/ filter out */
 
+typedef struct /* i2g_t2 */
+{
+    unsigned **i, sz, bf;
+    gt_t **gt; // dynamic .. per sample
+} i2g_t2; /* map indices to with gts */
+
 typedef struct /* dgia_t */
 {
     unsigned **is /* indices */, bf, sz;
@@ -81,6 +87,8 @@ typedef struct /* dia_t */
 {
     unsigned **is /* indices */, bf, sz;
     int lidx; // category label index
+    gt_t wgt; // the the winning GT, only after processing
+    unsigned wi; // the winning index
     char posstr[17]; /* position string, the thing we're hashing on */
 } dia_t; /* dupe index array */
 

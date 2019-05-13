@@ -175,7 +175,7 @@ void prtaawcsel(aaw_c *aawc)
     /* still a debugging function shows how the right allele between the square brackerts is chosen */
     int i;
     for(i=0;i<aawc->numl;++i) {
-        if(!aawc->aaw[i]->postc)
+        if(aawc->aaw[i]->postc != 1)
             continue;
         printf("%s\t", aawc->aaw[i]->aw[0]->w);
         printf("%s\t", aawc->aaw[i]->aw[1]->w);
@@ -194,6 +194,20 @@ void prtaawcsymb(aaw_c *aawc) /* print line and word details, but not the words 
         for(j=0;j<aawc->aaw[i]->al;++j)
             printf((j!=aawc->aaw[i]->al-1)?"%s ":"%s\n", aawc->aaw[i]->aw[j]->w);
     }
+}
+
+void prtsqsli(i_s *sqisz, int sz, int s, int e)
+{
+	int i, j;
+	printf("Number of different sequences=%i\n", sz); 
+	for(i=0;i<sz;++i) {
+		printf("%s ", sqisz[i].id);
+		printf("%i to %i\n", s, e);
+        for(j=s;j<e;++j) 
+		    putchar(sqisz[i].sq[j]);
+        putchar('\n');
+	}
+	return;
 }
 
 aaw_c *processinpblao(char *fname) /* processin input blast output (fmt code 7) */
@@ -243,8 +257,9 @@ aaw_c *processinpblao(char *fname) /* processin input blast output (fmt code 7) 
                 reall_awc(aawc->aaw+aawc->numl, WABUF);
             couc=0;
             cbuf=CBUF;
-            if((couc==0) & (couw==0) & (c!='#'))
-                aawc->aaw[aawc->numl]->postc++;
+            if((couc==0) & (couw==0) & (c!='#') & (aawc->numl>0))
+                aawc->aaw[aawc->numl]->postc = 1+ aawc->aaw[aawc->numl-1]->postc;
+            // note above how easy it is to have postc cumulative count number of hits per seq.
             aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
             GETLCTYPE(c, aawc->aaw[aawc->numl]->aw[couw]->t); /* MACRO: the firt character gives a clue */
             inword=1;
@@ -267,11 +282,186 @@ aaw_c *processinpblao(char *fname) /* processin input blast output (fmt code 7) 
     return aawc;
 }
 
+i_s *procfa(char *fname, unsigned *nsq)
+{
+	FILE *fin;
+	char IGLINE, begline;
+	size_t lidx, mxsylen, mnsylen;
+	unsigned mxamb, mnamb;
+	int i, j, k, c, sqidx;
+	int gbuf;
+	i_s *sqisz=NULL;
+	int whatint; // a number reflecting the type of symbol read
+	unsigned numsq, numano;
+	int ididx0=0;
+	char *spapad="    ";
+
+	// OK open the file
+	if(!(fin=fopen(fname, "r")) ) { /*should one check the extension of the fasta file ? */
+		printf("Error. Cannot open file named \"%s\".\n", fname);
+		exit(EXIT_FAILURE);
+	}
+
+	IGLINE=0, begline=1;
+	lidx=0, mxsylen=0, mnsylen=0XFFFFFFFFFFFFFFFF;
+	mxamb=0, mnamb=0xFFFFFFFF;
+
+	sqidx=-1; /* this is slightly dangerous, you need very much to know what you're doing */
+	gbuf=GBUF;
+	// sqisz=malloc(gbuf*sizeof(i_s));
+	sqisz=realloc(sqisz, gbuf*sizeof(i_s));
+	for(i=0;i<gbuf;++i) {
+		sqisz[i].ibf=GBUF;
+		sqisz[i].sbf=GBUF;
+		sqisz[i].id=calloc(sqisz[i].ibf, sizeof(char));
+		sqisz[i].sq=calloc(sqisz[i].sbf, sizeof(char));
+	}
+	for(i=gbuf-GBUF;i<gbuf;++i) {
+		sqisz[i].ambano[0]=0;
+		sqisz[i].ambano[1]=0;
+	}
+	whatint=0; /* needs explanation */
+	ididx0=0;
+
+	while( ( (c = fgetc(fin)) != EOF) ) {
+		if(c =='\n') {
+			IGLINE=0;
+			begline=1;
+			lidx++;
+		} else if( (begline==1) & (c == '>') ) { /* this condition catches the beginning of a new sequence, and uses it to prepare the nextsequence.*/
+			IGLINE =1;
+			begline=0; 
+			if(sqidx>=0) { /* chancing my arm here ... operating on the past sequence */
+				if(sqisz[sqidx].sylen > mxsylen)
+					mxsylen = sqisz[sqidx].sylen;
+				if(sqisz[sqidx].sylen < mnsylen)
+					mnsylen = sqisz[sqidx].sylen;
+				if(sqisz[sqidx].ambano[0] > mxamb)
+					mxamb = sqisz[sqidx].ambano[0];
+				if(sqisz[sqidx].ambano[0] < mnamb)
+					mnamb = sqisz[sqidx].ambano[0];
+
+				CONDREALLOC(ididx0, sqisz[sqidx].ibf, GBUF, sqisz[sqidx].id, char);
+				sqisz[sqidx].id[ididx0]='\0';
+				CONDREALLOC(sqisz[sqidx].sylen, sqisz[sqidx].sbf, GBUF, sqisz[sqidx].sq, char);
+				sqisz[sqidx].sq[sqisz[sqidx].sylen]='\0';
+				sqisz[sqidx].idz=1+ididx0;
+				sqisz[sqidx].sqz=1+sqisz[sqidx].sylen;
+			}
+
+			sqidx++;
+			if(sqidx==gbuf) {
+				gbuf+=GBUF;
+				sqisz=realloc(sqisz, gbuf*sizeof(i_s));
+				for(i=gbuf-GBUF;i<gbuf;++i) {
+					sqisz[i].ibf=GBUF;
+					sqisz[i].sbf=GBUF;
+					sqisz[i].id=calloc(sqisz[i].ibf, sizeof(char));
+					sqisz[i].sq=calloc(sqisz[i].sbf, sizeof(char));
+				}
+			}
+			sqisz[sqidx].idx=sqidx;
+
+			/* resetting stuff */
+			sqisz[sqidx].sylen=0;
+			ididx0=0;
+			for(i=0;i<SSZ;++i)
+				sqisz[sqidx].sy[i]=0;
+			for(i=0;i<2;++i)
+				sqisz[sqidx].ambano[i]=0;
+		} else if (IGLINE==1) {
+			CONDREALLOC(ididx0, sqisz[sqidx].ibf, GBUF, sqisz[sqidx].id, char);
+			sqisz[sqidx].id[ididx0++]=c;
+		} else if (IGLINE==0) {
+			CONDREALLOC(sqisz[sqidx].sylen, sqisz[sqidx].sbf, GBUF, sqisz[sqidx].sq, char);
+			sqisz[sqidx].sq[sqisz[sqidx].sylen]=c;
+			sqisz[sqidx].sylen++;
+			switch(c) {
+				case 'A': case 'a':
+					whatint=1; break;
+				case 'C': case 'c':
+					whatint=2; break;
+				case 'G': case 'g':
+					whatint=3; break;
+				case 'T': case 't':
+					whatint=4; break;
+				case 'R': case 'r':
+					whatint=5; break;
+				case 'Y': case 'y':
+					whatint=6; break;
+				case 'K': case 'k': /* the ketos */
+					whatint=7; break;
+				case 'M': case 'm': /* the aminoids */
+					whatint=8; break;
+				case 'S': case 's':
+					whatint=9; break;
+				case 'W': case 'w':
+					whatint=10; break;
+				case 'B': case 'b':
+					whatint=11; break;
+				case 'D': case 'd':
+					whatint=12; break;
+				case 'H': case 'h':
+					whatint=13; break;
+				case 'V': case 'v':
+					whatint=14; break;
+				case 'N': case 'n':
+					whatint=15; break;
+				case '-':
+					whatint=16; break;
+				default:
+					whatint=17; /* unknown this means your fasta file is naff. */
+			}
+		}
+		if( (whatint == 2) || (whatint == 3) ) {
+			sqisz[sqidx].sy[0]++;
+			sqisz[sqidx].ambano[1]++;
+		} else if (whatint < 5) {
+			sqisz[sqidx].sy[1]++;
+			sqisz[sqidx].ambano[1]++;
+		} else 
+			sqisz[sqidx].ambano[0]++;
+	}
+	fclose(fin);
+	/* postprocessing on the final sequence */
+	if(sqisz[sqidx].sylen > mxsylen)
+		mxsylen = sqisz[sqidx].sylen;
+	if(sqisz[sqidx].sylen < mnsylen)
+		mnsylen = sqisz[sqidx].sylen;
+	if(sqisz[sqidx].ambano[0] > mxamb)
+		mxamb = sqisz[sqidx].ambano[0];
+	if(sqisz[sqidx].ambano[0] < mnamb)
+		mnamb = sqisz[sqidx].ambano[0];
+
+	/* the last sequence */
+	CONDREALLOC(ididx0, sqisz[sqidx].ibf, GBUF, sqisz[sqidx].id, char);
+	sqisz[sqidx].id[ididx0]='\0';
+	CONDREALLOC(sqisz[sqidx].sylen, sqisz[sqidx].sbf, GBUF, sqisz[sqidx].sq, char);
+	sqisz[sqidx].sq[sqisz[sqidx].sylen]='\0';
+	sqisz[sqidx].idz=1+ididx0;
+	sqisz[sqidx].sqz=1+sqisz[sqidx].sylen;
+
+	numsq=sqidx+1, numano=0;
+	for(i=0;i<numsq;++i) {
+		if(sqisz[i].ambano[1])
+			numano++;
+	}
+
+	for(i=numsq;i<gbuf;++i) {
+		free(sqisz[i].id);
+		free(sqisz[i].sq);
+	}
+	sqisz=realloc(sqisz, numsq*sizeof(i_s));
+
+    *nsq=numsq;
+	return sqisz;
+}
+
 int main(int argc, char *argv[])
 {
     /* argument accounting */
-    if(argc!=2) {
-        printf("Error. Pls supply argument (name of text file).\n");
+    if(argc!=3) {
+        printf("Error. Pls supply 2 args: 1) blast o/p file 2) fasta.\n");
         exit(EXIT_FAILURE);
     }
     aaw_c *aawc=processinpblao(argv[1]);
@@ -280,11 +470,16 @@ int main(int argc, char *argv[])
     printf("DBG in force\n"); 
     printf("This was for checking size of flanking seq, it's 200 on either side, making 401 in total\n");
 #else
+    unsigned numsq;
+    int s=0, e=12;
+	i_s *sqisz=procfa(argv[2], &numsq);
+    // prtsqsli(sqisz, numsq, s, e);
     // prtaawcdata(aawc); // just the metadata
     prtaawcsel(aawc); // printout original text as well as you can.
 #endif
     // printf("Numlines: %zu\n", aawc->numl); 
 
+	free(sqisz);
     free_aawc(&aawc);
 
     return 0;

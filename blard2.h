@@ -13,7 +13,30 @@
 #define LBUF 32
 #endif
 
+#define GBUF 4
+#define SSZ 4
+#define HISTBUCKETSZ 10
+#define HTCOLWIDTH 120
+#define NAMESTRSZ 256 // an arbitrary size for a name.
+
+#define CONDREALLOC(x, b, c, a, t); \
+	if((x)==((b)-1)) { \
+		(b) += (c); \
+		(a)=realloc((a), (b)*sizeof(t)); \
+		memset((a)+(b)-(c), '\0', (c)*sizeof(t)); \
+	}
+
+#define CONDREALLOC2(x, b, c, a1, a2, t); \
+	if((x)==((b)-1)) { \
+		(b) += (c); \
+		(a1)=realloc((a1), (b)*sizeof(t)); \
+		memset((a1)+(b)-(c), '\0', (c)*sizeof(t)); \
+		(a2)=realloc((a2), (b)*sizeof(t)); \
+		memset((a2)+(b)-(c), '\0', (c)*sizeof(t)); \
+	}
+
 typedef unsigned char boole;
+
 typedef enum
 {
     STRG, /* unknown type, so default to string */
@@ -24,6 +47,19 @@ typedef enum
     SCCP, /* string with starting capital AND closing punctuation */
     ALLC /* string with all caps */
 } t_t;
+
+typedef struct /* i_s; sequence index and number of symbols */
+{
+	unsigned idx;
+	size_t sylen; /* this is the precise symbol length of the sequence */
+	size_t sy[SSZ]; /* used to hold counts of symbols */
+	float cgp;
+	unsigned ambano[2]; /* number of ambiguous symbols (first), then number of anomalous symbols */
+	char *id; // the ID name
+	char *sq; // the sequence itself
+	unsigned ibf, sbf; // buffers for ID and SQ strings
+	unsigned idz, sqz; // actual size  of the ID and SQ strings. Is almost a duplication of sylen, can be removed if memory is a consideration.
+} i_s; /* sequence index and number of symbols */
 
 typedef struct /* word type */
 {

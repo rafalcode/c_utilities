@@ -1460,6 +1460,7 @@ void prt_wff0(wff_t *wff, int m)
 void filtprocmid(wff_t *wff, int m, i2g_t2 *mid, mp_t *mp)
 {
     int i;
+    char *tc=NULL;
     int coumhits=0 /* number of snpnames that coincided with a master dup */, couddwoms=0 /* Number of the snpnames whose master dup was not called */, couddwmas=0 /* dups with master dups mentioned already */;
     printf("Investigating snp name that are duplicates but not master ones.\n");
     for(i=0;i<m;++i) {
@@ -1477,6 +1478,7 @@ void filtprocmid(wff_t *wff, int m, i2g_t2 *mid, mp_t *mp)
                 wff[i].ddupwom =1;
                 couddwoms++;
                 mp[(*mid->mif)[wff[i].gdn-1]].keep=1; // OK, this dupset is mentioned directly.
+                tc=mp[(*mid->mif)[wff[i].gdn-1]].n;// was trying to overwrite size of this string not allowed.OK, this dupset is mentioned directly.
             } else if( (*mid->mif)[wff[i].gdn-1] == 1 )
                 couddwmas++;
                 // note: not necessary to set the corresponding mp to keep here, already done.
