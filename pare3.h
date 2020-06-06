@@ -29,6 +29,6 @@ typedef struct /* aw_c: array of words container */
 
 typedef struct /* aaw_c: array of array of words container */
 {
-    size_t numl; /* number of lines, i.e. rows */
+    long long numl; /* number of lines, i.e. rows */
     aw_c **aaw; /* an array of pointers to aw_c */
 } aaw_c;

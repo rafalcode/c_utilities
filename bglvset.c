@@ -1307,6 +1307,8 @@ void prtusage()
     printf("Usage: Insufficent arguments given.\n");
     printf("       bglvset take a bgl file, a marker file and a vcf file\n");
     printf("       and rewrites the vcf with heterozygotes reflecting the bgl.\n");
+    printf("       Note that it is a post-processing step intended to correct an\n");
+    printf("       already generated (i.e. converted from bgl via plink1.9) vcf file\n");
     printf("       -i the bgl file.\n");
     printf("       -m the marker file.\n");
     printf("       -v the vcf file.\n");
@@ -1379,7 +1381,7 @@ int main(int argc, char *argv[])
     // we can reuse stab
     stab=hashmrk2(maawc, htsz); // this second version of function takes gd's into account.
     // prtchaharr(stab, htsz);
-    if((opstru.oname != NULL) & (opstru.cflag!=1)) { // cflag prevtns files beig written
+    if((opstru.oname != NULL) & !(opstru.cflag)) { // cflag prevents files being written
         prtaawctp(aawc, maawc, stab, htsz, tc, tpedout);
     } else if(opstru.cflag) {
         prtaawc00(aawc, maawc, stab, vaawc, htsz, tc);
