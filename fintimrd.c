@@ -20,6 +20,7 @@ void reall_wc(w_c **wc, unsigned *cbuf)
     tcbuf += CBUF;
     twc->lp1=tcbuf;
     twc->w=realloc(twc->w, tcbuf*sizeof(char));
+    memset(twc->w+tcbuf-CBUF, 0, CBUF*sizeof(char));
     *wc=twc; /* realloc can often change the ptr */
     *cbuf=tcbuf;
     return;
@@ -47,7 +48,9 @@ aw_c *crea_awc(unsigned initsz)
     aw_c *awc=malloc(sizeof(aw_c));
     awc->ab=initsz;
     awc->al=awc->ab;
-    awc->hrs = awc->min = awc->sec = awc->hh = 0;
+    awc->t0 = 0;
+    for(i=0;i<3;++i) 
+        awc->tmg[i] = 0;
     awc->aw=malloc(awc->ab*sizeof(w_c*));
     for(i=0;i<awc->ab;++i) 
         awc->aw[i]=crea_wc(CBUF);
@@ -123,11 +126,11 @@ void prtaawcdbg(aaw_c *aawc)
             if(aawc->aaw[i]->aw[j]->t == NUMS) {
                 printf("NUM! "); 
                 continue;
-            } else if(aawc->aaw[i]->aw[j]->t == PNI) {
-                printf("PNI! "); 
+            } else if(aawc->aaw[i]->aw[j]->t == TMG) {
+                printf("TMG! "); 
                 continue;
-            } else if(aawc->aaw[i]->aw[j]->t == STCP) {
-                printf("STCP! "); 
+            } else if(aawc->aaw[i]->aw[j]->t == STRG) {
+                printf("STRG! "); 
                 continue;
             }
             for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
@@ -138,13 +141,113 @@ void prtaawcdbg(aaw_c *aawc)
     }
 }
 
+void proctmgw(aaw_c *aawc) /* process the timing word */
+{
+    int i, j, m;
+	char *tk=NULL;
+    for(i=0;i<aawc->numl;++i) {
+        for(j=0;j<aawc->aaw[i]->al;++j) {
+            if(aawc->aaw[i]->aw[j]->t == TMG) {
+                if(j != aawc->aaw[i]->al-1) {
+                    printf("Warning: timing number at line %i is not last word in line.\n", i); 
+                    printf("Are you sure you know what you're doing?\n"); 
+                }
+                aawc->aaw[i]->t0 = atof(strtok(aawc->aaw[i]->aw[j]->w, ":."));
+                m=0;
+                while( (m < 3) &((tk=strtok(NULL, ":.")) != NULL)) {
+                    aawc->aaw[i]->tmg[m++] = (char)atoi(tk);
+                }
+            }
+        }
+    }
+}
+
+void proctmgw1m(aaw_c *aawc) /* process the timing word, first token is minutes. */
+{
+    int i, j, m;
+	char *tk=NULL;
+    for(i=0;i<aawc->numl;++i) {
+        for(j=0;j<aawc->aaw[i]->al;++j) {
+            if(aawc->aaw[i]->aw[j]->t == TMG) {
+                if(j != aawc->aaw[i]->al-1) {
+                    printf("Warning: timing number at line %i is not last word in line.\n", i); 
+                    printf("Are you sure you know what you're doing?\n"); 
+                }
+                aawc->aaw[i]->t0 = atof(strtok(aawc->aaw[i]->aw[j]->w, ":."));
+                m=0;
+                while( (m < 3) &((tk=strtok(NULL, ":.")) != NULL)) {
+                    aawc->aaw[i]->tmg[m++] = (char)atoi(tk);
+                }
+                aawc->aaw[i]->t0 = 60.*aawc->aaw[i]->t0;
+                aawc->aaw[i]->t0 += (float)aawc->aaw[i]->tmg[0];
+                aawc->aaw[i]->t0 += aawc->aaw[i]->tmg[1];
+            }
+        }
+    }
+}
+
+void prtaawctypcum(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i, j, k=0;
+    float oldtcum =.0, tcum=.0;
+    for(i=0;i<aawc->numl;++i) {
+        for(j=0;j<aawc->aaw[i]->al;++j) {
+            if(aawc->aaw[i]->aw[j]->t == TMG) {
+                tcum += aawc->aaw[i]->t0;
+                printf("Trk #%i: ", k++);
+                printf("%3.1f to %3.1f secs.\n", oldtcum, tcum);
+                oldtcum = tcum;
+            }
+        }
+    }
+}
+
+void prtaawctyp5(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i, j, k=0;
+    for(i=0;i<aawc->numl;++i) {
+        for(j=0;j<aawc->aaw[i]->al;++j) {
+            if(aawc->aaw[i]->aw[j]->t == TMG) {
+                printf("Trk #%i: ", k++);
+                printf("%3.1f secs.\n", aawc->aaw[i]->t0);
+            }
+        }
+    }
+}
+
+void prtaawctyp4(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i, j, k=0, m;
+    for(i=0;i<aawc->numl;++i) {
+        for(j=0;j<aawc->aaw[i]->al;++j) {
+            if(aawc->aaw[i]->aw[j]->t == TMG) {
+                printf("Trk #%i: ", k++);
+                printf("%3.1f,", aawc->aaw[i]->t0);
+                for(m=0;m<3;++m) 
+                    printf((m==2)?"%i\n":"%i.", (int)aawc->aaw[i]->tmg[m]);
+            }
+        }
+    }
+}
+
+void prtaawctyp3(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i, j, k=0;
+    for(i=0;i<aawc->numl;++i) {
+        for(j=0;j<aawc->aaw[i]->al;++j) {
+            if(aawc->aaw[i]->aw[j]->t == TMG) {
+                printf("Trk #%i: %s\n", k++, aawc->aaw[i]->aw[j]->w);
+            }
+        }
+    }
+}
 void prtaawctyp2(aaw_c *aawc) /* print line and word details, but not the words themselves */
 {
     int i, j;
     for(i=0;i<aawc->numl;++i) {
         printf("%u (w#%u): ", i, aawc->aaw[i]->al); 
         for(j=0;j<aawc->aaw[i]->al;++j) {
-            if(aawc->aaw[i]->aw[j]->t == NUMS) {
+            if(aawc->aaw[i]->aw[j]->t == TMG) {
                 printf("%s", aawc->aaw[i]->aw[j]->w);
             }
             if(j==aawc->aaw[i]->al-1)
@@ -161,19 +264,16 @@ void prtaawctyps(aaw_c *aawc) /* print line and word details, but not the words 
             printf("%s", aawc->aaw[i]->aw[j]->w);
             switch(aawc->aaw[i]->aw[j]->t) {
                 case NUMS: printf("/N "); break;
-                case PNI: printf("/I "); break;
-                case STRG: printf("/S "); break;
-                case STCP: printf("/C "); break; /* closing punctuation */
-                case SCST: printf("/Z "); break; /* starting capital */
-                case SCCP: printf("/Y "); break; /* starting capital and closing punctuation */
-                default: printf("/W "); break; /* whatever */
+                case TMG: printf("/T "); break;
+                case STRG: printf("/S "); break; /* starting capital and closing punctuation */
+                default: printf("/U "); break; /* whatever */
             }
             if(j==aawc->aaw[i]->al-1)
                 putchar('\n');
         }
     }
     printf("\n"); 
-	printf("L is a line, l is length of word, S is normal string, C closing punct, Z, starting cap, Y Starting cap and closing punct.\n"); 
+    printf("L is a line, l is length of word, S is normal string, C closing punct, Z, starting cap, Y Starting cap and closing punct.\n"); 
 }
 
 void prtaawcplain(aaw_c *aawc) /* print line and word details, but not the words themselves */
@@ -261,8 +361,8 @@ int main(int argc, char *argv[])
 #ifdef DBG
     prtaawcdbg(aawc);
 #else
-    prtaawctyp2(aawc); // just the metadata
-    // prtaawcplain(aawc); // printout original text as well as you can.
+    proctmgw1m(aawc);
+    prtaawctypcum(aawc);
 #endif
     // printf("Numlines: %zu\n", aawc->numl); 
 

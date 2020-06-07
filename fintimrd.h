@@ -18,11 +18,8 @@ typedef enum
 {
     STRG, /* unknown type, so default to string */
     NUMS, /* NUMberS: but does not include currency. So. .Date, time, float or int, i.e. just a sequence of numbers with maybe some special symbils.*/
-    PNI, /* pos or beg int. i/e not negative, but int all the way .., */
-    STCP, /* string with closing punctuation attached.. a comma, or a full stop, semicolon, !? etc */
-    SCST, /* string with starting capital */
-    SCCP, /* string with starting capital AND closing punctuation */
-    ALLC /* string with all caps */
+    TMG, /* pos or beg int. i/e not negative, but int all the way .., */
+    OTH /* anythign nto the above */
 } t_t;
 
 typedef struct /* word type */
@@ -37,7 +34,8 @@ typedef struct /* aw_c: array of words container */
     w_c **aw;
     unsigned ab;
     unsigned al;
-    int hrs, min, sec, hh; // hours inutes seconds and hundreths. hours is only one 
+    float t0; // principal timing, prob seconds.
+    char tmg[3]; // three signed integers that are <128 each.
 } aw_c;
 
 typedef struct /* aaw_c: array of array of words container */
@@ -55,12 +53,12 @@ typedef struct /* aaw_c: array of array of words container */
             if(((c) >= 0x30) && ((c) <= 0x39)) { \
                     typ = NUMS; \
             } else  { \
-                    typ = SCST; \
+                    typ = STRG; \
             }
 
 /* Macro for InWord MODify TYPE */
 #define IWMODTYPEIF(c, typ); \
-            if( ((typ) == NUMS) & ((c == 0x3A) || (c == 0x2E) || (((c) >= 0x30) && ((c) <= 0x39)))) \
-                typ = NUMS; \
-            else \
-                typ = STRG;
+            if( ((typ) == NUMS) & ((c == 0x3A) || (c == 0x2E) || (((c) >= 0x30) && ((c) <= 0x39)))) { \
+                if( ((c == 0x3A) || (c == 0x2E))) \
+                    typ = TMG; \
+            }
