@@ -2,6 +2,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<unistd.h>
 
 #ifdef DBG
 #define CBUF 2
@@ -24,6 +25,22 @@ typedef enum
     SCCP, /* string with starting capital AND closing punctuation */
     ALLC /* string with all caps */
 } t_t;
+
+typedef struct  /* optstruct, a struct for the options */
+{
+    int oflag; /* output lines only with regular cellnums: will need to capture in file */
+    int snum; /* like R's csvread, skip a number of forst lines */
+    int emp; /* minimum number of filled cells for outputting the rows. warning user needs prior knowledge */
+} optstruct;
+
+typedef struct /* summary attrs for CSV */
+{
+    int nrows; // number of rows in csv
+    int regcellnum; // what is the most regular cell number per row?
+    int nregcell; // number of rows with the regcell num
+    int empdel; // number of rows deleted bcause num emp cells exceeded max
+    int *ecprow; // vector of number of empty cells per row (only in rows with regcellnum
+} cattrs;
 
 typedef struct /* word type */
 {
