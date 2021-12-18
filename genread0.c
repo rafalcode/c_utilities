@@ -112,83 +112,79 @@ void free_aawc(aaw_c **aw)
     free(taw);
 }
 
-void prtaawcdbg(aaw_c *aawc)
+void convt0(char *tmng, float dt)
 {
-    int i, j, k;
-    printf("Legend: Begin with Line number, numwords in brackets, words uscore number, length of words:\n\n");
-    for(i=0;i<aawc->numl;++i) {
-        printf("l.%u(%u): ", i, aawc->aaw[i]->al); 
-        for(j=0;j<aawc->aaw[i]->al;++j) {
-            printf("w_%u: ", j); 
-            // if(aawc->aaw[i]->aw[j]->t == NUMS) {
-            //     printf("NUM! "); 
-            //     continue;
-            // } else if(aawc->aaw[i]->aw[j]->t == PNI) {
-            //     printf("PNI! "); 
-            //     continue;
-            // } else if(aawc->aaw[i]->aw[j]->t == STCP) {
-            //     printf("STCP! "); 
-            //     continue;
-            // }
-            for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
-                putchar(aawc->aaw[i]->aw[j]->w[k]);
-            printf("/%u ", aawc->aaw[i]->aw[j]->lp1-1); 
-        }
-        printf("\n"); 
-    }
+    int hs, ms, ss, fs; // fractions of secs
+    char h[3]={0}; h[0] = tmng[0]; h[1] = tmng[1];
+    hs=atoi(h);
+    char m[3]={0}; m[0] = tmng[3]; m[1] = tmng[4];
+    ms=atoi(m);
+    char s[3]={0}; s[0] = tmng[6]; s[1] = tmng[7];
+    ss=atoi(s);
+    char f[4]={0}; f[0] = tmng[9]; f[1] = tmng[10], f[2] = tmng[11];
+    fs=atoi(f);
+    // printf("hs=%i ms=%i ss=%i fs=%i\n", hs, ms, ss, fs); 
+    // printf("%s --- %i:%i:%i,%i\n", tmng, hs, ms, ss, fs); 
+    float t0=hs*3600+ms*60+ss+fs/1000.;
+    // printf("%4.4f to %4.4f\n", t0, t0+dt); 
+    float newt=t0+dt; 
+    hs=(int)newt/3600;
+    int hsm=hs*3600;
+    ms=(int)(newt-hsm)/60;
+    int msm=ms*60;
+    ss=(int)(newt-hsm-msm);
+    fs=100*(newt-hsm-msm-ss);
+    fs*=10;
+    printf("%s --- %02i:%02i:%02i,%03i\n", tmng, hs, ms, ss, fs); 
 }
 
-void prtaawcdbg2(aaw_c *aawc)
+
+void convt(char *tmng, float dt)
 {
-    int j, k;
-    size_t i;
-    printf("Legend: Begin with Line number, numwords in brackets, words uscore number, length of words:\n\n");
-    for(i=0;i<aawc->numl;++i) {
-        if(aawc->aaw[i]->aw[0]->w[0] == '#')
-            continue;
-        printf("%zu) IID: %s GT:", i, aawc->aaw[i]->aw[1]->w);
-        for(j=6;j<aawc->aaw[i]->al;j+=2) {
-            putchar(' ');
-            for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
-                putchar(aawc->aaw[i]->aw[j]->w[k]);
-            putchar('/');
-            for(k=0;k<aawc->aaw[i]->aw[j+1]->lp1-1; k++)
-                putchar(aawc->aaw[i]->aw[j+1]->w[k]);
-        }
-        printf("\n");
-    }
+    int hs, ms, ss, fs; // fractions of secs
+    char h[3]={0}; h[0] = tmng[0]; h[1] = tmng[1];
+    hs=atoi(h);
+    char m[3]={0}; m[0] = tmng[3]; m[1] = tmng[4];
+    ms=atoi(m);
+    char s[3]={0}; s[0] = tmng[6]; s[1] = tmng[7];
+    ss=atoi(s);
+    char f[4]={0}; f[0] = tmng[9]; f[1] = tmng[10], f[2] = tmng[11];
+    fs=atoi(f);
+    // printf("hs=%i ms=%i ss=%i fs=%i\n", hs, ms, ss, fs); 
+    float t0=hs*3600+ms*60+ss+fs/1000.;
+    printf("%4.4f to %4.4f\n", t0, t0+dt); 
 }
 
-void prtaawcdata(aaw_c *aawc) /* print line and word details, but not the words themselves */
+
+void prtaawcd2(aaw_c *aawc) /* print line and word details, but not the words themselves */
 {
     int i, j;
     for(i=0;i<aawc->numl;++i) {
-        printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+        // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
         for(j=0;j<aawc->aaw[i]->al;++j) {
-            printf("l%ut", aawc->aaw[i]->aw[j]->lp1-1);
-            switch(aawc->aaw[i]->aw[j]->t) {
-                case NUMS: printf("N "); break;
-                case PNI: printf("I "); break;
-                case STRG: printf("S "); break;
-                case STCP: printf("C "); break; /* closing punctuation */
-                case SCST: printf("Z "); break; /* starting capital */
-                case SCCP: printf("Y "); break; /* starting capital and closing punctuation */
-                case ALLC: printf("A "); break; /* horrid! all capitals */
-            }
+            // printf("l%ut", aawc->aaw[i]->aw[j]->lp1-1);
+            if((aawc->aaw[i]->aw[j]->t == TMNG) & (aawc->aaw[i]->aw[j]->lp1 >10))
+                // printf("%s len: %i\n", aawc->aaw[i]->aw[j]->w, aawc->aaw[i]->aw[j]->lp1);
+                // printf("%s(%i)\n", aawc->aaw[i]->aw[j]->w, aawc->aaw[i]->aw[j]->lp1);
+                printf("%s\n", aawc->aaw[i]->aw[j]->w);
         }
     }
     printf("\n"); 
-	printf("L is a line, l is length of word, S is normal string, C closing punct, Z, starting cap, Y Starting cap and closing punct.\n"); 
+	printf("Only numbers printed\n");
 }
 
-void prtaawcplain(aaw_c *aawc) /* print line and word details, but not the words themselves */
+void prtaawcd3(aaw_c *aawc, float dt) /* print line and word details, but not the words themselves */
 {
     int i, j;
     for(i=0;i<aawc->numl;++i) {
-        printf("L%u(%uw):", i, aawc->aaw[i]->al); 
-        for(j=0;j<aawc->aaw[i]->al;++j)
-            printf((j!=aawc->aaw[i]->al-1)?"%s ":"%s\n", aawc->aaw[i]->aw[j]->w);
+        // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+        for(j=0;j<aawc->aaw[i]->al;++j) {
+            // printf("l%ut", aawc->aaw[i]->aw[j]->lp1-1);
+            if((aawc->aaw[i]->aw[j]->t == TMNG) & (aawc->aaw[i]->aw[j]->lp1 >10))
+                convt0(aawc->aaw[i]->aw[j]->w, dt);
+        }
     }
+	printf("Only timings printed\n");
 }
 
 aaw_c *processinpf(char *fname)
@@ -255,22 +251,17 @@ aaw_c *processinpf(char *fname)
 int main(int argc, char *argv[])
 {
     /* argument accounting */
-    if(argc!=2) {
-        printf("Error. Pls supply argument (name of text file).\n");
+    if(argc!=3) {
+        printf("Error. Pls supply 2 arguments (name of text file) and number of seconds and fractional seconds (as floati, to delay timings, just make it negative).\n");
         exit(EXIT_FAILURE);
     }
-#ifdef DBG2
-    printf("typeszs: aaw_c: %zu aw_c: %zu w_c: %zu\n", sizeof(aaw_c), sizeof(aw_c), sizeof(w_c));
-#endif
 
     aaw_c *aawc=processinpf(argv[1]);
-#ifdef DBG
-    prtaawcdbg2(aawc);
-#else
-    prtaawcdata(aawc); // just the metadata
-    // prtaawcplain(aawc); // printout original text as well as you can.
-#endif
-    // printf("Numlines: %zu\n", aawc->numl); 
+    float dt=atof(argv[2]);
+    prtaawcd3(aawc, dt); // just the metadata
+    // prtaawcd2(aawc);
+    printf("typeszs: aaw_c: %zu aw_c: %zu w_c: %zu\n", sizeof(aaw_c), sizeof(aw_c), sizeof(w_c));
+    printf("Numlines: %zu\n", aawc->numl); 
 
     free_aawc(&aawc);
 

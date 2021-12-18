@@ -17,12 +17,11 @@ typedef unsigned char boole;
 typedef enum
 {
     STRG, /* unknown type, so default to string */
-    NUMS, /* NUMberS: but does not include currency. Date, time, float or int, i.e. just a sequence of numbers with maybe some special symbils.*/
-    PNI, /* pos or beg int */
+    NUM, /*number integer*/
+    TMNG, /* Timing this is clearly for srt files */
     STCP, /* string with closing punctuation attached.. a comma, or a full stop, semicolon, !? etc */
     SCST, /* string with starting capital */
     SCCP, /* string with starting capital AND closing punctuation */
-    ALLC /* string with all caps */
 } t_t;
 
 typedef struct /* word type */
@@ -45,35 +44,30 @@ typedef struct /* aaw_c: array of array of words container */
     aw_c **aaw; /* an array of pointers to aw_c */
 } aaw_c;
 
-/* checking each character can be comptiue-intensive, so I've offloaded off to MACROS */
+/* checking each character can be compute-intensive, so I've offloaded off to MACROS */
 
 /* Macro fo GET Leading Char TYPE */
 /* so, this refers to the first character: "+-.0123456789" only these are allowed. These is how we infer
  * a quantity of some sort ... except for currency */
 #define GETLCTYPE(c, typ); \
-            if(((c) == 0x2B) | ((c) == 0x2D) | ((c) == 0x2E) | (((c) >= 0x30) && ((c) <= 0x39))) { \
-                if( ((c) == 0x2B) | ((c) == 0x2D) | (((c) >= 0x30) && ((c) <= 0x39))) \
-                    typ = PNI; \
-                else \
-                    typ = NUMS; \
-            } else if(((c) >= 0x41) && ((c) <= 0x5A)) \
-                    typ = SCST;
+            if(((c) >= 0x30) && ((c) <= 0x39)) \
+                typ = TMNG; \
+            else if(((c) >= 0x41) && ((c) <= 0x5A)) \
+                typ = SCST; \
+            else \
+                typ = STRG;
 
 /* Macro for InWord MODify TYPE */
 #define IWMODTYPEIF(c, typ); \
-            if( ((typ) == NUMS) & (((c) != 0x2E) & (((c) < 0x30) || ((c) > 0x39)))) \
-                typ = STRG; \
-            else if( ((typ) == PNI) & (c == 0x2E)) \
-                typ = NUMS; \
-            else if( ((typ) == PNI) & ((c < 0x30) || (c > 0x39)) ) \
+            if( ((typ) == NUM) & (((c) == ':') & ((c) == ',') & (((c) >= 0x30) || ((c) <= 0x39)))) \
+                typ = TMNG; \
+            else if( ((typ) == NUM) & (((c) != ':') & ((c) != ',') & (((c) < 0x30) || ((c) > 0x39)))) \
                 typ = STRG;
 
 /* Macro for SETting CLosing Punctuation TYPE, based on oldc (oc) not c-var */
 /* 21=! 29=) 2C=, 2E=. 3B=; 3F=? 5D=] 7D=}*/
 #define SETCPTYPE(oc, typ); \
-            if( ((oc)==0x21)|((oc)==0x29)|((oc)==0x2C)|((oc)==0x2E)|((oc)==0x3B)|((oc)==0x3F)|((oc)==0x5D)|((oc)==0x7D) ) { \
+            if( ((oc)=='!')|((oc)==')')|((oc)==',')|((oc)=='.')|((oc)==';')|((oc)=='?')|((oc)==']')|((oc)=='}') ) { \
                 if((typ) == STRG) \
                     typ = STCP; \
-                else if((typ) == SCST) \
-                    typ = SCCP; \
             }
