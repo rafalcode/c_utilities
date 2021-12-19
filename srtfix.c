@@ -296,7 +296,9 @@ int main(int argc, char *argv[])
 {
     /* argument accounting */
     if(argc!=3) {
-        printf("Error. Pls supply 2 arguments (name of text file) and number of seconds and fractional seconds (as floati, to delay timings, just make it negative).\n");
+        printf("%s, a program to shift the timings in a subtitle file by a certain amount\n", argv[0]);
+        printf("Pls supply 2 arguments 1) name of text file 2) float, number of seconds and fractional seconds (in order to delay timings, just make it negative).\n");
+        printf("NOTES: Will not accept DOS line endings\n");
         exit(EXIT_FAILURE);
     }
 
