@@ -2,7 +2,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include "genread0.h"
+#include "srtfix.h"
 
 w_c *crea_wc(unsigned initsz)
 {
@@ -139,6 +139,35 @@ void convt0(char *tmng, float dt)
 }
 
 
+char *convt2(char *tmng, float dt)
+{
+    int hs, ms, ss, fs; // fractions of secs
+    char h[3]={0}; h[0] = tmng[0]; h[1] = tmng[1];
+    hs=atoi(h);
+    char m[3]={0}; m[0] = tmng[3]; m[1] = tmng[4];
+    ms=atoi(m);
+    char s[3]={0}; s[0] = tmng[6]; s[1] = tmng[7];
+    ss=atoi(s);
+    char f[4]={0}; f[0] = tmng[9]; f[1] = tmng[10], f[2] = tmng[11];
+    fs=atoi(f);
+    // printf("hs=%i ms=%i ss=%i fs=%i\n", hs, ms, ss, fs); 
+    // printf("%s --- %i:%i:%i,%i\n", tmng, hs, ms, ss, fs); 
+    float t0=hs*3600+ms*60+ss+fs/1000.;
+    // printf("%4.4f to %4.4f\n", t0, t0+dt); 
+    float newt=t0+dt; 
+    hs=(int)newt/3600;
+    int hsm=hs*3600;
+    ms=(int)(newt-hsm)/60;
+    int msm=ms*60;
+    ss=(int)(newt-hsm-msm);
+    fs=100*(newt-hsm-msm-ss);
+    fs*=10;
+    char *tt=calloc(32, sizeof(char));
+    sprintf(tt, "%02i:%02i:%02i,%03i", hs, ms, ss, fs); 
+    return tt;
+}
+
+
 void convt(char *tmng, float dt)
 {
     int hs, ms, ss, fs; // fractions of secs
@@ -155,6 +184,15 @@ void convt(char *tmng, float dt)
     printf("%4.4f to %4.4f\n", t0, t0+dt); 
 }
 
+
+void prtaawcd0(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i;
+    for(i=0;i<aawc->numl;++i)
+        printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+    printf("\n"); 
+	printf("Only line sizes\n");
+}
 
 void prtaawcd2(aaw_c *aawc) /* print line and word details, but not the words themselves */
 {
@@ -176,12 +214,18 @@ void prtaawcd2(aaw_c *aawc) /* print line and word details, but not the words th
 void prtaawcd3(aaw_c *aawc, float dt) /* print line and word details, but not the words themselves */
 {
     int i, j;
+    char *tt=NULL;
     for(i=0;i<aawc->numl;++i) {
         // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+        if(!aawc->aaw[i]->al)
+            putchar('\n');
         for(j=0;j<aawc->aaw[i]->al;++j) {
-            // printf("l%ut", aawc->aaw[i]->aw[j]->lp1-1);
-            if((aawc->aaw[i]->aw[j]->t == TMNG) & (aawc->aaw[i]->aw[j]->lp1 >10))
-                convt0(aawc->aaw[i]->aw[j]->w, dt);
+            if((aawc->aaw[i]->aw[j]->t == TMNG) & (aawc->aaw[i]->aw[j]->lp1 >10)) {
+                tt=convt2(aawc->aaw[i]->aw[j]->w, dt);
+                printf((j!=aawc->aaw[i]->al-1)?"%s ":"%s\n", tt);
+                free(tt);
+            } else
+                printf((j!=aawc->aaw[i]->al-1)?"%s ":"%s\n", aawc->aaw[i]->aw[j]->w);
         }
     }
 	printf("Only timings printed\n");
@@ -259,7 +303,7 @@ int main(int argc, char *argv[])
     aaw_c *aawc=processinpf(argv[1]);
     float dt=atof(argv[2]);
     prtaawcd3(aawc, dt); // just the metadata
-    // prtaawcd2(aawc);
+    // prtaawcd0(aawc);
     printf("typeszs: aaw_c: %zu aw_c: %zu w_c: %zu\n", sizeof(aaw_c), sizeof(aw_c), sizeof(w_c));
     printf("Numlines: %zu\n", aawc->numl); 
 
