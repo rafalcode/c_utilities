@@ -26,6 +26,7 @@ typedef enum
     NUM, /*number integer*/
     STPU, /* string which ends with punctuation :,;- */
     STES, /* string with closing full stop, uestion mark or exclamation which Ends Sentence */
+    STEF /* string with closing full stop, */
 } t_t;
 
 typedef struct /* word container */

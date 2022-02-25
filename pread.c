@@ -160,6 +160,7 @@ void prtaawcdata(aaw_c *aawc) /* print line and word details, but not the words 
                 case STRG: printf("S:"); break; /* basic string */
                 case STES: printf("E:"); break; /* word is a string and ends with a period */
                 case STPU: printf("P:"); break; /* closing punctuation */
+                case STEF: printf("F:"); break; /* closing para */
             }
             printf("%s ", aawc->aaw[i]->aw[j]->w);
         }
@@ -168,12 +169,49 @@ void prtaawcdata(aaw_c *aawc) /* print line and word details, but not the words 
     printf("\n"); 
 }
 
+void prtaawcdat2(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i, j;
+    for(i=0;i<aawc->numl;++i) {
+        // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+        for(j=0;j<aawc->aaw[i]->al;++j) {
+            //printf("l%ut", aawc->aaw[i]->aw[j]->lp1-1);
+            switch(aawc->aaw[i]->aw[j]->t) {
+                case NUM: printf("N:"); break;
+                case STRG: printf("S:"); break; /* basic string */
+                case STES: printf("E:"); break; /* word is a string and ends with a period */
+                case STPU: printf("P:"); break; /* closing punctuation */
+                case STEF: printf("F:"); break; /* closing para */
+            }
+            printf("%s ", aawc->aaw[i]->aw[j]->w);
+        }
+        printf("(%uw)\n", aawc->aaw[i]->al); 
+    }
+    printf("\n"); 
+    for(i=0;i<aawc->ppsz; i++) {
+        printf("%i ", aawc->ppa[i]);
+    }
+    printf("\n"); 
+}
+
+void prtaawcdat3(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i, j;
+    for(i=0;i<aawc->numl;++i) {
+        for(j=0;j<aawc->aaw[i]->al;++j) {
+            printf((j==aawc->aaw[i]->al-1)?"%s\n":"%s ", aawc->aaw[i]->aw[j]->w);
+            if((aawc->aaw[i]->aw[j]->t == STEF) && (i!=aawc->numl-1))
+                printf("\n");
+        }
+    }
+}
+
 aaw_c *processinpf(char *fname)
 {
     /* declarations */
     FILE *fp=fopen(fname,"r");
     int i;
-    size_t couc /*count chars per line */, couw=0 /* count words */;
+    size_t couc /*count chars per line */, couw=0 /* count words */, oldcouw;
     int c, oldc='\0', ooldc='\0' /* pcou=0 paragraph counter */;
     boole inword=0;
     boole linestart=1; /* want to catch number of stating spaces or tabs */
@@ -190,21 +228,26 @@ aaw_c *processinpf(char *fname)
                 couw++; /* verified: this has to be here */
             }
             if(c=='\n') { /* cue line-ending procedure */
-                if(aawc->numl ==lbuf-1) {
-                    lbuf += LBUF;
-                    aawc->aaw=realloc(aawc->aaw, lbuf*sizeof(aw_c*));
-                    for(i=lbuf-LBUF; i<lbuf; ++i)
-                        aawc->aaw[i]=crea_awc(WABUF);
-                }
-                aawc->aaw[aawc->numl]->al=couw;
-                norm_awc(aawc->aaw+aawc->numl);
                 if(oldc=='\n') {
+                    /* paragraph occurence */
                     CONDREALLOC(aawc->ppsz, aawc->ppb, CBUF, aawc->ppa, int);
                     aawc->ppa[aawc->ppsz++]=aawc->numl;
+                    aawc->aaw[aawc->numl-1]->aw[oldcouw-1]->t=STEF;
                 }
-                aawc->numl++;
-                couw=0;
-                linestart=1;
+                if(couw != 0) {
+                    if(aawc->numl ==lbuf-1) {
+                        lbuf += LBUF;
+                        aawc->aaw=realloc(aawc->aaw, lbuf*sizeof(aw_c*));
+                        for(i=lbuf-LBUF; i<lbuf; ++i)
+                            aawc->aaw[i]=crea_awc(WABUF);
+                    }
+                    aawc->aaw[aawc->numl]->al=couw;
+                    norm_awc(aawc->aaw+aawc->numl);
+                    aawc->numl++;
+                    oldcouw=couw;
+                    couw=0;
+                    linestart=1;
+                }
             } else if (linestart) /* must be a space or a tab */
                 (c == ' ')? aawc->aaw[aawc->numl]->stsps++ : aawc->aaw[aawc->numl]->sttbs++;
             inword=0;
@@ -228,6 +271,12 @@ aaw_c *processinpf(char *fname)
         oldc=c;
     } /* end of big for statement */
     fclose(fp);
+
+    /* so we know now that EOF has been reached ... this normally also means the final paragraph, so: */
+    CONDREALLOC(aawc->ppsz, aawc->ppb, CBUF, aawc->ppa, int);
+    aawc->ppa[aawc->ppsz++]=aawc->numl;
+    aawc->aaw[aawc->numl-1]->aw[oldcouw-1]->t=STEF;
+    printf("CC: %zu %zu %zu\n", aawc->numl, couw, oldcouw);
 
     /* normalization stage */
     for(i=aawc->numl; i<lbuf; ++i) {
@@ -253,7 +302,7 @@ int main(int argc, char *argv[])
 
     aaw_c *aawc=processinpf(argv[1]);
 
-    prtaawcdata(aawc);
+    prtaawcdat3(aawc);
     // prtaawcdbg(aawc);
     printf("Numlines: %zu\n", aawc->numl); 
     printf("Numparas: %d\n", aawc->ppsz); 
