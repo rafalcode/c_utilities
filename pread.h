@@ -24,7 +24,7 @@ typedef enum
 {
     STRG, /* unknown type, so default to string */
     NUM, /*number integer*/
-    STPU, /* string which ends with punctuation :,;- */
+    STPU, /* string which ends with (non-sentence ending) punctuation :,;- */
     STES, /* string with closing full stop, uestion mark or exclamation which Ends Sentence */
     STEF /* string with closing full stop, */
 } t_t;
@@ -65,7 +65,7 @@ typedef struct /* aaw_c: array of array of words container */
 
 /* Macro for InWord MODify TYPE */
 #define IWMODTYPEIF(c, typ); \
-            if( ((typ) == NUM) & (((c) != ':') & ((c) != ',') & (((c) < 0x30) || ((c) > 0x39)))) \
+            if( ((typ) == NUM) & (((c) != ':') & ((c) != '.') & ((c) != ',') & (((c) < 0x30) || ((c) > 0x39)))) \
                 typ = STRG;
 
 /* Macro for SETting CLosing Punctuation TYPE, based on oldc (oc) not c-var */

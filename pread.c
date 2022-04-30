@@ -181,11 +181,48 @@ void prtaawcdat2(aaw_c *aawc) /* print line and word details, but not the words 
                 case STRG: printf("S:"); break; /* basic string */
                 case STES: printf("E:"); break; /* word is a string and ends with a period */
                 case STPU: printf("P:"); break; /* closing punctuation */
-                case STEF: printf("F:"); break; /* closing para */
+                case STEF: printf("F:"); break; /* closing full stop */
             }
             printf("%s ", aawc->aaw[i]->aw[j]->w);
         }
         printf("(%uw)\n", aawc->aaw[i]->al); 
+    }
+    printf("\n"); 
+    for(i=0;i<aawc->ppsz; i++) {
+        printf("%i ", aawc->ppa[i]);
+    }
+    printf("\n"); 
+}
+
+void prtaawcp0(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i, j;
+    for(i=0;i<aawc->numl;++i) {
+        // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+        for(j=0;j<aawc->aaw[i]->al;++j) {
+            if(aawc->aaw[i]->aw[j]->t == STEF)
+                printf("%s:F", aawc->aaw[i]->aw[j]->w);
+            }
+        }
+    }
+    printf("\n"); 
+    for(i=0;i<aawc->ppsz; i++) {
+        printf("%i ", aawc->ppa[i]);
+    }
+    printf("\n"); 
+}
+
+void prtaawcp1(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i, j;
+    printf("Numlines = %zu\n", aawc->numl;
+    for(i=0;i<aawc->numl;++i) {
+        // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+        for(j=0;j<aawc->aaw[i]->al;++j) {
+            if(aawc->aaw[i]->aw[j]->t == STEF)
+                printf("%s:F", aawc->aaw[i]->aw[j]->w);
+            }
+        }
     }
     printf("\n"); 
     for(i=0;i<aawc->ppsz; i++) {
@@ -302,7 +339,7 @@ int main(int argc, char *argv[])
 
     aaw_c *aawc=processinpf(argv[1]);
 
-    prtaawcdat3(aawc);
+    prtaawcdat2(aawc);
     // prtaawcdbg(aawc);
     printf("Numlines: %zu\n", aawc->numl); 
     printf("Numparas: %d\n", aawc->ppsz); 
