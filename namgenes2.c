@@ -169,17 +169,18 @@ void mu_nam2(aaw_c *aawc, snodm **stam, unsigned tsz, int hi)
     return;
 }
 
-void mu_nam22(aaw_c *aawc, snodm **stam, unsigned tsz, int hi, snodm **stam1, unsigned tsz1, int hi1)
+void mu_nam22f(aaw_c *aawc, snodm **stam, unsigned tsz, int hi, snodm **stam1, unsigned tsz1, int hi1, char *fn)
 {
-    /* if there's no matchin ht efirst has, try the second */
+    /* outputting to file */
     unsigned i, j;
     snodm *tsnod0, *tsnod2;
     unsigned tint, tint1;
     boole ma0, ma;
     int nummisses=0, nummisses1=0;
+    FILE *fp=fopen(fn,"w");
 
     for(i=0; i< aawc->numl; ++i) {
-        printf("%s: ", aawc->aaw[i]->aw[0]->w);
+        // fprintf(fp, "%s: ", aawc->aaw[i]->aw[0]->w);
         for(j=1;j<aawc->aaw[i]->al;++j) {
             ma=0;
             tint=hashit(aawc->aaw[i]->aw[j]->w, tsz); // hash the snpname
@@ -189,7 +190,7 @@ void mu_nam22(aaw_c *aawc, snodm **stam, unsigned tsz, int hi, snodm **stam1, un
                 if( (stam1[tint1] == NULL) ) {
                     nummisses1++;
                     if(j==aawc->aaw[i]->al-1) // if it happens to be the last in hte list
-                        putchar('\n');
+                        fprintf(fp, "\n");
                 }
                 continue; // blank entry, no match, so skip.
             }
@@ -197,7 +198,7 @@ void mu_nam22(aaw_c *aawc, snodm **stam, unsigned tsz, int hi, snodm **stam1, un
             tsnod2=stam[tint];
             while( (tsnod2 != NULL) ) {
                 if(!strcmp(tsnod2->aw->aw[hi]->w, aawc->aaw[i]->aw[j]->w)) {
-                    printf((j==aawc->aaw[i]->al-1)?"%s\n":"%s ", tsnod2->aw->aw[1]->w);
+                    fprintf(fp, (j==aawc->aaw[i]->al-1)?"%s\n":"%s ", tsnod2->aw->aw[1]->w);
                     ma0=1;
                     aawc->aaw[i]->aw[j]->ma1 = 1;
                     break;
@@ -210,7 +211,7 @@ void mu_nam22(aaw_c *aawc, snodm **stam, unsigned tsz, int hi, snodm **stam1, un
                 tsnod2=stam1[tint1];
                 while( (tsnod2 != NULL) ) {
                     if(!strcmp(tsnod2->aw->aw[hi1]->w, aawc->aaw[i]->aw[j]->w)) {
-                        printf((j==aawc->aaw[i]->al-1)?"%s\n":"%s ", tsnod2->aw->aw[1]->w);
+                        fprintf(fp, (j==aawc->aaw[i]->al-1)?"%s\n":"%s ", tsnod2->aw->aw[1]->w);
                         ma=1;
                         aawc->aaw[i]->aw[j]->ma2 = 1;
                         break;
@@ -221,12 +222,12 @@ void mu_nam22(aaw_c *aawc, snodm **stam, unsigned tsz, int hi, snodm **stam1, un
                 if(!ma) {
                     nummisses1++;
                     if(j==aawc->aaw[i]->al-1) // if it happens to be the last in hte list
-                        putchar('\n'); // nothing else required.
+                        fprintf(fp, "\n");
                 }
             }
         }
     }
-    printf("Nummisses = %i; nummisses1= %i\n", nummisses, nummisses1); 
+    fclose(fp);
     return;
 }
 
@@ -247,7 +248,9 @@ void mu_nam22_(aaw_c *aawc, snodm **stam, unsigned tsz, int hi, snodm **stam1, u
             if( (stam[tint] == NULL) ) {
                 tint1=hashit(aawc->aaw[i]->aw[j]->w, tsz1); // hash the snpname
                 nummisses++;
+                printf("No entry in HT1 for: %s\n", aawc->aaw[i]->aw[j]->w); 
                 if( (stam1[tint1] == NULL) ) {
+                    printf("No entry in HT2 for: %s\n", aawc->aaw[i]->aw[j]->w); 
                     nummisses1++;
                 }
                 continue; // blank entry, no match, so skip.
@@ -264,6 +267,7 @@ void mu_nam22_(aaw_c *aawc, snodm **stam, unsigned tsz, int hi, snodm **stam1, u
                 tsnod2=tsnod2->n;
             }
             if(!ma0) {
+                printf("HT1 entries exhausted, no match for: %s\n", aawc->aaw[i]->aw[j]->w); 
                 nummisses++;
                 tsnod2=stam1[tint1];
                 while( (tsnod2 != NULL) ) {
@@ -276,6 +280,7 @@ void mu_nam22_(aaw_c *aawc, snodm **stam, unsigned tsz, int hi, snodm **stam1, u
                     tsnod2=tsnod2->n;
                 }
                 if(!ma) {
+                    printf("HT2 entries exhausted, no match for: %s\n", aawc->aaw[i]->aw[j]->w); 
                     nummisses1++;
                 }
             }
@@ -517,124 +522,6 @@ void prtaawcplain2(aaw_c *aawc) /* print line and word details, but not the word
     }
 }
 
-aaw_c *processinpf(char *fname)
-{
-    /* declarations */
-    FILE *fp=fopen(fname,"r");
-    int i;
-    size_t couc /*count chars per line */, couw=0 /* count words */;
-    int c, oldc='\0';
-    boole inword=0;
-    boole intitle=0;
-    unsigned lbuf=LBUF /* buffer for number of lines */, cbuf=CBUF /* char buffer for size of w_c's: reused for every word */;
-    aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
-
-    while( (c=fgetc(fp)) != EOF) {
-        if(c=='>')
-            intitle=1;
-        else if((intitle) & (oldc=='\n'))
-            intitle=0;
-        if((c==' ') & !intitle)
-            continue;
-        if( ((c==' ') & intitle) | (c=='"') | (c=='=') | (c=='|') | (c== '\n') | (c == '\t') ) {
-            if( inword==1) { /* cue word-ending procedure */
-                aawc->aaw[aawc->numl]->aw[couw]->w[couc++]='\0';
-                aawc->aaw[aawc->numl]->aw[couw]->lp1=couc;
-                norm_wc(aawc->aaw[aawc->numl]->aw+couw);
-                couw++; /* verified: this has to be here */
-            }
-            if(c=='\n') { /* cue line-ending procedure */
-                if(aawc->numl ==lbuf-1) {
-                    lbuf += LBUF;
-                    aawc->aaw=realloc(aawc->aaw, lbuf*sizeof(aw_c*));
-                    for(i=lbuf-LBUF; i<lbuf; ++i)
-                        aawc->aaw[i]=crea_awc(WABUF);
-                }
-                aawc->aaw[aawc->numl]->al=couw;
-                norm_awc(aawc->aaw+aawc->numl);
-                aawc->numl++;
-                couw=0;
-            }
-            inword=0;
-        } else if(inword==0) { /* a normal character opens word */
-            if(couw ==aawc->aaw[aawc->numl]->ab-1) /* new word opening */
-                reall_awc(aawc->aaw+aawc->numl, WABUF);
-            couc=0;
-            cbuf=CBUF;
-            aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-            inword=1;
-        } else if(inword) { /* simply store */
-            if(couc == cbuf-1)
-                reall_wc(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
-            aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-        }
-        oldc=c;
-    } /* end of big for statement */
-    fclose(fp);
-
-    /* normalization stage */
-    for(i=aawc->numl; i<lbuf; ++i) {
-        free_awc(aawc->aaw+i);
-    }
-    aawc->aaw=realloc(aawc->aaw, aawc->numl*sizeof(aw_c*));
-
-    return aawc;
-}
-
-aaw_c *processinpf1l(char *fname)
-{
-    /* declarations */
-    FILE *fp=fopen(fname,"r");
-    int i;
-    size_t couc /*count chars per line */, couw=0 /* count words */;
-    int c;
-    boole inword=0;
-    unsigned lbuf=LBUF /* buffer for number of lines */, cbuf=CBUF /* char buffer for size of w_c's: reused for every word */;
-    aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
-
-    while( (c=fgetc(fp)) != EOF) {
-        if(c=='\n') { /* cue line-ending procedure */
-            if( inword==1) { /* cue word-ending procedure */
-                aawc->aaw[aawc->numl]->aw[couw]->w[couc++]='\0';
-                aawc->aaw[aawc->numl]->aw[couw]->lp1=couc;
-                norm_wc(aawc->aaw[aawc->numl]->aw+couw);
-                couw++; /* verified: this has to be here */
-            }
-            if(aawc->numl ==lbuf-1) {
-                lbuf += LBUF;
-                aawc->aaw=realloc(aawc->aaw, lbuf*sizeof(aw_c*));
-                for(i=lbuf-LBUF; i<lbuf; ++i)
-                    aawc->aaw[i]=crea_awc(WABUF);
-            }
-            aawc->aaw[aawc->numl]->al=couw;
-            norm_awc(aawc->aaw+aawc->numl);
-            aawc->numl++;
-            couw=0;
-            inword=0;
-        } else if(inword==0) { /* a normal character opens word */
-            if(couw ==aawc->aaw[aawc->numl]->ab-1) /* new word opening */
-                reall_awc(aawc->aaw+aawc->numl, WABUF);
-            couc=0;
-            cbuf=CBUF;
-            aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-            inword=1;
-        } else if(inword) { /* simply store */
-            if(couc == cbuf-1)
-                reall_wc(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
-            aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-        }
-    } /* end of big for statement */
-    fclose(fp);
-
-    /* normalization stage */
-    for(i=aawc->numl; i<lbuf; ++i) {
-        free_awc(aawc->aaw+i);
-    }
-    aawc->aaw=realloc(aawc->aaw, aawc->numl*sizeof(aw_c*));
-
-    return aawc;
-}
-
 aaw_c *processinpf0(char *fname)
 {
     /* declarations */
@@ -695,14 +582,15 @@ aaw_c *processinpf0(char *fname)
 
 void prtusage()
 {
-    printf("Program \"namgenes\" takes two name files 1) a 4 column one, where index 2 is entrezid, and 2) the geneset file\n");
+    printf("Program \"namgenes2\" takes 4 args: 2 name tsv files 1) a 4 column one, where index 2 is entrezid, 2) a two column one where index 0 is entrezid 3) the geneset file and 4) output file\n");
+    printf("Example usage: ./namgenes2 genes2.tsv id2sy.tsv eids.txt oo.out\n");
     exit(EXIT_FAILURE);
 }
 
 int main(int argc, char *argv[])
 {
     /* argument accounting */
-    if(argc!=4)
+    if(argc!=5)
         prtusage();
 
     aaw_c *aawc=processinpf0(argv[1]);
@@ -717,15 +605,15 @@ int main(int argc, char *argv[])
     unsigned htsz1=givehtsz(aawc1->numl);
     snodm **stam1 = hashnam(aawc1, htsz1, 0);
     // mu_nam0(aawc2, stam1, htsz1, 0);
-    mu_nam22_(aawc2, stam, htsz, 2, stam1, htsz1, 0);
+    mu_nam22f(aawc2, stam, htsz, 2, stam1, htsz1, 0, argv[4]);
 
     // check which id's did not match.
-    for(i=0; i< aawc2->numl; ++i) {
-        for(j=1;j<aawc2->aaw[i]->al;++j)
-            if((!aawc2->aaw[i]->aw[j]->ma1) && (!aawc2->aaw[i]->aw[j]->ma2))
-                printf("%s ", aawc2->aaw[i]->aw[j]->w);
-    }
-    printf("\n"); 
+    // for(i=0; i< aawc2->numl; ++i) {
+    //     for(j=1;j<aawc2->aaw[i]->al;++j)
+    //         if((!aawc2->aaw[i]->aw[j]->ma1) && (!aawc2->aaw[i]->aw[j]->ma2))
+    //             printf("%s ", aawc2->aaw[i]->aw[j]->w);
+    // }
+    // printf("\n"); 
 
     freechainharr(stam, htsz);
     freechainharr(stam1, htsz1);
