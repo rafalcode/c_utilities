@@ -171,7 +171,7 @@ void mu_nam2(aaw_c *aawc, snodm **stam, unsigned tsz, int hi)
 
 void mu_nam22f(aaw_c *aawc, snodm **stam, unsigned tsz, int hi, snodm **stam1, unsigned tsz1, int hi1, char *fn)
 {
-    /* outputting to file */
+    /* outputting to file NOTE with commas! */
     unsigned i, j;
     snodm *tsnod0, *tsnod2;
     unsigned tint, tint1;
@@ -198,7 +198,7 @@ void mu_nam22f(aaw_c *aawc, snodm **stam, unsigned tsz, int hi, snodm **stam1, u
             tsnod2=stam[tint];
             while( (tsnod2 != NULL) ) {
                 if(!strcmp(tsnod2->aw->aw[hi]->w, aawc->aaw[i]->aw[j]->w)) {
-                    fprintf(fp, (j==aawc->aaw[i]->al-1)?"%s\n":"%s ", tsnod2->aw->aw[1]->w);
+                    fprintf(fp, (j==aawc->aaw[i]->al-1)?"%s\n":"%s,", tsnod2->aw->aw[1]->w);
                     ma0=1;
                     aawc->aaw[i]->aw[j]->ma1 = 1;
                     break;
@@ -211,7 +211,7 @@ void mu_nam22f(aaw_c *aawc, snodm **stam, unsigned tsz, int hi, snodm **stam1, u
                 tsnod2=stam1[tint1];
                 while( (tsnod2 != NULL) ) {
                     if(!strcmp(tsnod2->aw->aw[hi1]->w, aawc->aaw[i]->aw[j]->w)) {
-                        fprintf(fp, (j==aawc->aaw[i]->al-1)?"%s\n":"%s ", tsnod2->aw->aw[1]->w);
+                        fprintf(fp, (j==aawc->aaw[i]->al-1)?"%s\n":"%s,", tsnod2->aw->aw[1]->w);
                         ma=1;
                         aawc->aaw[i]->aw[j]->ma2 = 1;
                         break;
