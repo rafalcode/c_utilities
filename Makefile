@@ -6,7 +6,7 @@ DBG2CFLAGS=-g -Wall -DDBG2
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
 
 LIBS=-lgsl -lgslcblas -lm
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d parard ahread ahread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4 pedsta pedsta0 mpdmu2 mpdmu2_d mpdmu3 mpdmu3_d mpdmu4 mpdmu4_d tpedsta_d bglsta bglsta_d bglvset vttrd genrd ssrd ssrd_d blard blard_d blard2 blard2_d rurd fard fard_d fard2 paredown f3 f4 pare0 pare2 pare3 onel morel vrd0 chktasty tabcmatch tpedsta2 namgenes2 namgenes namsets repinfam csvrd fintimrd csvrdh srtfix sentin sentinu u0 tmsee pread pread0
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d parard ahread ahread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4 pedsta pedsta0 mpdmu2 mpdmu2_d mpdmu3 mpdmu3_d mpdmu4 mpdmu4_d tpedsta_d bglsta bglsta_d bglvset vttrd genrd ssrd ssrd_d blard blard_d blard2 blard2_d rurd fard fard_d fard2 paredown f3 f4 pare0 pare2 pare3 onel morel vrd0 chktasty tabcmatch tpedsta2 namgenes2 namgenes namsets repinfam csvrd fintimrd csvrdh srtfix sentin sentinu u0 tmsee pread pread0 rdog0
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -135,6 +135,9 @@ genread0: genread0.c
 genread0_d: genread0.c
 	${CC} ${DBGCFLAGS} -DDBG -o $@ $^
 
+#read a discogs tracklist
+rdog0: rdog0.c
+	${CC} ${CFLAGS} -o $@ $^
 # using genread0 to do a ped comparator
 pedcmp: pedcmp.c
 	${CC} ${CFLAGS} -o $@ $^
