@@ -1,4 +1,7 @@
-/* vttgo2: pretty stupid program relies on line indices to print out.
+/* vttgo3: taken from vtggo2
+ * accepts two sub files (say Russian and then English)
+ * only works with two autosubs.
+ * Manual subs are totally different, do not try with them
  * BEWARE spaces after last word in line mplayer/mpv very fussy about these.*/
 #include<stdio.h>
 #include<stdlib.h>
@@ -144,7 +147,7 @@ void prtaawcdbg(aaw_c *aawc)
     }
 }
 
-void prtspec(aaw_c *aawc)
+void prtspec(aaw_c *aawc, aaw_c *aawc2)
 {
     int i, j, k;
     int ii;
@@ -159,7 +162,7 @@ void prtspec(aaw_c *aawc)
             printf("\n"); 
         } else {
             ii=(i-12)%8;
-            if((ii==0) | (ii==5) | (ii==6)) {
+            if(ii==0) {
                 // printf("[i==%i]: ", i);
                 for(j=0;j<aawc->aaw[i]->al;++j) {
                     for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
@@ -168,7 +171,77 @@ void prtspec(aaw_c *aawc)
                         putchar(' ');
                 }
                 printf("\n"); 
+            } else if(ii==5) {
+                for(j=0;j<aawc->aaw[i]->al;++j) {
+                    for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
+                        putchar(aawc->aaw[i]->aw[j]->w[k]);
+                    if(j!=aawc->aaw[i]->al-1)
+                        putchar(' ');
+                }
+                printf("\n"); 
+                for(j=0;j<aawc2->aaw[i]->al;++j) {
+                    for(k=0;k<aawc2->aaw[i]->aw[j]->lp1-1; k++)
+                        putchar(aawc2->aaw[i]->aw[j]->w[k]);
+                    if(j!=aawc2->aaw[i]->al-1)
+                        putchar(' ');
+                }
+                printf("\n"); 
+            } else if(ii==6)
+                printf("\n"); 
+        }
+    }
+}
+
+void prtspec2(aaw_c *aawc, aaw_c *aawc2)
+{
+    int i, j, k;
+    int ii;
+    for(i=0;i<aawc->numl;++i) {
+        if((i<8) & (i!=5)) {
+            for(j=0;j<aawc->aaw[i]->al;++j) {
+                for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
+                    putchar(aawc->aaw[i]->aw[j]->w[k]);
+                if(j!=aawc->aaw[i]->al-1)
+                    putchar(' ');
             }
+            printf("\n"); 
+            if(i==6) {
+                for(j=0;j<aawc2->aaw[i]->al;++j) {
+                    for(k=0;k<aawc2->aaw[i]->aw[j]->lp1-1; k++)
+                        putchar(aawc2->aaw[i]->aw[j]->w[k]);
+                    if(j!=aawc2->aaw[i]->al-1)
+                        putchar(' ');
+                }
+                printf("\n"); 
+            }
+        } else {
+            ii=(i-12)%8;
+            if(ii==0) {
+                // printf("[i==%i]: ", i);
+                for(j=0;j<aawc->aaw[i]->al;++j) {
+                    for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
+                        putchar(aawc->aaw[i]->aw[j]->w[k]);
+                    if(j!=aawc->aaw[i]->al-1)
+                        putchar(' ');
+                }
+                printf("\n"); 
+            } else if(ii==5) {
+                for(j=0;j<aawc->aaw[i]->al;++j) {
+                    for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
+                        putchar(aawc->aaw[i]->aw[j]->w[k]);
+                    if(j!=aawc->aaw[i]->al-1)
+                        putchar(' ');
+                }
+                printf("\n"); 
+                for(j=0;j<aawc2->aaw[i]->al;++j) {
+                    for(k=0;k<aawc2->aaw[i]->aw[j]->lp1-1; k++)
+                        putchar(aawc2->aaw[i]->aw[j]->w[k]);
+                    if(j!=aawc2->aaw[i]->al-1)
+                        putchar(' ');
+                }
+                printf("\n"); 
+            } else if(ii==6)
+                printf("\n"); 
         }
     }
 }
@@ -235,15 +308,17 @@ aaw_c *processinpf(char *fname)
 int main(int argc, char *argv[])
 {
     /* argument accounting */
-    if(argc!=2) {
-        printf("Error. Pls supply argument (name of text file).\n");
+    if(argc!=3) {
+        printf("Error. Pls supply 2 arguments: first and second subtitle files.\n");
         exit(EXIT_FAILURE);
     }
 
     aaw_c *aawc=processinpf(argv[1]);
-    prtspec(aawc);
+    aaw_c *aawc2=processinpf(argv[2]);
+    prtspec2(aawc, aawc2);
 
     free_aawc(&aawc);
+    free_aawc(&aawc2);
 
     return 0;
 }
