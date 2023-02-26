@@ -18,3 +18,12 @@ There would have only one word per line.
 * a plink-alike stats reader
 * ran into issue of hashing on chr/pos strings, which is fine for
 * plink must be 
+
+# srtfix and vttgo3
+And similar sound file are for YT downloaded autosubs (not manual subs)
+srtfix (a delay program) actually interprets the timings .. not so sophicated mind you 
+ebause they are all the same format in YT VTT so not strtok enecessary.
+vttgo also very simplistic, again the lines are highly regular so you 
+can rey on indices.
+Note no special requirements for Cyrillic, this must be UTF-8 at work behind the scenes.
+
