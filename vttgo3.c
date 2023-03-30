@@ -196,7 +196,8 @@ void prtspec2(aaw_c *aawc, aaw_c *aawc2)
 {
     int i, j, k;
     int ii;
-    for(i=0;i<aawc->numl;++i) {
+    int leastlines=(aawc->numl>aawc2->numl)?aawc2->numl:aawc->numl;
+    for(i=0;i<leastlines;++i) {
         if((i<8) & (i!=5)) {
             for(j=0;j<aawc->aaw[i]->al;++j) {
                 for(k=0;k<aawc->aaw[i]->aw[j]->lp1-1; k++)
