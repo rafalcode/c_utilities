@@ -258,30 +258,93 @@ void prtaawcplain00(aaw_c *aawc) /* print line and word details, but not the wor
 void prtaawcplainc7(aaw_c *aawc) /* print line and word details, but not the words themselves */
 {
     int i, j;
+    int sta, end;
     for(i=0;i<aawc->numl;++i) {
         printf("%s(l.%i): ", aawc->aaw[i]->aw[6]->w, aawc->aaw[i]->aw[6]->lp1);
+        sta=0;
         if(aawc->aaw[i]->avc !=NULL) {
-            printf("c7 semicolon pos: "); 
-            for(j=0;j<aawc->aaw[i]->avc->vsz;++j)
-                printf("%i ", aawc->aaw[i]->avc->v[j]);
+            for(j=0;j<aawc->aaw[i]->avc->vsz;++j) {
+                end=aawc->aaw[i]->avc->v[j]-1;
+                printf("%i->%i ", sta, end);
+                sta=aawc->aaw[i]->avc->v[j]+1;
+            }
+            end=aawc->aaw[i]->aw[6]->lp1-1;
+            printf("%i->%i ", sta, end);
         } else
             printf("No c7 semicolons."); 
         printf("\n"); 
     }
 }
 
-void prtaawcplain2(aaw_c *aawc) /* print line and word details, but not the words themselves */
+void prtaawcplainav0(aaw_c *aawc) /* print line and word details, but not the words themselves */
 {
-    int i, j;
+    int i, j, k, kk;
+    int sta, end;
     for(i=0;i<aawc->numl;++i) {
-        printf("L%u#C%u) ", i, aawc->aaw[i]->al); 
-        for(j=0;j<aawc->aaw[i]->al;++j) {
-            printf("sz%u:", aawc->aaw[i]->aw[j]->lp1);
-            if(aawc->aaw[i]->aw[j]->lp1==1)
-                printf((j!=aawc->aaw[i]->al-1)?"%s ":"%s\n", "EEE");
-            else
-                printf((j!=aawc->aaw[i]->al-1)?"%s ":"%s\n", aawc->aaw[i]->aw[j]->w);
+        printf("C7length=%i::",aawc->aaw[i]->aw[6]->lp1-1);
+        if(aawc->aaw[i]->avc !=NULL) {
+            sta=0;
+            for(k=0;k<aawc->aaw[i]->avc->vsz;++k) {
+                end=aawc->aaw[i]->avc->v[k];
+                for(kk=sta;kk<end;++kk)
+                    putchar(aawc->aaw[i]->aw[6]->w[kk]);
+                putchar(','); 
+                for(j=0;j<aawc->aaw[i]->al;++j) {
+                    if(j==6) continue;
+                    printf((j!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[j]->w);
+                }
+                sta=aawc->aaw[i]->avc->v[k]+1;
+            }
+            /* last semicolon */
+            end=aawc->aaw[i]->aw[6]->lp1-1;
+            for(kk=sta;kk<end;++kk)
+                putchar(aawc->aaw[i]->aw[6]->w[kk]);
+            putchar(','); 
+            for(j=0;j<aawc->aaw[i]->al;++j)
+                printf((j!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[j]->w);
+        } else if(aawc->aaw[i]->aw[6]->lp1>1) {
+            printf("%s,", aawc->aaw[i]->aw[6]->w);
+            for(j=0;j<aawc->aaw[i]->al;++j)
+                printf((j!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[j]->w);
+        } else {
+            putchar(','); // no semicolon
+            for(j=0;j<aawc->aaw[i]->al;++j)
+                printf((j!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[j]->w);
         }
+    }
+}
+
+void prtaawcplainav(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i, j, k, kk;
+    int sta, end;
+    for(i=0;i<aawc->numl;++i) {
+        //col7:
+        if(aawc->aaw[i]->avc !=NULL) {
+            sta=0;
+            for(k=0;k<aawc->aaw[i]->avc->vsz;++k) {
+                for(j=0;j<6;++j)
+                    printf("%s,", aawc->aaw[i]->aw[j]->w);
+                end=aawc->aaw[i]->avc->v[k];
+                for(kk=sta;kk<end;++kk)
+                    putchar(aawc->aaw[i]->aw[6]->w[kk]);
+                putchar(','); 
+                for(j=7;j<aawc->aaw[i]->al;++j)
+                    printf((j!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[j]->w);
+                sta=aawc->aaw[i]->avc->v[k]+1;
+            }
+            /* last semicolon */
+            end=aawc->aaw[i]->aw[6]->lp1-1;
+            for(j=0;j<6;++j)
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            for(kk=sta;kk<end;++kk)
+                putchar(aawc->aaw[i]->aw[6]->w[kk]);
+            putchar(','); 
+            for(j=7;j<aawc->aaw[i]->al;++j)
+                printf((j!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[j]->w);
+        } else
+            for(j=0;j<aawc->aaw[i]->al;++j)
+                printf((j!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[j]->w);
     }
 }
 
@@ -503,73 +566,6 @@ aaw_c *processinpf(char *fname)
     return aawc;
 }
 
-aaw_c *processincsv0(char *fname)
-{
-    /* declarations */
-    FILE *fp=fopen(fname,"r");
-    int i;
-    size_t couc /*count chars per line */, couw=0 /* count words */;
-    int c, oldc='\0';
-    boole inword=0;
-    unsigned lbuf=LBUF /* buffer for number of lines */, cbuf=CBUF /* char buffer for size of w_c's: reused for every word */;
-    aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
-
-    while( (c=fgetc(fp)) != EOF) {
-        if(c=='"')
-            continue;
-        if( (c== '\n') | (c == ',') ) {
-            if(oldc==',') {
-                if(couw ==aawc->aaw[aawc->numl]->ab-1) /* new word opening */
-                    reall_awc(aawc->aaw+aawc->numl, WABUF);
-                couw++; /* verified: this has to be here */
-                aawc->aaw[aawc->numl]->aw[couw]->w[0]='\0';
-                aawc->aaw[aawc->numl]->aw[couw]->lp1=1;
-                norm_wc(aawc->aaw[aawc->numl]->aw+couw);
-            } else if(inword==1) {
-                aawc->aaw[aawc->numl]->aw[couw]->w[couc++]='\0';
-                aawc->aaw[aawc->numl]->aw[couw]->lp1=couc;
-                norm_wc(aawc->aaw[aawc->numl]->aw+couw);
-                couw++; /* verified: this has to be here */
-            }
-            if(c=='\n') { /* cue line-ending procedure */
-                if(aawc->numl ==lbuf-1) {
-                    lbuf += LBUF;
-                    aawc->aaw=realloc(aawc->aaw, lbuf*sizeof(aw_c*));
-                    for(i=lbuf-LBUF; i<lbuf; ++i)
-                        aawc->aaw[i]=crea_awc(WABUF);
-                }
-                aawc->aaw[aawc->numl]->al=couw;
-                norm_awc(aawc->aaw+aawc->numl);
-                aawc->numl++;
-                couw=0;
-            }
-            inword=0;
-        } else if(inword==0) {
-            if(couw ==aawc->aaw[aawc->numl]->ab-1) /* new word opening */
-                reall_awc(aawc->aaw+aawc->numl, WABUF);
-            couc=0;
-            cbuf=CBUF;
-            aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-            inword=1;
-        } else if(inword) { /* simply store */
-            if(couc == cbuf-1)
-                reall_wc(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
-            aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-            /* if word is a candidate for a NUM or PNI (i.e. via its first character), make sure it continues to obey rules: a MACRO */
-        }
-        oldc=c;
-    } /* end of big for statement */
-    fclose(fp);
-
-    /* normalization stage */
-    for(i=aawc->numl; i<lbuf; ++i) {
-        free_awc(aawc->aaw+i);
-    }
-    aawc->aaw=realloc(aawc->aaw, aawc->numl*sizeof(aw_c*));
-
-    return aawc;
-}
-
 aaw_c *processincsv(char *fname)
 {
     /* declarations */
@@ -586,15 +582,15 @@ aaw_c *processincsv(char *fname)
             if(oldc==',') {
                 if(couw ==aawc->aaw[aawc->numl]->ab-1) /* new word opening */
                     reall_awc(aawc->aaw+aawc->numl, WABUF);
-                couw++; /* verified: this has to be here */
                 aawc->aaw[aawc->numl]->aw[couw]->w[0]='\0';
                 aawc->aaw[aawc->numl]->aw[couw]->lp1=1;
-                if(couw==6)
-                    norm_avc(aawc->aaw[aawc->numl]->avc);
                 norm_wc(aawc->aaw[aawc->numl]->aw+couw);
+                couw++; /* verified: this has to be here */
             } else if(inword==1) {
                 aawc->aaw[aawc->numl]->aw[couw]->w[couc++]='\0';
                 aawc->aaw[aawc->numl]->aw[couw]->lp1=couc;
+                if((couw==6) & (aawc->aaw[aawc->numl]->avc!=NULL))
+                    norm_avc(aawc->aaw[aawc->numl]->avc);
                 norm_wc(aawc->aaw[aawc->numl]->aw+couw);
                 couw++; /* verified: this has to be here */
             }
@@ -674,7 +670,8 @@ int main(int argc, char *argv[])
     aaw_c *aawc=processincsv(argv[1]);
     // prtaawcdbg(aawc);
     // prtaawcplain00(aawc);
-    prtaawcplainc7(aawc);
+    // prtaawcplainc7(aawc);
+    prtaawcplainav(aawc);
     // prtaawcsum2(aawc); // printout original text as well as you can.
     free_aawc(&aawc);
 
