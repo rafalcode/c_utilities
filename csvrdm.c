@@ -124,6 +124,8 @@ aw_c *crea_awc(unsigned initsz)
     awc->al=awc->ab;
     awc->avc=NULL;
     awc->av2=NULL;
+    awc->av3=NULL;
+    awc->av4=NULL;
     awc->aw=malloc(awc->ab*sizeof(w_c*));
     for(i=0;i<awc->ab;++i) 
         awc->aw[i]=crea_wc(CBUF);
@@ -166,6 +168,10 @@ void free_awc(aw_c **awc)
         free_avc(tawc->avc);
     if(tawc->av2!=NULL)
         free_avc(tawc->av2);
+    if(tawc->av3!=NULL)
+        free_avc(tawc->av3);
+    if(tawc->av4!=NULL)
+        free_avc(tawc->av4);
     free(tawc->aw); /* unbelieveable: I left this out, couldn't find where I leaking the memory! */
     free(tawc);
     return;
@@ -314,12 +320,26 @@ void prtaawcplainc78(aaw_c *aawc) /* print line and word details, but not the wo
 
 void prtaawcplainc78_(aaw_c *aawc) /* print line and word details, but not the words themselves */
 {
-    int i, j;
-    int sta, end;
+    int i;
     for(i=0;i<aawc->numl;++i) {
         if((aawc->aaw[i]->avc !=NULL) & (aawc->aaw[i]->av2 !=NULL))
             if(aawc->aaw[i]->avc->vsz != aawc->aaw[i]->av2->vsz)
                 printf("PROBLEM@l%i: c7sc:%i != c8sc:%i\n", i, aawc->aaw[i]->avc->vsz, aawc->aaw[i]->av2->vsz);
+    }
+}
+
+void prtaawcplainc910_(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i;
+    for(i=0;i<aawc->numl;++i) {
+        if((aawc->aaw[i]->avc !=NULL) & (aawc->aaw[i]->av2 !=NULL))
+            if(aawc->aaw[i]->avc->vsz != aawc->aaw[i]->av2->vsz)
+                printf("PROBLEM@l%i: c7sc:%i != c8sc:%i\n", i, aawc->aaw[i]->avc->vsz, aawc->aaw[i]->av2->vsz);
+        if((aawc->aaw[i]->av3 !=NULL) & (aawc->aaw[i]->av4 !=NULL))
+            if(aawc->aaw[i]->av3->vsz != aawc->aaw[i]->av4->vsz)
+                printf("PROBLEM@l%i: c9sc:%i != c10sc:%i\n", i, aawc->aaw[i]->av3->vsz, aawc->aaw[i]->av4->vsz);
+        if((aawc->aaw[i]->avc !=NULL) & (aawc->aaw[i]->av3 !=NULL))
+            printf("UCSCRGsc=%i vs. GCODEV12sc=%i\n", aawc->aaw[i]->avc->vsz, aawc->aaw[i]->av3->vsz);
     }
 }
 
@@ -395,14 +415,16 @@ void prtaawcplainav(aaw_c *aawc) /* print line and word details, but not the wor
     }
 }
 
-void prtaawcplainav2(aaw_c *aawc) /* print line and word details, but not the words themselves */
+void prtaawcplainav2(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons must be the exact same: they mostly(!) are.*/
 {
     int i, j, k, kk;
     int sta, end;
+    int sta2, end2;
     for(i=0;i<aawc->numl;++i) {
         //col7:
         if(aawc->aaw[i]->avc !=NULL) {
             sta=0;
+            sta2=0;
             for(k=0;k<aawc->aaw[i]->avc->vsz;++k) {
                 for(j=0;j<6;++j)
                     printf("%s,", aawc->aaw[i]->aw[j]->w);
@@ -410,9 +432,14 @@ void prtaawcplainav2(aaw_c *aawc) /* print line and word details, but not the wo
                 for(kk=sta;kk<end;++kk)
                     putchar(aawc->aaw[i]->aw[6]->w[kk]);
                 putchar(','); 
-                for(j=7;j<aawc->aaw[i]->al;++j)
-                    printf((j!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[j]->w);
                 sta=aawc->aaw[i]->avc->v[k]+1;
+                end2=aawc->aaw[i]->av2->v[k];
+                for(kk=sta2;kk<end2;++kk)
+                    putchar(aawc->aaw[i]->aw[7]->w[kk]);
+                putchar(','); 
+                for(j=8;j<aawc->aaw[i]->al;++j)
+                    printf((j!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[j]->w);
+                sta2=aawc->aaw[i]->av2->v[k]+1;
             }
             /* last semicolon */
             end=aawc->aaw[i]->aw[6]->lp1-1;
@@ -421,7 +448,11 @@ void prtaawcplainav2(aaw_c *aawc) /* print line and word details, but not the wo
             for(kk=sta;kk<end;++kk)
                 putchar(aawc->aaw[i]->aw[6]->w[kk]);
             putchar(','); 
-            for(j=7;j<aawc->aaw[i]->al;++j)
+            end2=aawc->aaw[i]->aw[7]->lp1-1;
+            for(kk=sta2;kk<end2;++kk)
+                putchar(aawc->aaw[i]->aw[7]->w[kk]);
+            putchar(','); 
+            for(j=8;j<aawc->aaw[i]->al;++j)
                 printf((j!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[j]->w);
         } else
             for(j=0;j<aawc->aaw[i]->al;++j)
@@ -750,6 +781,10 @@ aaw_c *processincsv2(char *fname) // this one handles the 2 avc's.
                     norm_avc(aawc->aaw[aawc->numl]->avc);
                 else if((couw==7) & (aawc->aaw[aawc->numl]->av2!=NULL))
                     norm_avc(aawc->aaw[aawc->numl]->av2);
+                else if((couw==8) & (aawc->aaw[aawc->numl]->av3!=NULL))
+                    norm_avc(aawc->aaw[aawc->numl]->av3);
+                else if((couw==9) & (aawc->aaw[aawc->numl]->av4!=NULL))
+                    norm_avc(aawc->aaw[aawc->numl]->av4);
                 norm_wc(aawc->aaw[aawc->numl]->aw+couw);
                 couw++; /* verified: this has to be here */
             }
@@ -793,6 +828,22 @@ aaw_c *processincsv2(char *fname) // this one handles the 2 avc's.
                 } else {
                     CONDREALLOCAV(aawc->aaw[aawc->numl]->av2->vsz, aawc->aaw[aawc->numl]->av2->vbf, GBUF, aawc->aaw[aawc->numl]->av2->v, int);
                     aawc->aaw[aawc->numl]->av2->v[aawc->aaw[aawc->numl]->av2->vsz++]=couc-1;
+                }
+            } else if((couw==8) & (c==';')) {
+                if(aawc->aaw[aawc->numl]->av3==NULL) {
+                    aawc->aaw[aawc->numl]->av3 = crea_avc(GBUF);
+                    aawc->aaw[aawc->numl]->av3->v[aawc->aaw[aawc->numl]->av3->vsz++]=couc-1;
+                } else {
+                    CONDREALLOCAV(aawc->aaw[aawc->numl]->av3->vsz, aawc->aaw[aawc->numl]->av3->vbf, GBUF, aawc->aaw[aawc->numl]->av3->v, int);
+                    aawc->aaw[aawc->numl]->av3->v[aawc->aaw[aawc->numl]->av3->vsz++]=couc-1;
+                }
+            } else if((couw==9) & (c==';')) /* col10 */ {
+                if(aawc->aaw[aawc->numl]->av4==NULL) {
+                    aawc->aaw[aawc->numl]->av4 = crea_avc(GBUF);
+                    aawc->aaw[aawc->numl]->av4->v[aawc->aaw[aawc->numl]->av4->vsz++]=couc-1;
+                } else {
+                    CONDREALLOCAV(aawc->aaw[aawc->numl]->av4->vsz, aawc->aaw[aawc->numl]->av4->vbf, GBUF, aawc->aaw[aawc->numl]->av4->v, int);
+                    aawc->aaw[aawc->numl]->av4->v[aawc->aaw[aawc->numl]->av4->vsz++]=couc-1;
                 }
             }
         }
@@ -838,9 +889,8 @@ int main(int argc, char *argv[])
     // prtaawcdbg(aawc);
     // prtaawcplain00(aawc);
     // prtaawcplainc7(aawc);
-    prtaawcplainc78_(aawc);
-    // prtaawcplainav(aawc);
-    // prtaawcsum2(aawc); // printout original text as well as you can.
+    // prtaawcplainc910_(aawc);
+    prtaawcplainav2(aawc);
     free_aawc(&aawc);
 
     return 0;

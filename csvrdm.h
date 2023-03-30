@@ -60,7 +60,10 @@ typedef struct /* aw_c: array of words container */
     w_c **aw;
     unsigned ab;
     unsigned al;
-    av_c *avc;
+    av_c *avc; // for parsing col 7, UCSC refgene
+    av_c *av2; //for parsing the GROUP of UCSC refgene, should be the same vsz!!!!
+    av_c *av3; // for parsing col 9, GENCODEV12 gene
+    av_c *av4; //for parsing col10, GENCODEV12 GROUP
 } aw_c;
 
 typedef struct /* aaw_c: array of array of words container */
