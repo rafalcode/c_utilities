@@ -123,6 +123,7 @@ aw_c *crea_awc(unsigned initsz)
     awc->ab=initsz;
     awc->al=awc->ab;
     awc->avc=NULL;
+    awc->av2=NULL;
     awc->aw=malloc(awc->ab*sizeof(w_c*));
     for(i=0;i<awc->ab;++i) 
         awc->aw[i]=crea_wc(CBUF);
@@ -163,6 +164,8 @@ void free_awc(aw_c **awc)
         free_wc(tawc->aw+i);
     if(tawc->avc!=NULL)
         free_avc(tawc->avc);
+    if(tawc->av2!=NULL)
+        free_avc(tawc->av2);
     free(tawc->aw); /* unbelieveable: I left this out, couldn't find where I leaking the memory! */
     free(tawc);
     return;
@@ -276,6 +279,50 @@ void prtaawcplainc7(aaw_c *aawc) /* print line and word details, but not the wor
     }
 }
 
+void prtaawcplainc78(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i, j;
+    int sta, end;
+    for(i=0;i<aawc->numl;++i) {
+        printf("%s(l.%i): ", aawc->aaw[i]->aw[6]->w, aawc->aaw[i]->aw[6]->lp1);
+        printf("%s(l.%i): ", aawc->aaw[i]->aw[7]->w, aawc->aaw[i]->aw[7]->lp1);
+        sta=0;
+        if(aawc->aaw[i]->avc !=NULL) {
+            for(j=0;j<aawc->aaw[i]->avc->vsz;++j) {
+                end=aawc->aaw[i]->avc->v[j]-1;
+                printf("%i->%i ", sta, end);
+                sta=aawc->aaw[i]->avc->v[j]+1;
+            }
+            end=aawc->aaw[i]->aw[6]->lp1-1;
+            printf("%i->%i ", sta, end);
+        } else
+            printf("No c7 semicolons."); 
+        sta=0;
+        if(aawc->aaw[i]->av2 !=NULL) {
+            for(j=0;j<aawc->aaw[i]->av2->vsz;++j) {
+                end=aawc->aaw[i]->av2->v[j]-1;
+                printf("%i->%i ", sta, end);
+                sta=aawc->aaw[i]->av2->v[j]+1;
+            }
+            end=aawc->aaw[i]->aw[7]->lp1-1;
+            printf("%i->%i ", sta, end);
+        } else
+            printf("No c8 semicolons."); 
+        printf("\n"); 
+    }
+}
+
+void prtaawcplainc78_(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i, j;
+    int sta, end;
+    for(i=0;i<aawc->numl;++i) {
+        if((aawc->aaw[i]->avc !=NULL) & (aawc->aaw[i]->av2 !=NULL))
+            if(aawc->aaw[i]->avc->vsz != aawc->aaw[i]->av2->vsz)
+                printf("PROBLEM@l%i: c7sc:%i != c8sc:%i\n", i, aawc->aaw[i]->avc->vsz, aawc->aaw[i]->av2->vsz);
+    }
+}
+
 void prtaawcplainav0(aaw_c *aawc) /* print line and word details, but not the words themselves */
 {
     int i, j, k, kk;
@@ -315,6 +362,40 @@ void prtaawcplainav0(aaw_c *aawc) /* print line and word details, but not the wo
 }
 
 void prtaawcplainav(aaw_c *aawc) /* print line and word details, but not the words themselves */
+{
+    int i, j, k, kk;
+    int sta, end;
+    for(i=0;i<aawc->numl;++i) {
+        //col7:
+        if(aawc->aaw[i]->avc !=NULL) {
+            sta=0;
+            for(k=0;k<aawc->aaw[i]->avc->vsz;++k) {
+                for(j=0;j<6;++j)
+                    printf("%s,", aawc->aaw[i]->aw[j]->w);
+                end=aawc->aaw[i]->avc->v[k];
+                for(kk=sta;kk<end;++kk)
+                    putchar(aawc->aaw[i]->aw[6]->w[kk]);
+                putchar(','); 
+                for(j=7;j<aawc->aaw[i]->al;++j)
+                    printf((j!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[j]->w);
+                sta=aawc->aaw[i]->avc->v[k]+1;
+            }
+            /* last semicolon */
+            end=aawc->aaw[i]->aw[6]->lp1-1;
+            for(j=0;j<6;++j)
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            for(kk=sta;kk<end;++kk)
+                putchar(aawc->aaw[i]->aw[6]->w[kk]);
+            putchar(','); 
+            for(j=7;j<aawc->aaw[i]->al;++j)
+                printf((j!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[j]->w);
+        } else
+            for(j=0;j<aawc->aaw[i]->al;++j)
+                printf((j!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[j]->w);
+    }
+}
+
+void prtaawcplainav2(aaw_c *aawc) /* print line and word details, but not the words themselves */
 {
     int i, j, k, kk;
     int sta, end;
@@ -642,6 +723,92 @@ aaw_c *processincsv(char *fname)
     return aawc;
 }
 
+aaw_c *processincsv2(char *fname) // this one handles the 2 avc's.
+{
+    /* declarations */
+    FILE *fp=fopen(fname,"r");
+    int i;
+    size_t couc /*count chars per line */, couw=0 /* count words */;
+    int c, oldc='\0';
+    boole inword=0;
+    unsigned lbuf=LBUF /* buffer for number of lines */, cbuf=CBUF /* char buffer for size of w_c's: reused for every word */;
+    aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
+
+    while( (c=fgetc(fp)) != EOF) {
+        if( (c== '\n') | (c == ',') ) {
+            if(oldc==',') {
+                if(couw ==aawc->aaw[aawc->numl]->ab-1) /* new word opening */
+                    reall_awc(aawc->aaw+aawc->numl, WABUF);
+                aawc->aaw[aawc->numl]->aw[couw]->w[0]='\0';
+                aawc->aaw[aawc->numl]->aw[couw]->lp1=1;
+                norm_wc(aawc->aaw[aawc->numl]->aw+couw);
+                couw++; /* verified: this has to be here */
+            } else if(inword==1) /* empty cell */ {
+                aawc->aaw[aawc->numl]->aw[couw]->w[couc++]='\0';
+                aawc->aaw[aawc->numl]->aw[couw]->lp1=couc;
+                if((couw==6) & (aawc->aaw[aawc->numl]->avc!=NULL))
+                    norm_avc(aawc->aaw[aawc->numl]->avc);
+                else if((couw==7) & (aawc->aaw[aawc->numl]->av2!=NULL))
+                    norm_avc(aawc->aaw[aawc->numl]->av2);
+                norm_wc(aawc->aaw[aawc->numl]->aw+couw);
+                couw++; /* verified: this has to be here */
+            }
+            if(c=='\n') { /* cue line-ending procedure */
+                if(aawc->numl ==lbuf-1) {
+                    lbuf += LBUF;
+                    aawc->aaw=realloc(aawc->aaw, lbuf*sizeof(aw_c*));
+                    for(i=lbuf-LBUF; i<lbuf; ++i)
+                        aawc->aaw[i]=crea_awc(WABUF);
+                }
+                aawc->aaw[aawc->numl]->al=couw;
+                norm_awc(aawc->aaw+aawc->numl);
+                aawc->numl++;
+                couw=0;
+            }
+            inword=0;
+        } else if(inword==0) {
+            if(couw ==aawc->aaw[aawc->numl]->ab-1) /* new word opening */
+                reall_awc(aawc->aaw+aawc->numl, WABUF);
+            couc=0;
+            cbuf=CBUF;
+            aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
+            inword=1;
+        } else if(inword) { /* simply store */
+            if(couc == cbuf-1)
+                reall_wc(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
+            aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
+            // locate semcolons in c7:
+            if((couw==6) & (c==';')) {
+                if(aawc->aaw[aawc->numl]->avc==NULL) {
+                    aawc->aaw[aawc->numl]->avc = crea_avc(GBUF);
+                    aawc->aaw[aawc->numl]->avc->v[aawc->aaw[aawc->numl]->avc->vsz++]=couc-1;
+                } else {
+                    CONDREALLOCAV(aawc->aaw[aawc->numl]->avc->vsz, aawc->aaw[aawc->numl]->avc->vbf, GBUF, aawc->aaw[aawc->numl]->avc->v, int);
+                    aawc->aaw[aawc->numl]->avc->v[aawc->aaw[aawc->numl]->avc->vsz++]=couc-1;
+                }
+            } else if((couw==7) & (c==';')) /* col8 */ {
+                if(aawc->aaw[aawc->numl]->av2==NULL) {
+                    aawc->aaw[aawc->numl]->av2 = crea_avc(GBUF);
+                    aawc->aaw[aawc->numl]->av2->v[aawc->aaw[aawc->numl]->av2->vsz++]=couc-1;
+                } else {
+                    CONDREALLOCAV(aawc->aaw[aawc->numl]->av2->vsz, aawc->aaw[aawc->numl]->av2->vbf, GBUF, aawc->aaw[aawc->numl]->av2->v, int);
+                    aawc->aaw[aawc->numl]->av2->v[aawc->aaw[aawc->numl]->av2->vsz++]=couc-1;
+                }
+            }
+        }
+        oldc=c;
+    } /* end of big for statement */
+    fclose(fp);
+
+    /* normalization stage */
+    for(i=aawc->numl; i<lbuf; ++i) {
+        free_awc(aawc->aaw+i);
+    }
+    aawc->aaw=realloc(aawc->aaw, aawc->numl*sizeof(aw_c*));
+
+    return aawc;
+}
+
 void prtusage(void)
 {
     printf("Usage notes: csvrde\n"); 
@@ -667,11 +834,12 @@ int main(int argc, char *argv[])
 
     printf("typeszs: aaw_c: %zu aw_c: %zu w_c: %zu\n", sizeof(aaw_c), sizeof(aw_c), sizeof(w_c));
 
-    aaw_c *aawc=processincsv(argv[1]);
+    aaw_c *aawc=processincsv2(argv[1]);
     // prtaawcdbg(aawc);
     // prtaawcplain00(aawc);
     // prtaawcplainc7(aawc);
-    prtaawcplainav(aawc);
+    prtaawcplainc78_(aawc);
+    // prtaawcplainav(aawc);
     // prtaawcsum2(aawc); // printout original text as well as you can.
     free_aawc(&aawc);
 
