@@ -19,9 +19,9 @@ int catchopts(optstruct *opstru, int oargc, char **oargv)
             case 'e': // max number of empty cells allowed
                 opstru->emp = atoi(optarg);
                 break;
-			case '?':
-				if((optopt == 's') | (optopt == 'e')) {
-					fprintf (stderr, "Option -%c requires an integer.\n", optopt);
+            case '?':
+                if((optopt == 's') | (optopt == 'e')) {
+                    fprintf (stderr, "Option -%c requires an integer.\n", optopt);
                     exit(EXIT_FAILURE);
                 }
             default:
@@ -243,7 +243,7 @@ void prtaawcdata(aaw_c *aawc) /* print line and word details, but not the words 
         }
     }
     printf("\n"); 
-	printf("L is a line, l is length of word, S is normal string, C closing punct, Z, starting cap, Y Starting cap and closing punct.\n"); 
+    printf("L is a line, l is length of word, S is normal string, C closing punct, Z, starting cap, Y Starting cap and closing punct.\n"); 
 }
 
 void prtaawcplain(aaw_c *aawc) /* print line and word details, but not the words themselves */
@@ -457,6 +457,220 @@ void prtaawcplainav2(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons
         } else
             for(j=0;j<aawc->aaw[i]->al;++j)
                 printf((j!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[j]->w);
+    }
+}
+
+void prtaawcplainav30(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons must be the exact same: they mostly(!) are.*/
+{
+    /* no gencode printing */
+    int i, j, k, kk;
+    int sta, end;
+    int sta2, end2;
+
+    //header: first empty cell gets skipped .. sort of a bug.
+    printf("Genename,Genegrp,Cpgname,"); 
+    for(j=0;j<3;++j) {
+        if(j==5) continue;
+        printf("%s,", aawc->aaw[0]->aw[j]->w);
+    }
+    printf("%s,", aawc->aaw[0]->aw[4]->w);
+    for(j=9;j<aawc->aaw[0]->al;++j) {
+        printf((j!=aawc->aaw[0]->al-1)?"%s,":"%s\n", aawc->aaw[0]->aw[j]->w);
+    }
+    for(i=1;i<aawc->numl;++i) {
+        //col7:
+        if(aawc->aaw[i]->avc !=NULL) {
+            sta=0;
+            sta2=0;
+            for(k=0;k<aawc->aaw[i]->avc->vsz;++k) {
+                end=aawc->aaw[i]->avc->v[k];
+                for(kk=sta;kk<end;++kk)
+                    putchar(aawc->aaw[i]->aw[6]->w[kk]);
+                putchar(','); 
+                sta=aawc->aaw[i]->avc->v[k]+1;
+                end2=aawc->aaw[i]->av2->v[k];
+                for(kk=sta2;kk<end2;++kk)
+                    putchar(aawc->aaw[i]->aw[7]->w[kk]);
+                putchar(','); 
+                for(j=0;j<4;++j) {
+                    printf("%s,", aawc->aaw[i]->aw[j]->w);
+                }
+                printf("%s,", aawc->aaw[i]->aw[5]->w);
+                for(j=10;j<aawc->aaw[i]->al;++j) {
+                    printf((j!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[j]->w);
+                }
+                sta2=aawc->aaw[i]->av2->v[k]+1;
+            }
+            /* last semicolon */
+            end=aawc->aaw[i]->aw[6]->lp1-1;
+            for(kk=sta;kk<end;++kk)
+                putchar(aawc->aaw[i]->aw[6]->w[kk]);
+            putchar(','); 
+            end2=aawc->aaw[i]->aw[7]->lp1-1;
+            for(kk=sta2;kk<end2;++kk)
+                putchar(aawc->aaw[i]->aw[7]->w[kk]);
+            putchar(','); 
+            for(j=0;j<4;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            printf("%s,", aawc->aaw[i]->aw[5]->w);
+            for(j=10;j<aawc->aaw[i]->al;++j) {
+                printf((j!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[j]->w);
+            }
+        } else if(aawc->aaw[i]->aw[6]->lp1>1) /* single USCS refgenes */ {
+            printf("%s,", aawc->aaw[i]->aw[6]->w);
+            printf("%s,", aawc->aaw[i]->aw[7]->w);
+            for(j=0;j<4;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            printf("%s,", aawc->aaw[i]->aw[5]->w);
+            for(j=10;j<aawc->aaw[i]->al;++j) {
+                printf((j!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[j]->w);
+            }
+        } else if(aawc->aaw[i]->aw[8]->lp1>1) /* single GENCODEV12 genes */ {
+            printf("%s,", aawc->aaw[i]->aw[8]->w);
+            printf("%s,", aawc->aaw[i]->aw[9]->w);
+            for(j=0;j<4;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            printf("%s,", aawc->aaw[i]->aw[5]->w);
+            for(j=10;j<aawc->aaw[i]->al;++j) {
+                printf((j!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[j]->w);
+            }
+        }
+    }
+}
+
+void prtaawcplainav3(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons must be the exact same: they mostly(!) are.*/
+{
+    /* no gencode printing */
+    int i, j, k, kk;
+    int sta, end;
+    int sta2, end2;
+
+    //header: first empty cell gets skipped .. sort of a bug.
+    printf("Genename,Genegrp,Cpgname,"); 
+    for(j=0;j<3;++j) {
+        if(j==5) continue;
+        printf("%s,", aawc->aaw[0]->aw[j]->w);
+    }
+    printf("%s,", aawc->aaw[0]->aw[4]->w);
+    for(j=9;j<aawc->aaw[0]->al;++j) {
+        printf("%s,", aawc->aaw[0]->aw[j]->w);
+    }
+    printf("UCSCRG/GCV12\n"); 
+    for(i=1;i<aawc->numl;++i) {
+        //col7:
+        if(aawc->aaw[i]->avc !=NULL) {
+            sta=0;
+            sta2=0;
+            for(k=0;k<aawc->aaw[i]->avc->vsz;++k) {
+                end=aawc->aaw[i]->avc->v[k];
+                for(kk=sta;kk<end;++kk)
+                    putchar(aawc->aaw[i]->aw[6]->w[kk]);
+                putchar(','); 
+                sta=aawc->aaw[i]->avc->v[k]+1;
+                end2=aawc->aaw[i]->av2->v[k];
+                for(kk=sta2;kk<end2;++kk)
+                    putchar(aawc->aaw[i]->aw[7]->w[kk]);
+                putchar(','); 
+                for(j=0;j<4;++j) {
+                    printf("%s,", aawc->aaw[i]->aw[j]->w);
+                }
+                printf("%s,", aawc->aaw[i]->aw[5]->w);
+                for(j=10;j<aawc->aaw[i]->al;++j) {
+                    printf("%s,", aawc->aaw[i]->aw[j]->w);
+                }
+                printf("UCSCRG\n"); // Genname coded by UCSC Refgene
+                sta2=aawc->aaw[i]->av2->v[k]+1;
+            }
+            /* last semicolon */
+            end=aawc->aaw[i]->aw[6]->lp1-1;
+            for(kk=sta;kk<end;++kk)
+                putchar(aawc->aaw[i]->aw[6]->w[kk]);
+            putchar(','); 
+            end2=aawc->aaw[i]->aw[7]->lp1-1;
+            for(kk=sta2;kk<end2;++kk)
+                putchar(aawc->aaw[i]->aw[7]->w[kk]);
+            putchar(','); 
+            for(j=0;j<4;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            printf("%s,", aawc->aaw[i]->aw[5]->w);
+            for(j=10;j<aawc->aaw[i]->al;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            printf("UCSCRG\n"); // Genname coded by UCSC Refgene
+        } else if(aawc->aaw[i]->aw[6]->lp1>1) /* single USCS refgenes */ {
+            printf("%s,", aawc->aaw[i]->aw[6]->w);
+            printf("%s,", aawc->aaw[i]->aw[7]->w);
+            for(j=0;j<4;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            printf("%s,", aawc->aaw[i]->aw[5]->w);
+            for(j=10;j<aawc->aaw[i]->al;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            printf("UCSCRG\n"); // Genname coded by UCSC Refgene
+        /* OK, now we[re in gencode territory . they are less consistent than refgen */
+        } else if((aawc->aaw[i]->av3 !=NULL) & (aawc->aaw[i]->av4 !=NULL)) {
+            sta=0;
+            sta2=0;
+            for(k=0;k<aawc->aaw[i]->av3->vsz;++k) {
+                end=aawc->aaw[i]->av3->v[k];
+                for(kk=sta;kk<end;++kk)
+                    putchar(aawc->aaw[i]->aw[8]->w[kk]);
+                putchar(','); 
+                sta=aawc->aaw[i]->av3->v[k]+1;
+                end2=aawc->aaw[i]->av4->v[k];
+                for(kk=sta2;kk<end2;++kk)
+                    putchar(aawc->aaw[i]->aw[9]->w[kk]);
+                putchar(','); 
+                for(j=0;j<4;++j) {
+                    printf("%s,", aawc->aaw[i]->aw[j]->w);
+                }
+                printf("%s,", aawc->aaw[i]->aw[5]->w);
+                for(j=10;j<aawc->aaw[i]->al;++j) {
+                    printf("%s,", aawc->aaw[i]->aw[j]->w);
+                }
+                printf("GCV12\n"); // Genname coded by UCSC Refgene
+                sta2=aawc->aaw[i]->av4->v[k]+1;
+            }
+            /* last semicolon */
+            end=aawc->aaw[i]->aw[8]->lp1-1;
+            for(kk=sta;kk<end;++kk)
+                putchar(aawc->aaw[i]->aw[8]->w[kk]);
+            putchar(','); 
+            end2=aawc->aaw[i]->aw[9]->lp1-1;
+            for(kk=sta2;kk<end2;++kk)
+                putchar(aawc->aaw[i]->aw[9]->w[kk]);
+            putchar(','); 
+            for(j=0;j<4;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            printf("%s,", aawc->aaw[i]->aw[5]->w);
+            for(j=10;j<aawc->aaw[i]->al;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            printf("GCV12\n"); // Genname coded by UCSC Refgene
+        } else if((aawc->aaw[i]->aw[8]->lp1>1) & (aawc->aaw[i]->av3 ==NULL) & (aawc->aaw[i]->av4 !=NULL)) {
+            /* GENCODEV12 single gene but several GCV12 groups ... choose the first one */ 
+            printf("%s,", aawc->aaw[i]->aw[8]->w);
+            /* now get first token of GCV12 group */
+            sta=0;
+            end=aawc->aaw[i]->av4->v[0];
+            for(kk=sta;kk<end;++kk)
+                putchar(aawc->aaw[i]->aw[9]->w[kk]);
+            putchar(','); 
+            for(j=0;j<4;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            printf("%s,", aawc->aaw[i]->aw[5]->w);
+            for(j=10;j<aawc->aaw[i]->al;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            printf("GCV12\n"); // Genname coded by UCSC Refgene
+        }
     }
 }
 
@@ -883,14 +1097,12 @@ int main(int argc, char *argv[])
     optstruct opstru={0};
     catchopts(&opstru, oargc, oargv);
 
-    printf("typeszs: aaw_c: %zu aw_c: %zu w_c: %zu\n", sizeof(aaw_c), sizeof(aw_c), sizeof(w_c));
-
     aaw_c *aawc=processincsv2(argv[1]);
     // prtaawcdbg(aawc);
     // prtaawcplain00(aawc);
     // prtaawcplainc7(aawc);
     // prtaawcplainc910_(aawc);
-    prtaawcplainav2(aawc);
+    prtaawcplainav3(aawc);
     free_aawc(&aawc);
 
     return 0;
