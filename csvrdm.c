@@ -549,7 +549,7 @@ void prtaawcplainav3(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons
     int sta2, end2;
 
     //header: first empty cell gets skipped .. sort of a bug.
-    printf("Genename,Genegrp,Cpgname,"); 
+    printf("Genename,GpgGrp,Cpgname,"); 
     for(j=0;j<3;++j) {
         if(j==5) continue;
         printf("%s,", aawc->aaw[0]->aw[j]->w);
@@ -641,7 +641,11 @@ void prtaawcplainav3(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons
             for(kk=sta;kk<end;++kk)
                 putchar(aawc->aaw[i]->aw[8]->w[kk]);
             putchar(','); 
-            end2=aawc->aaw[i]->aw[9]->lp1-1;
+            // with GCV12 there can be more CpgGrps than Genenames! Sacré GCv12!
+            if(aawc->aaw[i]->av3->vsz < aawc->aaw[i]->av4->vsz)
+                end2=aawc->aaw[i]->av4->v[k]; // k should be robust to this.
+            else
+                end2=aawc->aaw[i]->aw[9]->lp1-1;
             for(kk=sta2;kk<end2;++kk)
                 putchar(aawc->aaw[i]->aw[9]->w[kk]);
             putchar(','); 
