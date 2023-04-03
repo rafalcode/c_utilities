@@ -27,3 +27,10 @@ vttgo also very simplistic, again the lines are highly regular so you
 can rey on indices.
 Note no special requirements for Cyrillic, this must be UTF-8 at work behind the scenes.
 
+# csvrdm.c
+A program to handle the output of the DNA Methylation pipeline. The CSV is similar
+to the EPIC Annotation CSV, though there are important changes including renaming of one
+or two columns reordering and other things. Note:
+- The pipeline outputs CSVs with quotes, this should be changed, they are not useful for csvrdm.
+- The column CpgGrp was GpgGrp for a while causing untold frustration.
+

@@ -9,9 +9,12 @@
 # }
 
 # csv <- read.csv("sigu.csv")
-csv <- read.csv("sigcsvrd.csv")
+# csv <- read.csv("sigcsvrd.csv")
 # this next one is where I corrected for av3->vsz < av4->vsz and av3->vsz>1, which was a problem.
 # csv <- read.csv("sig22.csv")
+# unfortunately a blight with the above was csvrdm retain a typeo GpgGrp instead of CpgGrp so
+# yes, it was this that caused fewer genes in dupcrd.R
+csv <- read.csv("sig222.csv")
 
 doon <- paste0(csv$Genename, "__", csv$CpgGrp)
 doon2 <- paste0(csv$Genename, "__", csv$CpgGrp, "__", csv$Relation_to_Island)
@@ -26,6 +29,6 @@ csvw <- csvw[order(csvw$Genename),]
 csvw2 <- csv[w2,]
 csvw2 <- csvw2[order(csvw2$Genename),]
 # first one ignores Relation_to_Island
-write.csv(csvw, "sigcdd.csv", quote=F, row.names=F)
+write.csv(csvw, "sigcdd_.csv", quote=F, row.names=F)
 # second csv does not.
-write.csv(csvw2, "sigcdd3.csv", quote=F, row.names=F)
+write.csv(csvw2, "sigcdd3_.csv", quote=F, row.names=F)

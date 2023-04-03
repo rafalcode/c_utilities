@@ -549,7 +549,7 @@ void prtaawcplainav3(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons
     int sta2, end2;
 
     //header: first empty cell gets skipped .. sort of a bug.
-    printf("Genename,GpgGrp,Cpgname,"); 
+    printf("Genename,CpgGrp,Cpgname,"); 
     for(j=0;j<3;++j) {
         if(j==5) continue;
         printf("%s,", aawc->aaw[0]->aw[j]->w);
@@ -558,7 +558,7 @@ void prtaawcplainav3(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons
     for(j=9;j<aawc->aaw[0]->al;++j) {
         printf("%s,", aawc->aaw[0]->aw[j]->w);
     }
-    printf("UCSCRG/GCV12\n"); 
+    printf("UCSCRG_GCV12\n"); 
     for(i=1;i<aawc->numl;++i) {
         //col7:
         if(aawc->aaw[i]->avc !=NULL) {
@@ -1080,11 +1080,9 @@ aaw_c *processincsv2(char *fname) // this one handles the 2 avc's.
 
 void prtusage(void)
 {
-    printf("Usage notes: csvrde\n"); 
-    printf("             program to read a (rough i.e. surveymonkey) CSV and regularise it\n");
+    printf("Usage notes: csvrdm\n"); 
+    printf("             program to read a sigDMPs.csv file (output of DNA Meth pipeline, and creates new gene rows, for different CpG groups (CpgGrp) and Island types (Relation_To_Island)\n");
     printf("             First argument must be the name of csv file to analyse\n");
-    printf("             Can be followed by -o flag, which will output the regular-cell-num rows\n");
-    printf("             Also can be followed by -s option with integer, this is number of first lines to skip.\n");
     return;
 }
 
