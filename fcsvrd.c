@@ -173,6 +173,16 @@ void prtaawcplain(aaw_c *aawc) /* print line and word details, but not the words
 
 double **givemat(aaw_c *aawc, int skiprows, int skipcols) /* print line and word details, but not the words themselves */
 {
+    /* OK what you're trying to do here could be a little tricky ... you're deliving into floatin point representation
+     * check out this stov link:
+     * https://stackoverflow.com/questions/16839658/printf-width-specifier-to-maintain-precision-of-floating-point-value
+     *
+     * the roudning func ions in math.h they just round to integers
+     *
+     * there is also this, on the latest C99 standard fp hex representation
+     * https://www.exploringbinary.com/hexadecimal-floating-point-constants/
+     *
+     */
     char *zerostr=malloc(64*sizeof(char));
     memset(zerostr, '0', 63);
     zerostr[63]='\0';
@@ -191,7 +201,8 @@ double **givemat(aaw_c *aawc, int skiprows, int skipcols) /* print line and word
     for(i=0;i<aawc->numl-skiprows;++i) {
         for(j=0;j<numcols1st;++j) {
             memset(zerostr, '0', 63);
-            for(k=0;k<aawc->aaw[i+skiprows]->aw[j+skipcols]->lp1-1;k++)
+            // for(k=0;k<aawc->aaw[i+skiprows]->aw[j+skipcols]->lp1-1;k++)
+            for(k=0;k<8;k++)
                 zerostr[k]=aawc->aaw[i+skiprows]->aw[j+skipcols]->w[k];
             // mat[i][j]=strtod(aawc->aaw[i+skiprows]->aw[j+skipcols]->w, NULL);
             mat[i][j]=strtod(zerostr, NULL);
@@ -285,6 +296,34 @@ int maxprec(aaw_c *aawc, int skiprows, int skipcols) // workout max precision.
         }
     }
     return(maxprec);
+}
+
+twoints_t *maxminprec(aaw_c *aawc, int skiprows, int skipcols) // workout max precision.
+{
+    // zero precision is not counted
+    int i, j;
+    int lword;
+    int prec; //precision
+    int maxprec=0;
+    int minprec=100000;
+    char *pt;
+    for(i=skiprows;i<aawc->numl;++i) {
+        for(j=skipcols;j<aawc->aaw[i]->al;++j) {
+            lword=aawc->aaw[i]->aw[j]->lp1-2;
+            pt=strchr(aawc->aaw[i]->aw[j]->w, '.');
+            if(pt!=NULL) {
+                prec=(int)((aawc->aaw[i]->aw[j]->w+lword) - pt);
+                if(prec>maxprec)
+                    maxprec=prec;
+                if(prec<minprec)
+                    minprec=prec;
+            }
+        }
+    }
+    twoints_t *mxmn=calloc(1, sizeof(twoints_t));
+    mxmn->x=maxprec;
+    mxmn->y=minprec;
+    return(mxmn);
 }
 
 void prtaawcplain0(aaw_c *aawc, int firstrows, int firstcols) /* print only first few rows and columns. */
@@ -438,6 +477,9 @@ int main(int argc, char *argv[])
     // printf("\n"); 
     int mxprec = maxprec(aawc, skiprows, skipcols);
     printf("Max precision is %i\n", mxprec);
+    twoints_t *mxmn=maxminprec(aawc, skiprows, skipcols);
+    printf("precision max:%i min:%i\n", mxmn->x, mxmn->y); 
+
 
     // can work out the following right now ... you for ease of viewing.
     int matrows=aawc->numl-skiprows;
@@ -448,6 +490,7 @@ int main(int argc, char *argv[])
     prtmat00(mat0, 8, 8, mxprec);
     freemat(mat0, matrows);
 
+    free(mxmn);
     free_aawc(&aawc);
 
     return 0;
