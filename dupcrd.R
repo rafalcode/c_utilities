@@ -14,7 +14,7 @@
 # csv <- read.csv("sig22.csv")
 # unfortunately a blight with the above was csvrdm retain a typeo GpgGrp instead of CpgGrp so
 # yes, it was this that caused fewer genes in dupcrd.R
-csv <- read.csv("sig222.csv")
+csv <- read.csv("sig222.csv") # hardcoded output of csvrdm.c
 
 doon <- paste0(csv$Genename, "__", csv$CpgGrp)
 doon2 <- paste0(csv$Genename, "__", csv$CpgGrp, "__", csv$Relation_to_Island)

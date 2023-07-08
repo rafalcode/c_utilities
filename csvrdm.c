@@ -544,7 +544,7 @@ void prtaawcplainav30(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolon
 void prtaawcplainav3(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons must be the exact same: they mostly(!) are.*/
 {
     /* no gencode printing */
-    int i, j, k, kk;
+    int i, j, jj, k, kk;
     int sta, end;
     int sta2, end2;
 
@@ -559,9 +559,14 @@ void prtaawcplainav3(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons
         printf("%s,", aawc->aaw[0]->aw[j]->w);
     }
     printf("UCSCRG_GCV12\n"); 
+    int couavnn=0; //count avc not nulls: this first if
+    int cousrg=0;  // count UCSC single transcript/splicevar genes
+    int couav34nn=0;
+    int couav34sg=0;
+    int coualloth=0; // count all others.
     for(i=1;i<aawc->numl;++i) {
-        //col7:
         if(aawc->aaw[i]->avc !=NULL) {
+            couavnn++;
             sta=0;
             sta2=0;
             for(k=0;k<aawc->aaw[i]->avc->vsz;++k) {
@@ -602,6 +607,7 @@ void prtaawcplainav3(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons
             }
             printf("UCSCRG\n"); // Genname coded by UCSC Refgene
         } else if(aawc->aaw[i]->aw[6]->lp1>1) /* single USCS refgenes */ {
+            cousrg++;
             printf("%s,", aawc->aaw[i]->aw[6]->w);
             printf("%s,", aawc->aaw[i]->aw[7]->w);
             for(j=0;j<4;++j) {
@@ -614,6 +620,8 @@ void prtaawcplainav3(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons
             printf("UCSCRG\n"); // Genname coded by UCSC Refgene
         /* OK, now we[re in gencode territory . they are less consistent than refgen */
         } else if((aawc->aaw[i]->av3 !=NULL) & (aawc->aaw[i]->av4 !=NULL)) {
+            // Move to GCv12:
+            couav34nn++;
             sta=0;
             sta2=0;
             for(k=0;k<aawc->aaw[i]->av3->vsz;++k) {
@@ -659,6 +667,7 @@ void prtaawcplainav3(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons
             printf("GCV12\n"); // Genname coded by UCSC Refgene
         } else if((aawc->aaw[i]->aw[8]->lp1>1) & (aawc->aaw[i]->av3 ==NULL) & (aawc->aaw[i]->av4 !=NULL)) {
             /* GENCODEV12 single gene but several GCV12 groups ... choose the first one */ 
+            couav34sg++;
             printf("%s,", aawc->aaw[i]->aw[8]->w);
             /* now get first token of GCV12 group */
             sta=0;
@@ -674,8 +683,16 @@ void prtaawcplainav3(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons
                 printf("%s,", aawc->aaw[i]->aw[j]->w);
             }
             printf("GCV12\n"); // Genname coded by UCSC Refgene
+        } else {
+            coualloth++;
+#ifdef CHECKLOST
+            for(jj=0;jj<aawc->aaw[i]->al;++jj) {
+                printf((jj!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[jj]->w);
+            }
+#endif
         }
     }
+    fprintf(stderr,"Summcounts: couavnn=%i, cousrg=%i, couav34nn=%i, couav34sg=%i, coualloth=%i, numl=%zu\n", couavnn, cousrg, couav34nn, couav34sg, coualloth, aawc->numl);
 }
 
 void prtaawcsum0(aaw_c *aawc) /* print line and word details, but not the words themselves */

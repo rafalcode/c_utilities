@@ -33,4 +33,4 @@ to the EPIC Annotation CSV, though there are important changes including renamin
 or two columns reordering and other things. Note:
 - The pipeline outputs CSVs with quotes, this should be changed, they are not useful for csvrdm.
 - The column CpgGrp was GpgGrp for a while causing untold frustration.
-
+- need dupcrd.R to de-duplicate Cpg annotation 
