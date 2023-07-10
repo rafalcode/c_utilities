@@ -1,8 +1,9 @@
-/* read in a csv of floats, allowing for skip first few rows or columns (i.e. heaards, rownames etc */
+/* read in 2 csv's of floats, and compare them. They are presumed to be the same in terms of headers and rownames
+ */
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include "fcsvrd.h"
+#include "fcsvcmp.h"
 
 w_c *crea_wc(unsigned initsz)
 {
@@ -250,9 +251,44 @@ void prtdmat000(double **mat0, double **mat2, int nr, int nc) // differences bet
 {
     int i, j;
     printf("Pct differences\n"); 
+    double diff, mindiff=512000000., maxdiff=0.;
+    double pdiff, minpdiff=512000000., maxpdiff=0.;
     for(i=0;i<nr;++i)
-        for(j=0;j<nc;++j)
-            printf((j!=nc-1)?"%6.14f%% ":"%6.14f%%\n", (mat2[i][j] - mat0[i][j]) / mat0[i][j]);
+        for(j=0;j<nc;++j) {
+            diff = mat2[i][j] - mat0[i][j];
+            if(diff>maxdiff)
+                maxdiff=diff;
+            if(diff<mindiff)
+                mindiff=diff;
+            pdiff= 100*diff / mat0[i][j];
+            if(pdiff>maxpdiff)
+                maxpdiff=pdiff;
+            if(pdiff<minpdiff)
+                minpdiff=pdiff;
+            printf((j!=nc-1)?"%6.14f%% ":"%6.14f%%\n", pdiff);
+        }
+}
+
+void summ_mat(double **mat0, double **mat2, int nr, int nc) // summary
+{
+    int i, j;
+    printf("Pct differences\n"); 
+    double diff, mindiff=512000000., maxdiff=0.;
+    double pdiff, minpdiff=512000000., maxpdiff=0.;
+    for(i=0;i<nr;++i)
+        for(j=0;j<nc;++j) {
+            diff = mat2[i][j] - mat0[i][j];
+            if(diff>maxdiff)
+                maxdiff=diff;
+            if(diff<mindiff)
+                mindiff=diff;
+            pdiff= 100*diff / mat0[i][j];
+            if(pdiff>maxpdiff)
+                maxpdiff=pdiff;
+            if(pdiff<minpdiff)
+                minpdiff=pdiff;
+            printf((j!=nc-1)?"%6.14f%% ":"%6.14f%%\n", pdiff);
+        }
 }
 
 void freemat(double **mat, int matrows)
@@ -487,10 +523,6 @@ int main(int argc, char *argv[])
     aaw_c *aawc=processincsv(argv[1]);
     aaw_c *aawc2=processincsv(argv[2]);
 
-    // I had a function here to only print out soem entries from the matrix,
-    // but then I decided this was ht efault of my test matrices ... they should be small.
-    // prtaawcplain0(aawc, 4, 4);
-
     int mxprec = maxprec(aawc, skiprows, skipcols);
     // printf("Max precision is %i\n", mxprec);
     twoints_t *mxmn=maxminprec(aawc, skiprows, skipcols);
@@ -500,6 +532,13 @@ int main(int argc, char *argv[])
     // can work out the following right now ... you for ease of viewing.
     int matrows=aawc->numl-skiprows;
     int matcols=aawc->aaw[skiprows]->al-skipcols; //yes the skiprows'th row is used to calculate ncols: all rows must have this numcols.
+    double *csu1, *rsu1, *csu2, *rsu2;  // column and ro sums for mat1
+    csu1=calloc(matcols, sizeof(double));
+    rsu1=calloc(matrows, sizeof(double));
+    rsu2=calloc(matrows, sizeof(double));
+    csu2=calloc(matcols, sizeof(double));
+    double cavg1, ravg1, cavg2, ravg2;
+                                                  //
 
     // matrows and matcols not passed up up recalculated (perhaps dodgy) in func.
     double **mat0=givemat(aawc, skiprows, skipcols);
@@ -510,6 +549,7 @@ int main(int argc, char *argv[])
     prtdmat000(mat0, mat2, matrows, matcols);
     freemat(mat0, matrows);
 
+    free(csu1, rsu1, csu2, rsu2);
     free(mxmn);
     free_aawc(&aawc);
     free_aawc(&aawc2);
