@@ -416,10 +416,12 @@ fintimrd: fintimrd.c
 
 csvrd: csvrd.c
 	${CC} ${CFLAGS} -o $@ $^
-	#
+
 # float csv read, allowing for skipping cols and rows. For csv you migh t get from r processing, for example.
 fcsvrd0: fcsvrd0.c
-	${CC} ${CFLAGS} -o $@ $^
+	${CC} ${CFLAGS} -o $@ $^ -lm
+
+# watch this next one .. I had started doing the fcsvcomp on it. For single matrices use fcsvrd
 fcsvrd: fcsvrd.c
 	${CC} ${CFLAGS} -o $@ $^
 
