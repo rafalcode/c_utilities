@@ -1,3 +1,10 @@
+/* this should be quoite useful especially hwen examining matrices from R
+ * which are output as binary floating representation (to avoid losses).
+ *
+ * it read sin an calculates romeans, rowvars, comenas, colvrs
+ *
+ * Also the sum .. which is the depth of the library
+ */
 /* read in a csv of floats, allowing for skipp first few rows or columns (i.e. heaards, rownames etc */
 /* we shall lean on %a, the binary floating point representation for losslessness in handling floats. */
 #include<stdio.h>
@@ -293,6 +300,18 @@ void prtvec(double *vec, int n)
         printf((i!=n-1)?"%4.6f ":"%4.6f\n", vec[i]);
 }
 
+void sumcol(double **mat, double *csu, int nr, int nc) // do your sums on the matrix
+{
+    int i, j;
+    for(i=0;i<nr;++i)
+        for(j=0;j<nc;++j)
+            csu[j] += mat[i][j];
+
+    printf("Your library size (colSums) is as follows:\n"); 
+    for(j=0;j<nc;++j)
+        printf((j!=nc-1)?"%4.6f ":"%4.6f\n", csu[j]); 
+}
+
 void meansmat(double **mat, double *rmeans, double *cmeans, int nr, int nc) // do your sums on the matrix
 {
     int i, j;
@@ -564,6 +583,10 @@ int main(int argc, char *argv[])
     prtmat000(mat0, matrows, matcols);
     prtmat000b(mat0, matrows, matcols);
 
+    double *csu=calloc(matcols, sizeof(double)); // this is for library size
+                                                 //
+    sumcol(mat0, csu, matrows, matcols);
+
     meansmat(mat0, rmeans, cmeans, matrows, matcols);
     varsmat(mat0, rvar, cvar, rmeans, cmeans, matrows, matcols);
     printf("%i rmeans:\n", matrows); 
@@ -580,6 +603,7 @@ int main(int argc, char *argv[])
 
     // freeing up section:
     freemat(mat0, matrows);
+    free(csu);
     free(rmeans);
     free(cmeans);
     free(rvar);
