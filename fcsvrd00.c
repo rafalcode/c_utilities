@@ -312,7 +312,7 @@ void prtcmpmats3(double **mat, double **mat2, int nr, int nc)
         for(j=0;j<nc;++j)
             if(mat2[i][j] != mat[i][j]) {
                 quandiffs++;
-                pdiff = 100*(mat2[i][j] - mat[i][j])/mat[i][j];
+                pdiff = abs(100*(mat2[i][j] - mat[i][j])/mat[i][j]);
                 if(pdiff<minpdiff)
                     minpdiff=pdiff;
                 if(pdiff>maxpdiff)
