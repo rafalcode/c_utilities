@@ -301,6 +301,27 @@ void prtcmpmats2(double **mat, double **mat2, int nr, int nc)
             }
 }
 
+void prtcmpmats3(double **mat, double **mat2, int nr, int nc)
+{
+    /* preparing for many many difference */
+    int i, j;
+    unsigned quandiffs=0;
+    double pdiff, allpdiffs=.0; // all percentage differences
+    double minpdiff=1e64, maxpdiff=.0;
+    for(i=0;i<nr;++i)
+        for(j=0;j<nc;++j)
+            if(mat2[i][j] != mat[i][j]) {
+                quandiffs++;
+                pdiff = 100*(mat2[i][j] - mat[i][j])/mat[i][j];
+                if(pdiff<minpdiff)
+                    minpdiff=pdiff;
+                if(pdiff>maxpdiff)
+                    maxpdiff=pdiff;
+                allpdiffs += pdiff;
+            }
+    printf("Quantity of differences = %u (%2.2f%%) / Minpct diff: %6.6f%%; Maxpct diff: %6.6f%%; Avgpct diff: %6.6f%%\n", quandiffs, 100.*quandiffs/(nc*nr), minpdiff, maxpdiff, allpdiffs/quandiffs);
+}
+
 void prtmat000b(double **mat, int nr, int nc)
 {
     int i, j;
@@ -598,11 +619,11 @@ int main(int argc, char *argv[])
     prtvec(cvar, matcols);
     printf("%i cvar2:\n", matcols); 
     prtvec(cvar2, matcols);
-#endif
 
     prtcmpmats(mat0, mat2, matrows, matcols);
     printf("\n"); 
-    prtcmpmats2(mat0, mat2, matrows, matcols);
+#endif
+    prtcmpmats3(mat0, mat2, matrows, matcols); 
 
     // matrows and matcols not passed up up recalculated (perhaps dodgy) in func.
     // prtmat00(mat0, 2, 2, mxprec);
