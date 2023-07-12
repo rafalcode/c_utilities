@@ -52,7 +52,7 @@ pwmatr: pwmatr.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
 
-# FOllowing facination with contingency tables ... this simple ad transparent prog for them
+# Following fascination with contingency tables ... this simple ad transparent prog for them
 contabrd: contabrd.c
 	${CC} ${DBGCFLAGS} -o $@ $^ -lm
 
@@ -421,6 +421,9 @@ csvrd: csvrd.c
 fcsvrd0: fcsvrd0.c
 	${CC} ${CFLAGS} -o $@ $^ -lm
 # takes after fcsvrd0 but faces off two binfloat matrices
+# Now what's utterly utterly key here is that you can test two binfloats with if(binfloat1 != binfloat2)
+# with decimals exact comparison like that is not good, "equivalence with an error" would have to be the way to go.
+# so that's the key advantage of binfloats!
 fcsvrd00: fcsvrd00.c
 	${CC} ${CFLAGS} -o $@ $^ -lm
 
