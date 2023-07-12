@@ -312,6 +312,18 @@ void sumcol(double **mat, double *csu, int nr, int nc) // do your sums on the ma
         printf((j!=nc-1)?"%4.6f ":"%4.6f\n", csu[j]); 
 }
 
+void sumrow(double **mat, double *rsu, int nr, int nc) // do your sums on the matrix
+{
+    int i, j;
+    for(i=0;i<nr;++i)
+        for(j=0;j<nc;++j)
+            rsu[i] += mat[i][j];
+
+    printf("Your difference rowSums are as follows:\n"); 
+    for(i=0;i<nr;++i)
+        printf((i!=nr-1)?"%4.6f ":"%4.6f\n", rsu[i]); 
+}
+
 void meansmat(double **mat, double *rmeans, double *cmeans, int nr, int nc) // do your sums on the matrix
 {
     int i, j;
@@ -429,67 +441,6 @@ void prtaawcplain0(aaw_c *aawc, int firstrows, int firstcols) /* print only firs
     printf("Full csv file specs: nrow= %zu, ncol1st=%i\n", aawc->numl, aawc->aaw[0]->al);
 }
 
-aaw_c *processinpf(char *fname)
-{
-    /* declarations */
-    FILE *fp=fopen(fname,"r");
-    int i;
-    size_t couc /*count chars per line */, couw=0 /* count words */;
-    int c, oldc='\0';
-    boole inword=0;
-    unsigned lbuf=LBUF /* buffer for number of lines */, cbuf=CBUF /* char buffer for size of w_c's: reused for every word */;
-    aaw_c *aawc=crea_aawc(lbuf); /* array of words per line */
-
-    while( (c=fgetc(fp)) != EOF) {
-        if( (c== '\n') | (c == ' ') | (c == '\t') ) {
-            if( inword==1) { /* cue word-ending procedure */
-                aawc->aaw[aawc->numl]->aw[couw]->w[couc++]='\0';
-                aawc->aaw[aawc->numl]->aw[couw]->lp1=couc;
-                SETCPTYPE(oldc, aawc->aaw[aawc->numl]->aw[couw]->t);
-                norm_wc(aawc->aaw[aawc->numl]->aw+couw);
-                couw++; /* verified: this has to be here */
-            }
-            if(c=='\n') { /* cue line-ending procedure */
-                if(aawc->numl ==lbuf-1) {
-                    lbuf += LBUF;
-                    aawc->aaw=realloc(aawc->aaw, lbuf*sizeof(aw_c*));
-                    for(i=lbuf-LBUF; i<lbuf; ++i)
-                        aawc->aaw[i]=crea_awc(WABUF);
-                }
-                aawc->aaw[aawc->numl]->al=couw;
-                norm_awc(aawc->aaw+aawc->numl);
-                aawc->numl++;
-                couw=0;
-            }
-            inword=0;
-        } else if(inword==0) { /* a normal character opens word */
-            if(couw ==aawc->aaw[aawc->numl]->ab-1) /* new word opening */
-                reall_awc(aawc->aaw+aawc->numl, WABUF);
-            couc=0;
-            cbuf=CBUF;
-            aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-            GETLCTYPE(c, aawc->aaw[aawc->numl]->aw[couw]->t); /* MACRO: the firt character gives a clue */
-            inword=1;
-        } else if(inword) { /* simply store */
-            if(couc == cbuf-1)
-                reall_wc(aawc->aaw[aawc->numl]->aw+couw, &cbuf);
-            aawc->aaw[aawc->numl]->aw[couw]->w[couc++]=c;
-            /* if word is a candidate for a NUM or PNI (i.e. via its first character), make sure it continues to obey rules: a MACRO */
-            IWMODTYPEIF(c, aawc->aaw[aawc->numl]->aw[couw]->t);
-        }
-        oldc=c;
-    } /* end of big for statement */
-    fclose(fp);
-
-    /* normalization stage */
-    for(i=aawc->numl; i<lbuf; ++i) {
-        free_awc(aawc->aaw+i);
-    }
-    aawc->aaw=realloc(aawc->aaw, aawc->numl*sizeof(aw_c*));
-
-    return aawc;
-}
-
 aaw_c *processincsv(char *fname)
 {
     /* declarations */
@@ -560,8 +511,10 @@ int main(int argc, char *argv[])
 
     aaw_c *aawc=processincsv(argv[1]);
 
+#ifdef DBG
     prtaawcplain(aawc);
     prtaawcplain2(aawc, skiprows, skipcols);
+#endif
 
     // prtaawcplain200(aawc, skiprows, skipcols, 12, 12);
     // printf("\n"); 
@@ -579,13 +532,18 @@ int main(int argc, char *argv[])
     double *cvar=calloc(matcols, sizeof(double));
     double *rvar=calloc(matrows, sizeof(double));
 
+
     double **mat0=givemat(aawc, skiprows, skipcols);
+#ifdef DBG
     prtmat000(mat0, matrows, matcols);
     prtmat000b(mat0, matrows, matcols);
+#endif
 
     double *csu=calloc(matcols, sizeof(double)); // this is for library size
-                                                 //
+    double *rsu=calloc(matrows, sizeof(double)); // this is for rowSums
+
     sumcol(mat0, csu, matrows, matcols);
+    sumrow(mat0, rsu, matrows, matcols);
 
     meansmat(mat0, rmeans, cmeans, matrows, matcols);
     varsmat(mat0, rvar, cvar, rmeans, cmeans, matrows, matcols);
@@ -604,6 +562,7 @@ int main(int argc, char *argv[])
     // freeing up section:
     freemat(mat0, matrows);
     free(csu);
+    free(rsu);
     free(rmeans);
     free(cmeans);
     free(rvar);
