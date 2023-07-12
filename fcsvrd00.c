@@ -321,7 +321,7 @@ void prtcmpmats3(double **mat, double **mat2, int nr, int nc)
             }
     // printf("Quantity of differences = %u (%2.2f%%) / Minpct diff: %6.6f%%; Maxpct diff: %6.6f%%; Avgpct diff: %6.6f%%\n", quandiffs, 100.*quandiffs/(nc*nr), minpdiff, maxpdiff, allpdiffs/quandiffs);
     printf("Quantity of differences = %u (%2.2f%%) / Minpct diff: %e%%; Maxpct diff: %e%%; Avgpct diff: %e%%\n", quandiffs, 100.*quandiffs/(nc*nr), minpdiff, maxpdiff, allpdiffs/quandiffs);
-    printf("Binfloat version - Quantity of differences = %u (%2.2f%%) / Minpct diff: %a%%; Maxpct diff: %a%%; Avgpct diff: %a%%\n", quandiffs, 100.*quandiffs/(nc*nr), minpdiff, maxpdiff, allpdiffs/quandiffs);
+    // printf("Binfloat version - Quantity of differences = %u (%2.2f%%) / Minpct diff: %a%%; Maxpct diff: %a%%; Avgpct diff: %a%%\n", quandiffs, 100.*quandiffs/(nc*nr), minpdiff, maxpdiff, allpdiffs/quandiffs);
 }
 
 void prtmat000b(double **mat, int nr, int nc)
