@@ -246,15 +246,6 @@ void prtmat000(double **mat, int nr, int nc)
             printf((j!=nc-1)?"%6.14f ":"%6.14f\n", mat[i][j]);
 }
 
-void prtdmat000(double **mat0, double **mat2, int nr, int nc) // differences between two
-{
-    int i, j;
-    printf("Pct differences\n"); 
-    for(i=0;i<nr;++i)
-        for(j=0;j<nc;++j)
-            printf((j!=nc-1)?"%6.14f%% ":"%6.14f%%\n", (mat2[i][j] - mat0[i][j]) / mat0[i][j]);
-}
-
 void freemat(double **mat, int matrows)
 {
     int i;
@@ -500,16 +491,25 @@ int main(int argc, char *argv[])
     // can work out the following right now ... you for ease of viewing.
     int matrows=aawc->numl-skiprows;
     int matcols=aawc->aaw[skiprows]->al-skipcols; //yes the skiprows'th row is used to calculate ncols: all rows must have this numcols.
+    double *csu1, *rsu1, *csu2, *rsu2;  // column and ro sums for mat1
+    csu1=calloc(matcols, sizeof(double));
+    rsu1=calloc(matrows, sizeof(double));
+    rsu2=calloc(matrows, sizeof(double));
+    csu2=calloc(matcols, sizeof(double));
+    double cavg1, ravg1, cavg2, ravg2;
 
     // matrows and matcols not passed up up recalculated (perhaps dodgy) in func.
     double **mat0=givemat(aawc, skiprows, skipcols);
-    double **mat2=givemat(aawc2, skiprows, skipcols);
     // prtmat00(mat0, 2, 2, mxprec);
     prtmat000(mat0, matrows, matcols);
     prtmat000(mat2, matrows, matcols);
-    prtdmat000(mat0, mat2, matrows, matcols);
     freemat(mat0, matrows);
 
+    // freeing up section, unfort one conainer per free!
+    free(csu1);
+    free(rsu1);
+    free(csu2);
+    free(rsu2);
     free(mxmn);
     free_aawc(&aawc);
     free_aawc(&aawc2);

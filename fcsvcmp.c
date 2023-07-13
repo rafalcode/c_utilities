@@ -538,7 +538,6 @@ int main(int argc, char *argv[])
     rsu2=calloc(matrows, sizeof(double));
     csu2=calloc(matcols, sizeof(double));
     double cavg1, ravg1, cavg2, ravg2;
-                                                  //
 
     // matrows and matcols not passed up up recalculated (perhaps dodgy) in func.
     double **mat0=givemat(aawc, skiprows, skipcols);
@@ -549,7 +548,10 @@ int main(int argc, char *argv[])
     prtdmat000(mat0, mat2, matrows, matcols);
     freemat(mat0, matrows);
 
-    free(csu1, rsu1, csu2, rsu2);
+    free(csu1);
+    free(rsu1);
+    free(csu2);
+    free(rsu2);
     free(mxmn);
     free_aawc(&aawc);
     free_aawc(&aawc2);
