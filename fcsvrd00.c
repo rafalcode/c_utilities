@@ -308,19 +308,50 @@ void prtcmpmats3(double **mat, double **mat2, int nr, int nc)
     unsigned quandiffs=0;
     double pdiff, allpdiffs=.0; // all percentage differences
     double minpdiff=1e64, maxpdiff=.0;
-    for(i=0;i<nr;++i)
-        for(j=0;j<nc;++j)
+    int rowoccs=0; // row occurrences
+    unsigned countrow;
+    unsigned *colblame=calloc(nc, sizeof(unsigned)); // how much are the columns to blame?
+    unsigned origzerocounts=0; // where the first matrix has a zero and the second one doesn't. Can't divide in this case.
+    unsigned secondzerocounts=0; // vice versa
+    double medianpdiff=.0;
+
+    for(i=0;i<nr;++i) {
+        countrow=0;
+        for(j=0;j<nc;++j) {
             if(mat2[i][j] != mat[i][j]) {
                 quandiffs++;
-                pdiff = fabs(100*(mat2[i][j] - mat[i][j])/mat[i][j]);
+                colblame[j]++;
+                if(!countrow) {
+                    rowoccs++;
+                    countrow=1;
+                }
+                if(mat[i][j] == 0x0p+1)
+                    origzerocounts++;
+                else if(mat2[i][j] == 0x0p+1)
+                    secondzerocounts++;
+                else
+                    pdiff = fabs(100*(mat2[i][j] - mat[i][j])/mat[i][j]);
                 if(pdiff<minpdiff)
                     minpdiff=pdiff;
                 if(pdiff>maxpdiff)
                     maxpdiff=pdiff;
+                if((i==nr/2) && (j==nc/2))
+                    medianpdiff=pdiff;
+
                 allpdiffs += pdiff;
             }
+        }
+    }
     // printf("Quantity of differences = %u (%2.2f%%) / Minpct diff: %6.6f%%; Maxpct diff: %6.6f%%; Avgpct diff: %6.6f%%\n", quandiffs, 100.*quandiffs/(nc*nr), minpdiff, maxpdiff, allpdiffs/quandiffs);
-    printf("Quantity of differences = %u (%2.2f%%) / Minpct diff: %e%%; Maxpct diff: %e%%; Avgpct diff: %e%%\n", quandiffs, 100.*quandiffs/(nc*nr), minpdiff, maxpdiff, allpdiffs/quandiffs);
+    printf("Quantity of diff=%u (from %u , i.e. %2.2f%%) / Occurred in %i of %i rows / Minpct diff: %e%%; Maxpct diff: %e%%; Avgpct diff: %e%%\n", quandiffs, nc*nr, 100.*quandiffs/(nc*nr), rowoccs, nr, minpdiff, maxpdiff, allpdiffs/quandiffs);
+    printf("Median pdiff=%e%%\n", medianpdiff); 
+    printf("How many of the first matrix had zero value, when second matrix didn't? %u Vice versa? %u\n", origzerocounts, secondzerocounts);
+    printf("How much are columns to blame? Distribution of discepancies among columns:\n"); 
+    for(j=0;j<nc;++j)
+        printf((j==nc-1)?"Col_%u\n":"Col_%u ", j);
+    for(j=0;j<nc;++j)
+        printf((j==nc-1)?"%u\n":"%u ", colblame[j]);
+    free(colblame);
     // printf("Binfloat version - Quantity of differences = %u (%2.2f%%) / Minpct diff: %a%%; Maxpct diff: %a%%; Avgpct diff: %a%%\n", quandiffs, 100.*quandiffs/(nc*nr), minpdiff, maxpdiff, allpdiffs/quandiffs);
 }
 
