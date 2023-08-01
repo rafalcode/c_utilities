@@ -224,6 +224,7 @@ void prtaawcpla30(aaw_c *aawc) /* garmin connect running gpx */
     // header:
     printf("%24s%12s%12s%12s%12s%14s%14s%14s\n", "TIME", "HR", "MIN", "SEC", "THOU", "LON", "LAT", "ELE"); 
     // first trkpt: absolute, i.e starting point.
+    printf("First trkpt: absolute, i.e starting point:\n");
     i=16;
     // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
     // for(j=0;j<aawc->aaw[i]->al;++j)
@@ -239,18 +240,24 @@ void prtaawcpla30(aaw_c *aawc) /* garmin connect running gpx */
     hrlen=(int)(t1-t0);
     for(j=0;j<hrlen-1;j++)
         hr[j]=t0[j+1];
+    h=atoi(hr);
     minlen=(int)(t2-t1);
     for(j=0;j<minlen-1;j++)
         min[j]=t1[j+1];
+    m=atoi(min);
     seclen=(int)(t3-t2);
     for(j=0;j<seclen-1;j++)
         sec[j]=t2[j+1];
+    s=atoi(sec);
     thoulen=(int)(t4-t3);
     for(j=0;j<thoulen-1;j++)
         thou[j]=t3[j+1];
-    printf("%i: %24s%12s%12s%12s%12s%14.6f%14.6f%14.6f\n", k++, time, hr, min, sec, thou, lon, lat, ele);
+    th=atoi(thou);
+    // printf("%i: %24s%12s%12s%12s%12s%14.6f%14.6f%14.6f\n", k++, time, hr, min, sec, thou, lon, lat, ele);
+    printf("%i: %24s%12i%12i%12i%12i%14.6f%14.6f%14.6f\n", k++, time, h, m, s, th, lon, lat, ele);
     
     // the rest shall all be differences:
+    printf("From now on, cumulative differences:\n"); 
     for(i=25;i<aawc->numl-8;i+=9) {
          // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
          // for(j=0;j<aawc->aaw[i]->al;++j)
@@ -269,19 +276,28 @@ void prtaawcpla30(aaw_c *aawc) /* garmin connect running gpx */
         hrlen=(int)(t1-t0);
         for(j=0;j<hrlen-1;j++)
             hr[j]=t0[j+1];
+        h2=atoi(hr);
         minlen=(int)(t2-t1);
         for(j=0;j<minlen-1;j++)
             min[j]=t1[j+1];
+        m2=atoi(min);
         seclen=(int)(t3-t2);
         for(j=0;j<seclen-1;j++)
             sec[j]=t2[j+1];
+        s2=atoi(sec);
         thoulen=(int)(t4-t3);
         for(j=0;j<thoulen-1;j++)
             thou[j]=t3[j+1];
-        printf("%i: %24s%12s%12s%12s%12s%14.6f%14.6f%14.6f\n", k++, time, hr, min, sec, thou, dlon, dlat, dele);
+        th2=atoi(thou);
+        // printf("%i: %24s%12s%12s%12s%12s%14.6f%14.6f%14.6f\n", k++, time, hr, min, sec, thou, dlon, dlat, dele);
+        printf("%i: %24s%12i%12i%12i%12i%14.6f%14.6f%14.6f\n", k++, time, h2-h, m2-m, s2-s, th2-th, dlon, dlat, dele);
          lon=lon2;
          lat=lat2;
          ele=ele2;
+         h=h2;
+         m=m2;
+         s=s2;
+         th=th2;
     }
     printf("total lines=%i\n", k); 
 }
