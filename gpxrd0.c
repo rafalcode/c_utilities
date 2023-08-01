@@ -1,4 +1,4 @@
-/* modification of matread but operating on words instead of floats */
+/* gpxrd0.c is for the strava downloaded cycle gpx's */
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -187,6 +187,105 @@ void prtaawcpla2(aaw_c *aawc) /* print line and word details, but not the words 
     }
 }
 
+void prtaawcpla3(aaw_c *aawc) /* garmin connect running gpx */
+{
+    int i, k=0;
+    double lon, lat;
+    float ele;
+    char *time;
+    printf("%24s%14s%14s%14s\n", "TIME", "LON", "LAT", "ELE"); 
+    for(i=16;i<aawc->numl-8;i+=9) {
+         // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+         // for(j=0;j<aawc->aaw[i]->al;++j)
+         lon=strtod(aawc->aaw[i]->aw[2]->w, NULL);
+         lat=strtod(aawc->aaw[i]->aw[4]->w, NULL);
+         ele=atof(aawc->aaw[i+1]->aw[1]->w);
+         time=aawc->aaw[i+2]->aw[1]->w;
+         printf("%i: %24s%14.6f%14.6f%14.6f\n", k++, time, lon, lat, ele);
+    }
+    printf("total lines=%i\n", k); 
+}
+
+void prtaawcpla30(aaw_c *aawc) /* garmin connect running gpx */
+{
+    int i, j, k=0;
+    int hrlen, minlen, seclen, thoulen;
+    double lon, lat, lon2, lat2;
+    double dlon, dlat;
+    float ele, ele2, dele;
+    char *time;
+    char *t0, *t1, *t2, *t3, *t4;
+    char hr[12]={'\0'};
+    char min[12]={'\0'};
+    char sec[12]={'\0'};
+    char thou[12]={'\0'};
+    int h, m, s, th;
+    int h2, m2, s2, th2;
+    // header:
+    printf("%24s%12s%12s%12s%12s%14s%14s%14s\n", "TIME", "HR", "MIN", "SEC", "THOU", "LON", "LAT", "ELE"); 
+    // first trkpt: absolute, i.e starting point.
+    i=16;
+    // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+    // for(j=0;j<aawc->aaw[i]->al;++j)
+    lon=strtod(aawc->aaw[i]->aw[2]->w, NULL);
+    lat=strtod(aawc->aaw[i]->aw[4]->w, NULL);
+    ele=atof(aawc->aaw[i+1]->aw[1]->w);
+    time=aawc->aaw[i+2]->aw[1]->w;
+    t0=strchr(time, 'T');
+    t1=strchr(time, ':');
+    t2=strchr(t1+1, ':');
+    t3=strchr(t2+1, '.');
+    t4=strchr(t3+1, 'Z');
+    hrlen=(int)(t1-t0);
+    for(j=0;j<hrlen-1;j++)
+        hr[j]=t0[j+1];
+    minlen=(int)(t2-t1);
+    for(j=0;j<minlen-1;j++)
+        min[j]=t1[j+1];
+    seclen=(int)(t3-t2);
+    for(j=0;j<seclen-1;j++)
+        sec[j]=t2[j+1];
+    thoulen=(int)(t4-t3);
+    for(j=0;j<thoulen-1;j++)
+        thou[j]=t3[j+1];
+    printf("%i: %24s%12s%12s%12s%12s%14.6f%14.6f%14.6f\n", k++, time, hr, min, sec, thou, lon, lat, ele);
+    
+    // the rest shall all be differences:
+    for(i=25;i<aawc->numl-8;i+=9) {
+         // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+         // for(j=0;j<aawc->aaw[i]->al;++j)
+         lon2=strtod(aawc->aaw[i]->aw[2]->w, NULL);
+         lat2=strtod(aawc->aaw[i]->aw[4]->w, NULL);
+         ele2=atof(aawc->aaw[i+1]->aw[1]->w);
+         dlon=lon2-lon;
+         dlat=lat2-lat;
+         dele=ele2-ele;
+         time=aawc->aaw[i+2]->aw[1]->w;
+        t0=strchr(time, 'T');
+        t1=strchr(time, ':');
+        t2=strchr(t1+1, ':');
+        t3=strchr(t2+1, '.');
+        t4=strchr(t3+1, 'Z');
+        hrlen=(int)(t1-t0);
+        for(j=0;j<hrlen-1;j++)
+            hr[j]=t0[j+1];
+        minlen=(int)(t2-t1);
+        for(j=0;j<minlen-1;j++)
+            min[j]=t1[j+1];
+        seclen=(int)(t3-t2);
+        for(j=0;j<seclen-1;j++)
+            sec[j]=t2[j+1];
+        thoulen=(int)(t4-t3);
+        for(j=0;j<thoulen-1;j++)
+            thou[j]=t3[j+1];
+        printf("%i: %24s%12s%12s%12s%12s%14.6f%14.6f%14.6f\n", k++, time, hr, min, sec, thou, dlon, dlat, dele);
+         lon=lon2;
+         lat=lat2;
+         ele=ele2;
+    }
+    printf("total lines=%i\n", k); 
+}
+
 aaw_c *processinpf(char *fname)
 {
     /* declarations */
@@ -266,7 +365,7 @@ int main(int argc, char *argv[])
 #else
     // prtaawcdata(aawc); // just the metadata
 //     prtaawcplain(aawc); // printout original text as well as you can.
-    prtaawcpla2(aawc); // printout original text as well as you can.
+    prtaawcpla30(aawc); // printout original text as well as you can.
 #endif
     // printf("Numlines: %zu\n", aawc->numl); 
 
