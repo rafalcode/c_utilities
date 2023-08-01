@@ -456,7 +456,7 @@ pread: pread.c
 	${CC} ${CFLAGS} -o $@ $^
 
 gpxrd0: gpxrd0.c
-	${CC} ${CFLAGS} -o $@ $^
+	${CC} ${CFLAGS} -o $@ $^ -lm
 
 .PHONY: clean
 

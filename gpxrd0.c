@@ -2,7 +2,31 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<math.h>
 #include "genread.h"
+
+//haversine courtesy of chatgpt.
+#define EARTH_RADIUS_KM 6371.0
+
+double to_radians(double degree)
+{
+    return degree * M_PI / 180.0;
+}
+
+double haversine(double lat1, double lon1, double lat2, double lon2)
+{
+    double dLat = to_radians(lat2 - lat1);
+    double dLon = to_radians(lon2 - lon1);
+
+    lat1 = to_radians(lat1);
+    lat2 = to_radians(lat2);
+
+    double a = sin(dLat / 2) * sin(dLat / 2) +
+        sin(dLon / 2) * sin(dLon / 2) * cos(lat1) * cos(lat2);
+    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+    return EARTH_RADIUS_KM * c;
+}
 
 w_c *crea_wc(unsigned initsz)
 {
@@ -156,7 +180,7 @@ void prtaawcdata(aaw_c *aawc) /* print line and word details, but not the words 
         }
     }
     printf("\n"); 
-	printf("L is a line, l is length of word, S is normal string, C closing punct, Z, starting cap, Y Starting cap and closing punct.\n"); 
+    printf("L is a line, l is length of word, S is normal string, C closing punct, Z, starting cap, Y Starting cap and closing punct.\n"); 
 }
 
 void prtaawcplain(aaw_c *aawc) /* print line and word details, but not the words themselves */
@@ -177,13 +201,13 @@ void prtaawcpla2(aaw_c *aawc) /* print line and word details, but not the words 
     char *time;
     printf("%24s%14s%14s%14s\n", "TIME", "LON", "LAT", "ELE"); 
     for(i=9;i<aawc->numl-3;i+=4) {
-         // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
-         // for(j=0;j<aawc->aaw[i]->al;++j)
-         lon=strtod(aawc->aaw[i]->aw[2]->w, NULL);
-         lat=strtod(aawc->aaw[i]->aw[4]->w, NULL);
-         ele=atof(aawc->aaw[i+1]->aw[1]->w);
-         time=aawc->aaw[i+2]->aw[1]->w;
-         printf("%24s%14.6f%14.6f%14.6f\n", time, lon, lat, ele);
+        // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+        // for(j=0;j<aawc->aaw[i]->al;++j)
+        lon=strtod(aawc->aaw[i]->aw[2]->w, NULL);
+        lat=strtod(aawc->aaw[i]->aw[4]->w, NULL);
+        ele=atof(aawc->aaw[i+1]->aw[1]->w);
+        time=aawc->aaw[i+2]->aw[1]->w;
+        printf("%24s%14.6f%14.6f%14.6f\n", time, lon, lat, ele);
     }
 }
 
@@ -195,18 +219,18 @@ void prtaawcpla3(aaw_c *aawc) /* garmin connect running gpx */
     char *time;
     printf("%24s%14s%14s%14s\n", "TIME", "LON", "LAT", "ELE"); 
     for(i=16;i<aawc->numl-8;i+=9) {
-         // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
-         // for(j=0;j<aawc->aaw[i]->al;++j)
-         lon=strtod(aawc->aaw[i]->aw[2]->w, NULL);
-         lat=strtod(aawc->aaw[i]->aw[4]->w, NULL);
-         ele=atof(aawc->aaw[i+1]->aw[1]->w);
-         time=aawc->aaw[i+2]->aw[1]->w;
-         printf("%i: %24s%14.6f%14.6f%14.6f\n", k++, time, lon, lat, ele);
+        // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+        // for(j=0;j<aawc->aaw[i]->al;++j)
+        lon=strtod(aawc->aaw[i]->aw[2]->w, NULL);
+        lat=strtod(aawc->aaw[i]->aw[4]->w, NULL);
+        ele=atof(aawc->aaw[i+1]->aw[1]->w);
+        time=aawc->aaw[i+2]->aw[1]->w;
+        printf("%i: %24s%14.6f%14.6f%14.6f\n", k++, time, lon, lat, ele);
     }
     printf("total lines=%i\n", k); 
 }
 
-void prtaawcpla30(aaw_c *aawc) /* garmin connect running gpx */
+void prtaawcpla300(aaw_c *aawc) /* garmin connect running gpx, further refinement. */
 {
     int i, j, k=0;
     int hrlen, minlen, seclen, thoulen;
@@ -221,8 +245,9 @@ void prtaawcpla30(aaw_c *aawc) /* garmin connect running gpx */
     char thou[12]={'\0'};
     int h, m, s, th;
     int h2, m2, s2, th2;
+    float allsecs, allsecs2; // all seconds
     // header:
-    printf("%24s%12s%12s%12s%12s%14s%14s%14s\n", "TIME", "HR", "MIN", "SEC", "THOU", "LON", "LAT", "ELE"); 
+    printf("%24s%12s%12s%12s%12s%12s%14s%14s%14s\n", "TIME", "HR", "MIN", "SEC", "THOU", "ASECS", "LON", "LAT", "ELE"); 
     // first trkpt: absolute, i.e starting point.
     printf("First trkpt: absolute, i.e starting point:\n");
     i=16;
@@ -253,21 +278,22 @@ void prtaawcpla30(aaw_c *aawc) /* garmin connect running gpx */
     for(j=0;j<thoulen-1;j++)
         thou[j]=t3[j+1];
     th=atoi(thou);
+    allsecs=3600*h + 60*m + s + (float)th/1000.;
     // printf("%i: %24s%12s%12s%12s%12s%14.6f%14.6f%14.6f\n", k++, time, hr, min, sec, thou, lon, lat, ele);
-    printf("%i: %24s%12i%12i%12i%12i%14.6f%14.6f%14.6f\n", k++, time, h, m, s, th, lon, lat, ele);
-    
+    printf("%i: %24s%12i%12i%12i%12i%14.6f%14.6f%14.6f%14.6f\n", k++, time, h, m, s, th, allsecs, lon, lat, ele);
+
     // the rest shall all be differences:
     printf("From now on, cumulative differences:\n"); 
     for(i=25;i<aawc->numl-8;i+=9) {
-         // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
-         // for(j=0;j<aawc->aaw[i]->al;++j)
-         lon2=strtod(aawc->aaw[i]->aw[2]->w, NULL);
-         lat2=strtod(aawc->aaw[i]->aw[4]->w, NULL);
-         ele2=atof(aawc->aaw[i+1]->aw[1]->w);
-         dlon=lon2-lon;
-         dlat=lat2-lat;
-         dele=ele2-ele;
-         time=aawc->aaw[i+2]->aw[1]->w;
+        // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+        // for(j=0;j<aawc->aaw[i]->al;++j)
+        lon2=strtod(aawc->aaw[i]->aw[2]->w, NULL);
+        lat2=strtod(aawc->aaw[i]->aw[4]->w, NULL);
+        ele2=atof(aawc->aaw[i+1]->aw[1]->w);
+        dlon=lon2-lon;
+        dlat=lat2-lat;
+        dele=ele2-ele;
+        time=aawc->aaw[i+2]->aw[1]->w;
         t0=strchr(time, 'T');
         t1=strchr(time, ':');
         t2=strchr(t1+1, ':');
@@ -289,15 +315,17 @@ void prtaawcpla30(aaw_c *aawc) /* garmin connect running gpx */
         for(j=0;j<thoulen-1;j++)
             thou[j]=t3[j+1];
         th2=atoi(thou);
+        allsecs2=3600*h2 + 60*m2 + s2 + (float)th2/1000.;
         // printf("%i: %24s%12s%12s%12s%12s%14.6f%14.6f%14.6f\n", k++, time, hr, min, sec, thou, dlon, dlat, dele);
-        printf("%i: %24s%12i%12i%12i%12i%14.6f%14.6f%14.6f\n", k++, time, h2-h, m2-m, s2-s, th2-th, dlon, dlat, dele);
-         lon=lon2;
-         lat=lat2;
-         ele=ele2;
-         h=h2;
-         m=m2;
-         s=s2;
-         th=th2;
+        printf("%i: %24s%12i%12i%12i%12i%14.6f%14.6f%14.6f%14.6f\n", k++, time, h2-h, m2-m, s2-s, th2-th, allsecs2-allsecs, dlon, dlat, dele);
+        lon=lon2;
+        lat=lat2;
+        ele=ele2;
+        h=h2;
+        m=m2;
+        s=s2;
+        th=th2;
+        allsecs=allsecs2;
     }
     printf("total lines=%i\n", k); 
 }
@@ -362,30 +390,30 @@ aaw_c *processinpf(char *fname)
     aawc->aaw=realloc(aawc->aaw, aawc->numl*sizeof(aw_c*));
 
     return aawc;
-}
-
-int main(int argc, char *argv[])
-{
-    /* argument accounting */
-    if(argc!=2) {
-        printf("Error. Pls supply argument (name of text file).\n");
-        exit(EXIT_FAILURE);
     }
+
+    int main(int argc, char *argv[])
+    {
+        /* argument accounting */
+        if(argc!=2) {
+            printf("Error. Pls supply argument (name of text file).\n");
+            exit(EXIT_FAILURE);
+        }
 #ifdef DBG2
-    printf("typeszs: aaw_c: %zu aw_c: %zu w_c: %zu\n", sizeof(aaw_c), sizeof(aw_c), sizeof(w_c));
+        printf("typeszs: aaw_c: %zu aw_c: %zu w_c: %zu\n", sizeof(aaw_c), sizeof(aw_c), sizeof(w_c));
 #endif
 
-    aaw_c *aawc=processinpf(argv[1]);
+        aaw_c *aawc=processinpf(argv[1]);
 #ifdef DBG
-    prtaawcdbg(aawc);
+        prtaawcdbg(aawc);
 #else
-    // prtaawcdata(aawc); // just the metadata
-//     prtaawcplain(aawc); // printout original text as well as you can.
-    prtaawcpla30(aawc); // printout original text as well as you can.
+        // prtaawcdata(aawc); // just the metadata
+        //     prtaawcplain(aawc); // printout original text as well as you can.
+        prtaawcpla300(aawc); // printout original text as well as you can.
 #endif
-    // printf("Numlines: %zu\n", aawc->numl); 
+        // printf("Numlines: %zu\n", aawc->numl); 
 
-    free_aawc(&aawc);
+        free_aawc(&aawc);
 
-    return 0;
-}
+        return 0;
+    }
