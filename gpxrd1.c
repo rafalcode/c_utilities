@@ -7,6 +7,8 @@
 
 //haversine courtesy of chatgpt.
 #define EARTH_RADIUS_KM 6371.0
+#define GARMFIRSTLINE 16 // the horrid hardcodes ... at least declared early so you can spot them.
+#define GARMREPEATPATT 9
 
 double to_radians(double degree)
 {
@@ -26,41 +28,6 @@ double haversine(double lat1, double lon1, double lat2, double lon2)
     double c = 2 * atan2(sqrt(a), sqrt(1 - a));
 
     return EARTH_RADIUS_KM * c;
-}
-
-double secsconv(char *time)
-{
-    // ignores date part (i.e. up tot T character.
-    int j;
-    int hrlen, minlen, seclen, thoulen;
-    char *t0, *t1, *t2, *t3, *t4;
-    char hr[12]={'\0'};
-    char min[12]={'\0'};
-    char sec[12]={'\0'};
-    char thou[12]={'\0'};
-    int h, m, s, th;
-    t0=strchr(time, 'T');
-    t1=strchr(time, ':');
-    t2=strchr(t1+1, ':');
-    t3=strchr(t2+1, '.');
-    t4=strchr(t3+1, 'Z');
-    hrlen=(int)(t1-t0);
-    for(j=0;j<hrlen-1;j++)
-        hr[j]=t0[j+1];
-    h=atoi(hr);
-    minlen=(int)(t2-t1);
-    for(j=0;j<minlen-1;j++)
-        min[j]=t1[j+1];
-    m=atoi(min);
-    seclen=(int)(t3-t2);
-    for(j=0;j<seclen-1;j++)
-        sec[j]=t2[j+1];
-    s=atoi(sec);
-    thoulen=(int)(t4-t3);
-    for(j=0;j<thoulen-1;j++)
-        thou[j]=t3[j+1];
-    th=atoi(thou);
-    return 3600*h + 60*m + s + (double)th/1000.;
 }
 
 void parsetime(char *time, hmst_t *hmst)
@@ -313,7 +280,7 @@ void prtaawcpla300(aaw_c *aawc) /* garmin connect running gpx, further refinemen
     printf("%24s%12s%12s%12s%12s%12s%14s%14s%14s\n", "TIME", "HR", "MIN", "SEC", "THOU", "ASECS", "LON", "LAT", "ELE"); 
     // first trkpt: absolute, i.e starting point.
     printf("First trkpt: absolute, i.e starting point:\n");
-    i=16;
+    i=GARMFIRSTLINE;
     // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
     // for(j=0;j<aawc->aaw[i]->al;++j)
     lon=strtod(aawc->aaw[i]->aw[2]->w, NULL);
@@ -327,7 +294,7 @@ void prtaawcpla300(aaw_c *aawc) /* garmin connect running gpx, further refinemen
 
     // the rest shall all be differences:
     printf("From now on, cumulative differences:\n"); 
-    for(i=25;i<aawc->numl-8;i+=9) {
+    for(i=GARMFIRSTLINE+GARMREPEATPATT;i<aawc->numl-GARMREPEATPATT+1;i+=GARMREPEATPATT) {
         // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
         // for(j=0;j<aawc->aaw[i]->al;++j)
         lon2=strtod(aawc->aaw[i]->aw[2]->w, NULL);

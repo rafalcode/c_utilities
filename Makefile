@@ -455,6 +455,12 @@ pread0: pread0.c
 pread: pread.c
 	${CC} ${CFLAGS} -o $@ $^
 
+# GPX reading.
+# these are rough and ready, and make no attempt to parse XML, which is what these files are
+# they are specific to application they were downloaded from, i.e. garmoin connect
+# also times reflect the application too. i.e. often Garmin Connect is set to Irish time
+# so Mungia times for example are an hour behind what they actually were recorded at.
+# often, there is no issue for IRL or Canarias.
 gpxrd0: gpxrd0.c
 	${CC} ${CFLAGS} -o $@ $^ -lm
 gpxrd1: gpxrd1.c
