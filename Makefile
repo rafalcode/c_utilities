@@ -6,7 +6,7 @@ DBG2CFLAGS=-g -Wall -DDBG2
 TDBGCFLAGS=-g -Wall -DDBG # True debug flags!
 
 LIBS=-lgsl -lgslcblas -lm
-EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d parard ahread ahread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4 pedsta pedsta0 mpdmu2 mpdmu2_d mpdmu3 mpdmu3_d mpdmu4 mpdmu4_d tpedsta_d bglsta bglsta_d bglvset vttrd vttgo3 vttgo2 tablerd genrd ssrd ssrd_d blard blard_d blard2 blard2_d rurd fard fard_d fard2 paredown f3 f4 pare0 pare2 pare3 onel morel vrd0 chktasty tabcmatch tpedsta2 namgenes2 namgenes namsets repinfam csvrd fcsvrd0 fcsvrd00 fcsvrd fintimrd csvrdh srtfix sentin sentinu u0 tmsee pread pread0 rdog0 csvrde csvrdm csvrdmcl gpxrd0 gpxrd1
+EXES=cmd2ext extcou cleangrpo matread genread genread_d txtread txtread_d parard ahread ahread_d dreadn dreadn_d vcolfrcr volfrcr_d txtread_t bgread bgread2 bgread0 bgread_ bgread0a bgread3 bgmergmc bgmergmc_d bgmergmcstealth bgreadx bgreadx0 bgfiltf contabrd rg0 macsigf bedsumzr bgmergbl bgmergbl2 vttmrg pwmatr tma2pwma pedread dcou dcou2 dcou3 mapedstats mapedstats_d pedcmp pedcmp_d mprd3 mprd3_d mpdmu mpdmu_d dcou4 pedsta pedsta0 mpdmu2 mpdmu2_d mpdmu3 mpdmu3_d mpdmu4 mpdmu4_d tpedsta_d bglsta bglsta_d bglvset vttrd vttgo3 vttgo2 tablerd genrd ssrd ssrd_d blard blard_d blard2 blard2_d rurd fard fard_d fard2 paredown f3 f4 pare0 pare2 pare3 onel morel vrd0 chktasty tabcmatch tpedsta2 namgenes2 namgenes namsets repinfam csvrd fcsvrd0 fcsvrd00 fcsvrd fintimrd csvrdh srtfix sentin sentinu u0 tmsee pread pread0 rdog0 csvrde csvrdm csvrdmcl gpxrd0 gpxrd1 kmlrd
 
 # Command to extension ... allows apllication of a command onto a file with a certain extension. Only useful for rare edge cases.
 cmd2ext: cmd2ext.c
@@ -464,6 +464,17 @@ pread: pread.c
 gpxrd0: gpxrd0.c
 	${CC} ${CFLAGS} -o $@ $^ -lm
 gpxrd1: gpxrd1.c
+	${CC} ${CFLAGS} -o $@ $^ -lm
+
+# The KML challenge.
+# This proved to be a bit different to the gpx, because all timepoints are given out first, and 
+# then all the location points follow. So, due to the differing number of timepoints,
+# you don't know when the locpoints start.
+# so you have to check for charatcers of the word.
+# as things stand, the first character is not too difficult at all, but one we're inside a word
+# all the letters of the ketword need to be allowed, for each of the character positions. So that;s not at all robust.
+# # the last character is sort of easy too, but the last character must also be included while in-word.
+kmlrd: kmlrd.c
 	${CC} ${CFLAGS} -o $@ $^ -lm
 
 .PHONY: clean
