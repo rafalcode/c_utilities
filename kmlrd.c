@@ -350,10 +350,12 @@ void prtaawcpla300(aaw_c *aawc) /* kml from flightware */
     free(hmst2);
 }
 
-void prtaawcpla301(aaw_c *aawc) /* kml from flightware */
+void prtaawcpla301(aaw_c *aawc) /* messed this up a little */
 {
     int i, k, kk=0, totalpts;
-    double lon, lat, lon2, lat2;
+    double lon, lat;
+    double lon2=RVLON, lat2=RVLAT;
+    double lon3=VALLON, lat3=VALLAT;
     double dlon, dlat;
     double hdist;
     int ele, dele, ele2;
@@ -361,57 +363,112 @@ void prtaawcpla301(aaw_c *aawc) /* kml from flightware */
     hmst_t *hmst2=calloc(1, sizeof(hmst_t));
     char *timestr;
 
-    size_t allsecs, allsecs2, tdiff; // all seconds
+    // size_t allsecs, allsecs2, tdiff; // all seconds
+    size_t allsecs, allsecs2;
     // header:
     // printf("%24s%12s%12s%12s%12s%12s%14s%14s%14s\n", "TIME", "HR", "MIN", "SEC", "THOU", "ASECS", "LON", "LAT", "ELE"); 
     // first trkpt: absolute, i.e starting point.
-    printf("First trkpt: absolute:\n");
+    // printf("First trkpt: absolute:\n");
     i=aawc->ftp;
     k=aawc->flp;
     totalpts=k-i;
     // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
     // for(j=0;j<aawc->aaw[i]->al;++j)
-    lon=strtod(aawc->aaw[k]->aw[1]->w, NULL);
-    lat=strtod(aawc->aaw[k]->aw[2]->w, NULL);
-    ele=atoi(aawc->aaw[k]->aw[3]->w);
+    // lon=strtod(aawc->aaw[k]->aw[1]->w, NULL);
+    // lat=strtod(aawc->aaw[k]->aw[2]->w, NULL);
+    // ele=atoi(aawc->aaw[k]->aw[3]->w);
 
-    timestr=aawc->aaw[i]->aw[1]->w;
-    parsetime(timestr, hmst);
-    allsecs = 3600*hmst->h + 60*hmst->m + hmst->s;
-    printf("%i/%i: %24s%12i%12i%12i%12zu%14.6f%14.6f%14i\n", 1+kk++, totalpts, timestr, hmst->h, hmst->m, hmst->s, allsecs, lon, lat, ele);
+    // timestr=aawc->aaw[i]->aw[1]->w;
+    // parsetime(timestr, hmst);
+    // allsecs = 3600*hmst->h + 60*hmst->m + hmst->s;
+    // printf("%i/%i: %02i:%02i:%02i (%12zu) %9.6f%9.6f%9i DRV: %9.6f DVAL: %9.6f\n", 1+kk++, totalpts, hmst->h, hmst->m, hmst->s, allsecs, haversine(lat,lon,lat2,lon2), haversine(lat,lon,at3,lon3));
     // printf("%i: %24s%12i%12i%12i%14.6f\n", k++, timestr, hmst->h, hmst->m, hmst->s, allsecs);
 
     // the rest shall all be differences:
-    printf("From now on, cumulative differences:\n"); 
-    printf("%s  %24s%12s%12s%12s\n", "line", "secselapsed", "havkm", "speed", "eldiff");
-    for(i=aawc->ftp+1,k=aawc->flp+1;i<aawc->flp;++i,++k) {
+    // printf("From now on, cumulative differences:\n"); 
+    // printf("%s  %24s%12s%12s%12s\n", "line", "secselapsed", "havkm", "speed", "eldiff");
+    allsecs=0;
+    for(i=aawc->ftp,k=aawc->flp+1;i<aawc->flp;++i,++k) {
         // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
         // for(j=0;j<aawc->aaw[i]->al;++j)
-        lon2=strtod(aawc->aaw[k]->aw[1]->w, NULL);
-        lat2=strtod(aawc->aaw[k]->aw[2]->w, NULL);
-        ele2=atoi(aawc->aaw[k]->aw[3]->w);
+        lon=strtod(aawc->aaw[k]->aw[1]->w, NULL);
+        lat=strtod(aawc->aaw[k]->aw[2]->w, NULL);
+        ele=atoi(aawc->aaw[k]->aw[3]->w);
         // dlon=lon2-lon;
         // dlat=lat2-lat;
-        hdist=haversine(lat, lon, lat2, lon2);
+        // hdist=haversine(lat, lon, lat2, lon2);
         dele=ele2-ele;
         // time=aawc->aaw[i+2]->aw[1]->w;
         timestr=aawc->aaw[i]->aw[1]->w;
         parsetime(aawc->aaw[i]->aw[1]->w, hmst2);
         allsecs2=3600*hmst2->h + 60*hmst2->m + hmst2->s;
-        tdiff=allsecs2-allsecs;
+        // tdiff=allsecs2-allsecs;
 
-        // printf("%i: %24s%12i%12i%12i%12zu%14.6f%14.6f%14i\n", kk++, timestr, hmst2->h-hmst->h, hmst2->m -hmst->m, hmst2->s-hmst->s, allsecs2-allsecs, dlon, dlat, dele);
-        // printf("%i: %24s%12i%12i%12i%12zu%14.6f%14i\n", kk++, timestr, hmst2->h-hmst->h, hmst2->m -hmst->m, hmst2->s-hmst->s, allsecs2-allsecs, hdist, dele);
-        // printf("%i/%i: %24zu%14.6f%14.6f%14i\n", 1+kk++, totalpts, tdiff, hdist, 3600.*hdist/tdiff, dele);
-        printf("%i/%i: %24s%12i%12i%12i%12zu%14.6f%14.6f%14i%24zu%14.6f%14.6f%14i\n", 1+kk++, totalpts, timestr, hmst2->h, hmst2->m, hmst2->s, allsecs, lon, lat, ele, tdiff, hdist, 3600.*hdist/tdiff, dele);
-        // printf("%i: %24s%12i%12i%12i%14.6f\n", k++, timestr, hmst2->h-hmst->h, hmst2->m -hmst->m, hmst2->s-hmst->s, allsecs2-allsecs);
+        printf("%i/%i: %02i:%02i:%02i (%12zu) %9.6f%9.6f%9i DRV: %9.6f DVAL: %9.6f\n", 1+kk++, totalpts, hmst->h, hmst->m, hmst->s, allsecs, haversine(lat,lon,lat2,lon2), haversine(lat,lon,lat3,lon3));
 
-        lon=lon2;
-        lat=lat2;
-        ele=ele2;
-        hmst->h=hmst2->h;
-        hmst->m=hmst2->m;
-        hmst->s=hmst2->s;
+        allsecs=allsecs2;
+    }
+    // printf("total lines=%i\n", k); 
+    free(hmst);
+    free(hmst2);
+}
+
+void prtaawcpla302(aaw_c *aawc) /* kml from flightware */
+{
+    int i, k, kk=0, totalpts;
+    double lon, lat;
+    double lon2=RVLON, lat2=RVLAT;
+    double lon3=VALLON, lat3=VALLAT;
+    double dlon, dlat;
+    double hdist;
+    int ele, dele, ele2;
+    hmst_t *hmst=calloc(1, sizeof(hmst_t));
+    hmst_t *hmst2=calloc(1, sizeof(hmst_t));
+    char *timestr;
+
+    // size_t allsecs, allsecs2, tdiff; // all seconds
+    size_t allsecs, allsecs2;
+    // header:
+    // printf("%24s%12s%12s%12s%12s%12s%14s%14s%14s\n", "TIME", "HR", "MIN", "SEC", "THOU", "ASECS", "LON", "LAT", "ELE"); 
+    // first trkpt: absolute, i.e starting point.
+    // printf("First trkpt: absolute:\n");
+    i=aawc->ftp;
+    k=aawc->flp;
+    totalpts=k-i;
+    // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+    // for(j=0;j<aawc->aaw[i]->al;++j)
+    // lon=strtod(aawc->aaw[k]->aw[1]->w, NULL);
+    // lat=strtod(aawc->aaw[k]->aw[2]->w, NULL);
+    // ele=atoi(aawc->aaw[k]->aw[3]->w);
+
+    // timestr=aawc->aaw[i]->aw[1]->w;
+    // parsetime(timestr, hmst);
+    // allsecs = 3600*hmst->h + 60*hmst->m + hmst->s;
+    // printf("%i/%i: %02i:%02i:%02i (%12zu) %9.6f%9.6f%9i DRV: %9.6f DVAL: %9.6f\n", 1+kk++, totalpts, hmst->h, hmst->m, hmst->s, allsecs, haversine(lat,lon,lat2,lon2), haversine(lat,lon,at3,lon3));
+    // printf("%i: %24s%12i%12i%12i%14.6f\n", k++, timestr, hmst->h, hmst->m, hmst->s, allsecs);
+
+    // the rest shall all be differences:
+    // printf("From now on, cumulative differences:\n"); 
+    // printf("%s  %24s%12s%12s%12s\n", "line", "secselapsed", "havkm", "speed", "eldiff");
+    allsecs=0;
+    for(i=aawc->ftp,k=aawc->flp;i<aawc->flp;++i,++k) {
+        // printf("L%u(%uw):", i, aawc->aaw[i]->al); 
+        // for(j=0;j<aawc->aaw[i]->al;++j)
+        lon=strtod(aawc->aaw[k]->aw[1]->w, NULL);
+        lat=strtod(aawc->aaw[k]->aw[2]->w, NULL);
+        ele=atoi(aawc->aaw[k]->aw[3]->w);
+        // dlon=lon2-lon;
+        // dlat=lat2-lat;
+        // hdist=haversine(lat, lon, lat2, lon2);
+        dele=ele2-ele;
+        // time=aawc->aaw[i+2]->aw[1]->w;
+        timestr=aawc->aaw[i]->aw[1]->w;
+        parsetime(aawc->aaw[i]->aw[1]->w, hmst2);
+        allsecs2=3600*hmst2->h + 60*hmst2->m + hmst2->s;
+        // tdiff=allsecs2-allsecs;
+
+        printf("%i/%i: %02i:%02i:%02i (%12zu) %9.6f %9.6f %9i DRV: %9.6f DVAL: %9.6f\n", 1+kk++, totalpts, hmst2->h, hmst2->m, hmst2->s, allsecs, lat, lon, ele, haversine(lat,lon,lat2,lon2), haversine(lat,lon,lat3,lon3));
+
         allsecs=allsecs2;
     }
     // printf("total lines=%i\n", k); 
@@ -496,12 +553,12 @@ int main(int argc, char *argv[])
     }
 
    aaw_c *aawc=processinpf(argv[1]);
-   prtaawcpla301(aawc); // printout original text as well as you can.
+   prtaawcpla302(aawc); // printout original text as well as you can.
    // prtaawcplain2(aawc); // printout original text as well as you can.
    // prtaawcplain3(aawc); // printout original text as well as you can.
-   printf("Numlines: %zu\n", aawc->numl); 
-   printf("ftp: %zu\n", aawc->ftp); 
-   printf("flp: %zu\n", aawc->flp); 
+   // printf("Numlines: %zu\n", aawc->numl); 
+   // printf("ftp: %zu\n", aawc->ftp); 
+   // printf("flp: %zu\n", aawc->flp); 
 
     free_aawc(&aawc);
 
