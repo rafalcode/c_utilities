@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
+<Document>
+    <name>FlightAware ✈ EIN747 06-Aug-2023 (BIO / LEBB-DUB / EIDW)</name>
+    <Placemark>
+        <name>LEBB Airport</name>
+        <description><![CDATA[Bilbao <br> Bilbao / Bilbo, Viscaya<br><br><a href='http://flightaware.com/live/airport/LEBB'>LEBB airport activity (live)</a><br><a href='http://flightaware.com/resources/airport/LEBB'>LEBB airport information</a>]]></description>
+        <Point>
+            <coordinates>-2.910608,43.301097,0</coordinates>
+        </Point>
+    </Placemark>
+    <Placemark>
+        <name>EIDW Airport</name>
+        <description><![CDATA[Dublin Int'l <br> Dublin<br><br><a href='http://flightaware.com/live/airport/EIDW'>EIDW airport activity (live)</a><br><a href='http://flightaware.com/resources/airport/EIDW'>EIDW airport information</a>]]></description>
+        <Point>
+            <coordinates>-6.270075,53.421333,0</coordinates>
+        </Point>
+    </Placemark>
+    <Placemark>
+        <name>EIN747</name>
+        <description>LEBB - EIDW</description>
+        <gx:Track>
+            <extrude>1</extrude>
+            <tessellate>1</tessellate>
+            <altitudeMode>absolute</altitudeMode>
+            <when>2023-08-06T19:32:46Z</when>
+            <when>2023-08-06T19:33:03Z</when>
+            <when>2023-08-06T19:33:20Z</when>
+            <when>2023-08-06T19:33:38Z</when>
+            <gx:coord>-2.93590 43.31035 221</gx:coord>
+            <gx:coord>-2.95104 43.31602 472</gx:coord>
+            <gx:coord>-2.96677 43.32202 709</gx:coord>
+            <gx:coord>-2.98349 43.32870 838</gx:coord>
+        </gx:Track>
+    </Placemark>
+    <ScreenOverlay>
+        <name>FlightAware</name>
+        <Icon>
+            <href>https://flightaware.com/images/logo_ge.png</href>
+        </Icon>
+        <overlayXY x="1" y="-1" xunits="fraction" yunits="fraction"/>
+        <screenXY x="1" y="0" xunits="fraction" yunits="fraction"/>
+        <size x="0" y="0" xunits="fraction" yunits="fraction"/>
+    </ScreenOverlay>
+</Document>
+
+</kml>
