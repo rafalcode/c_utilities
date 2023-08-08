@@ -16,10 +16,20 @@
 #define EARTH_RADIUS_KM 6371.0
 #define KMLFIRSTPT 25 // kml first timepoint.
 #define MYLINE 246
-#define PMLAT 47.8127 // Penmarch latitude
+
+//some example locations
+#define PMLAT 47.8127 // Penmarch France, lowerr prong of fork) latitude
 #define PMLON -4.3366 // Penmarch long
-#define RVLAT 47.82311428292863 //rocher des victimes lat
+#define RVLAT 47.82311428292863 //rocher des victimes .. also lower prong .. but very noticeable as beach loops up from it.
 #define RVLON -4.379444899501478 // lat of  above (from google maps).
+
+// Valero Oil refinery just opposite Milford Haven
+#define VALLAT 51.68278820308434
+#define VALLON -5.027448696194556
+
+// RH Rosslare Harbour
+#define RHLAT 52.251804331199516
+#define RHLON -6.341619581679981
 
 double to_radians(double degree)
 {
