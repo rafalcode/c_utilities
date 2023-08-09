@@ -34,3 +34,12 @@ or two columns reordering and other things. Note:
 - The pipeline outputs CSVs with quotes, this should be changed, they are not useful for csvrdm.
 - The column CpgGrp was GpgGrp for a while causing untold frustration.
 - need dupcrd.R to de-duplicate Cpg annotation 
+
+# kmlrd.c
+following from gpxrd.c these are rough and ready parsers of xml. Note I do not say "xml parsers"
+becuase they are most certainly not that. 
+gpxrd is particularly unrobust, relying on garmin line numbers which are hardcoded.
+kmlrd is an improvement, first appearance of a certain characters is looked for.
+kmlrd gets stuck on distance from lat and long from a plane. Penzance was 16.5 km away on the surface
+but at 11km up in the air, it's 26.8? No it should be about 20.
+so the mydist() function is not great at all.
