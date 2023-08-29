@@ -27,6 +27,9 @@ vttgo also very simplistic, again the lines are highly regular so you
 can rey on indices.
 Note no special requirements for Cyrillic, this must be UTF-8 at work behind the scenes.
 
+I find that subtitles are not delays by a constant factor, that it's more complicated than that.
+This program helps witht he beginning. Then they just start delaying wildly.
+
 # csvrdm.c
 A program to handle the output of the DNA Methylation pipeline. The CSV is similar
 to the EPIC Annotation CSV, though there are important changes including renaming of one
