@@ -19,6 +19,8 @@ u0: u0.c
 	${CC} -o $@ $^
 tmsee: tmsee.c
 	${CC} ${CFLAGS} -o $@ $^
+correl0: correl0.c
+	${CC} ${CFLAGS} -o $@ $^
 
 # test version of cleangrpo, just looks at files in current directory 
 cleangrploop: cleangrploop.c
