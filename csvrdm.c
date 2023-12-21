@@ -544,7 +544,7 @@ void prtaawcplainav30(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolon
 void prtaawcplainav3(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons must be the exact same: they mostly(!) are.*/
 {
     /* no gencode printing */
-    int i, j, jj, k, kk;
+    int i, j, k, kk;
     int sta, end;
     int sta2, end2;
 
@@ -558,7 +558,7 @@ void prtaawcplainav3(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons
     for(j=9;j<aawc->aaw[0]->al;++j) {
         printf("%s,", aawc->aaw[0]->aw[j]->w);
     }
-    printf("UCSCRG_GCV12\n"); 
+    printf("UCSCRG_GCV12\n");  // the new RF probability of biological impact score.
     int couavnn=0; //count avc not nulls: this first if
     int cousrg=0;  // count UCSC single transcript/splicevar genes
     int couav34nn=0;
@@ -588,6 +588,7 @@ void prtaawcplainav3(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons
                 }
                 printf("UCSCRG\n"); // Genname coded by UCSC Refgene
                 sta2=aawc->aaw[i]->av2->v[k]+1;
+
             }
             /* last semicolon */
             end=aawc->aaw[i]->aw[6]->lp1-1;
@@ -693,6 +694,244 @@ void prtaawcplainav3(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons
         }
     }
     fprintf(stderr,"Summcounts: couavnn=%i, cousrg=%i, couav34nn=%i, couav34sg=%i, coualloth=%i, numl=%zu\n", couavnn, cousrg, couav34nn, couav34sg, coualloth, aawc->numl);
+}
+
+void prtaawcplainav4(aaw_c *aawc) /* prints col7 and col8 parsed. the semicolons must be the exact same: they mostly(!) are.*/
+{
+    /* no gencode printing */
+    int i, j, jj, k, kk;
+    int sta, end;
+    int sta2, end2;
+
+    //header: first empty cell gets skipped .. sort of a bug.
+    printf("Genename,CpgGrp,Cpgname,"); 
+    for(j=0;j<3;++j) {
+        if(j==5) continue;
+        printf("%s,", aawc->aaw[0]->aw[j]->w);
+    }
+    printf("%s,", aawc->aaw[0]->aw[4]->w);
+    for(j=9;j<aawc->aaw[0]->al;++j) {
+        printf("%s,", aawc->aaw[0]->aw[j]->w);
+    }
+    printf("UCSCRG_GCV12,RFBISC\n");  // the new RF probability of biological impact score.
+    int couavnn=0; //count avc not nulls: this first if
+    int cousrg=0;  // count UCSC single transcript/splicevar genes
+    int rfbisc=0;
+    int couav34nn=0;
+    int couav34sg=0;
+    int coualloth=0; // count all others.
+    for(i=1;i<aawc->numl;++i) {
+        if(aawc->aaw[i]->avc !=NULL) {
+            couavnn++;
+            sta=0;
+            sta2=0;
+            for(k=0;k<aawc->aaw[i]->avc->vsz;++k) {
+                rfbisc=0;
+                end=aawc->aaw[i]->avc->v[k];
+                for(kk=sta;kk<end;++kk)
+                    putchar(aawc->aaw[i]->aw[6]->w[kk]);
+                putchar(','); 
+                sta=aawc->aaw[i]->avc->v[k]+1;
+                end2=aawc->aaw[i]->av2->v[k];
+                for(kk=sta2;kk<end2;++kk) {
+                    putchar(aawc->aaw[i]->aw[7]->w[kk]);
+                    if(((kk-sta2)==3) & (aawc->aaw[i]->aw[7]->w[kk]=='2'))
+                        rfbisc +=5; // a TSS200
+                    else if(((kk-sta2)==3) & (aawc->aaw[i]->aw[7]->w[kk]=='1'))
+                        rfbisc +=4; // a TSS1500
+                    else if(((kk-sta2)==0) & (aawc->aaw[i]->aw[7]->w[kk]=='5'))
+                        rfbisc +=3; // a UTR'5
+                    else if(((kk-sta2)==0) & (aawc->aaw[i]->aw[7]->w[kk]=='1'))
+                        rfbisc +=2; // a 1st Exon
+                //     else if(((kk-sta2)==0) & (aawc->aaw[i]->aw[7]->w[kk]=='3'))
+                //         rfbisc +=1; // a 3'UTR
+                }
+                putchar(','); 
+                for(j=0;j<4;++j) {
+                    printf("%s,", aawc->aaw[i]->aw[j]->w);
+                }
+                // next is relation to island
+                printf("%s,", aawc->aaw[i]->aw[5]->w);
+                if(aawc->aaw[i]->aw[5]->w[0]=='I')
+                    rfbisc +=3; // Island
+                else if(aawc->aaw[i]->aw[5]->w[4]=='o')
+                    rfbisc +=2; // north or south shore
+                else if(aawc->aaw[i]->aw[5]->w[4]=='e')
+                    rfbisc +=1; // north or south shore
+                for(j=10;j<aawc->aaw[i]->al;++j) {
+                    printf("%s,", aawc->aaw[i]->aw[j]->w);
+                }
+                printf("UCSCRG,%i\n", rfbisc); // Genname coded by UCSC Refgene
+                sta2=aawc->aaw[i]->av2->v[k]+1;
+
+            }
+            /* last semicolon */
+            rfbisc=0;
+            end=aawc->aaw[i]->aw[6]->lp1-1;
+            for(kk=sta;kk<end;++kk)
+                putchar(aawc->aaw[i]->aw[6]->w[kk]);
+            putchar(','); 
+            end2=aawc->aaw[i]->aw[7]->lp1-1;
+            for(kk=sta2;kk<end2;++kk) {
+                putchar(aawc->aaw[i]->aw[7]->w[kk]);
+                if(((kk-sta2)==3) & (aawc->aaw[i]->aw[7]->w[kk]=='2'))
+                    rfbisc +=5; // a TSS200
+                else if(((kk-sta2)==3) & (aawc->aaw[i]->aw[7]->w[kk]=='1'))
+                    rfbisc +=4; // a TSS1500
+                else if(((kk-sta2)==0) & (aawc->aaw[i]->aw[7]->w[kk]=='5'))
+                    rfbisc +=3; // a UTR'5
+                else if(((kk-sta2)==0) & (aawc->aaw[i]->aw[7]->w[kk]=='1'))
+                    rfbisc +=2; // a 1st Exon
+                // else if(((kk-sta2)==0) & (aawc->aaw[i]->aw[7]->w[kk]=='3'))
+                //     rfbisc +=1; // a 3'UTR
+            }
+            putchar(','); 
+            for(j=0;j<4;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            printf("%s,", aawc->aaw[i]->aw[5]->w);
+            if(aawc->aaw[i]->aw[5]->w[0]=='I')
+                rfbisc +=3; // Island
+            else if(aawc->aaw[i]->aw[5]->w[4]=='o')
+                rfbisc +=2; // north or south shore
+            else if(aawc->aaw[i]->aw[5]->w[4]=='e')
+                rfbisc +=1; // north or south shore
+            for(j=10;j<aawc->aaw[i]->al;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            printf("UCSCRG,%i\n", rfbisc); // Genname coded by UCSC Refgene
+        } else if(aawc->aaw[i]->aw[6]->lp1>1) /* single USCS refgenes */ {
+            cousrg++;
+            printf("%s,", aawc->aaw[i]->aw[6]->w);
+            printf("%s,", aawc->aaw[i]->aw[7]->w);
+            for(j=0;j<4;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            rfbisc=0;
+            printf("%s,", aawc->aaw[i]->aw[5]->w);
+            if(aawc->aaw[i]->aw[5]->w[0]=='I')
+                rfbisc +=3; // Island
+            else if(aawc->aaw[i]->aw[5]->w[4]=='o')
+                rfbisc +=2; // north or south shore
+            else if(aawc->aaw[i]->aw[5]->w[4]=='e')
+                rfbisc +=1; // north or south shore
+            for(j=10;j<aawc->aaw[i]->al;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            if(aawc->aaw[i]->aw[7]->w[3]=='2')
+                rfbisc +=5; // a TSS200
+            else if(aawc->aaw[i]->aw[7]->w[3]=='1')
+                rfbisc +=4; // a TSS1500
+            else if(aawc->aaw[i]->aw[7]->w[0]=='5')
+                rfbisc +=3; // a UTR'5
+            else if(aawc->aaw[i]->aw[7]->w[0]=='1')
+                rfbisc +=2; // a 1st Exon
+            printf("UCSCRG,%i\n", rfbisc); // Genname coded by UCSC Refgene
+        /* OK, now we[re in gencode territory . they are less consistent than refgen */
+        } else if((aawc->aaw[i]->av3 !=NULL) & (aawc->aaw[i]->av4 !=NULL)) {
+            // Move to GCv12:
+            couav34nn++;
+            sta=0;
+            sta2=0;
+            for(k=0;k<aawc->aaw[i]->av3->vsz;++k) {
+                end=aawc->aaw[i]->av3->v[k];
+                for(kk=sta;kk<end;++kk)
+                    putchar(aawc->aaw[i]->aw[8]->w[kk]);
+                putchar(','); 
+                sta=aawc->aaw[i]->av3->v[k]+1;
+                end2=aawc->aaw[i]->av4->v[k];
+                rfbisc=0;
+                for(kk=sta2;kk<end2;++kk) {
+                    putchar(aawc->aaw[i]->aw[9]->w[kk]);
+                    if(((kk-sta2)==3) & (aawc->aaw[i]->aw[9]->w[kk]=='2'))
+                        rfbisc +=5; // a TSS200
+                    else if(((kk-sta2)==3) & (aawc->aaw[i]->aw[9]->w[kk]=='1'))
+                        rfbisc +=4; // a TSS1500
+                    else if(((kk-sta2)==0) & (aawc->aaw[i]->aw[9]->w[kk]=='5'))
+                        rfbisc +=3; // a UTR'5
+                    else if(((kk-sta2)==0) & (aawc->aaw[i]->aw[9]->w[kk]=='1'))
+                        rfbisc +=2; // a 1st Exon
+                }
+                putchar(','); 
+                for(j=0;j<4;++j) {
+                    printf("%s,", aawc->aaw[i]->aw[j]->w);
+                }
+                printf("%s,", aawc->aaw[i]->aw[5]->w);
+                for(j=10;j<aawc->aaw[i]->al;++j) {
+                    printf("%s,", aawc->aaw[i]->aw[j]->w);
+                }
+                printf("GCV12,%i\n", rfbisc); // Genname coded by UCSC Refgene
+                sta2=aawc->aaw[i]->av4->v[k]+1;
+            }
+            /* last semicolon */
+            end=aawc->aaw[i]->aw[8]->lp1-1;
+            for(kk=sta;kk<end;++kk)
+                putchar(aawc->aaw[i]->aw[8]->w[kk]);
+            putchar(','); 
+            // with GCV12 there can be more CpgGrps than Genenames! Sacré GCv12!
+            if(aawc->aaw[i]->av3->vsz < aawc->aaw[i]->av4->vsz)
+                end2=aawc->aaw[i]->av4->v[k]; // k should be robust to this.
+            else
+                end2=aawc->aaw[i]->aw[9]->lp1-1;
+            rfbisc=0;
+            for(kk=sta2;kk<end2;++kk) {
+                putchar(aawc->aaw[i]->aw[9]->w[kk]);
+                if(((kk-sta2)==3) & (aawc->aaw[i]->aw[9]->w[kk]=='2'))
+                    rfbisc +=5; // a TSS200
+                else if(((kk-sta2)==3) & (aawc->aaw[i]->aw[9]->w[kk]=='1'))
+                    rfbisc +=4; // a TSS1500
+                else if(((kk-sta2)==0) & (aawc->aaw[i]->aw[9]->w[kk]=='5'))
+                    rfbisc +=3; // a UTR'5
+                else if(((kk-sta2)==0) & (aawc->aaw[i]->aw[9]->w[kk]=='1'))
+                    rfbisc +=2; // a 1st Exon
+            }
+            putchar(','); 
+            for(j=0;j<4;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            printf("%s,", aawc->aaw[i]->aw[5]->w);
+            for(j=10;j<aawc->aaw[i]->al;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            printf("GCV12,%i\n",rfbisc); // Genname coded by UCSC Refgene
+        } else if((aawc->aaw[i]->aw[8]->lp1>1) & (aawc->aaw[i]->av3 ==NULL) & (aawc->aaw[i]->av4 !=NULL)) {
+            /* GENCODEV12 single gene but several GCV12 groups ... choose the first one */ 
+            couav34sg++;
+            printf("%s,", aawc->aaw[i]->aw[8]->w);
+            /* now get first token of GCV12 group */
+            sta=0;
+            end=aawc->aaw[i]->av4->v[0];
+            rfbisc=0;
+            for(kk=sta;kk<end;++kk) {
+                putchar(aawc->aaw[i]->aw[9]->w[kk]);
+                if(((kk-sta)==3) & (aawc->aaw[i]->aw[9]->w[kk]=='2'))
+                    rfbisc +=5; // a TSS200
+                else if(((kk-sta)==3) & (aawc->aaw[i]->aw[9]->w[kk]=='1'))
+                    rfbisc +=4; // a TSS1500
+                else if(((kk-sta)==0) & (aawc->aaw[i]->aw[9]->w[kk]=='5'))
+                    rfbisc +=3; // a UTR'5
+                else if(((kk-sta)==0) & (aawc->aaw[i]->aw[9]->w[kk]=='1'))
+                    rfbisc +=2; // a 1st Exon
+            }
+            putchar(','); 
+            for(j=0;j<4;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            printf("%s,", aawc->aaw[i]->aw[5]->w);
+            for(j=10;j<aawc->aaw[i]->al;++j) {
+                printf("%s,", aawc->aaw[i]->aw[j]->w);
+            }
+            printf("GCV12,%i\n", rfbisc); // Genname coded by UCSC Refgene
+        } else {
+            coualloth++;
+            // Nah, we don't want these gene-less Cpg's in our output:
+            // printf("LOST: "); 
+            // for(jj=0;jj<aawc->aaw[i]->al;++jj) {
+            //     printf((jj!=aawc->aaw[i]->al-1)?"%s,":"%s\n", aawc->aaw[i]->aw[jj]->w);
+            // }
+        }
+    }
+    fprintf(stderr,"Summcounts: couavnn=%i, cousrg=%i, couav34nn=%i, couav34sg=%i, LOST:=%i, numl=%zu\n", couavnn, cousrg, couav34nn, couav34sg, coualloth, aawc->numl);
 }
 
 void prtaawcsum0(aaw_c *aawc) /* print line and word details, but not the words themselves */
@@ -1121,7 +1360,7 @@ int main(int argc, char *argv[])
     // prtaawcplain00(aawc);
     // prtaawcplainc7(aawc);
     // prtaawcplainc910_(aawc);
-    prtaawcplainav3(aawc);
+    prtaawcplainav4(aawc);
     free_aawc(&aawc);
 
     return 0;
