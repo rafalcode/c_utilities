@@ -447,8 +447,8 @@ csvrdm: csvrdm.c
 # csvfoc: csv Field OCcurence so take a field and give occurrences for each string there
 csvfoc: csvfoc.c
 	${CC} ${CFLAGS} -o $@ $^
-# csvfocg: thi sis meant to resolve csvfoc output, to have most representative CpG for a certain gene.
-csvfoc: csvfoc.c
+# csvfocg: this then goes to select 1 gene for each cpg, on the basis of rfbisc and then dispersity of DNA
+csvfocg: csvfocg.c
 	${CC} ${CFLAGS} -o $@ $^
 # check lost, who so many CpG's not getting through?
 csvrdmcl: csvrdm.c
